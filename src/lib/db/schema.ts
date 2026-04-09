@@ -131,13 +131,9 @@ export const membersRelations = relations(members, ({ many, one }) => ({
   teamMemberships: many(teamMemberships),
   tournamentParticipations: many(tournamentParticipants),
   gamesAsWhite: many(games, {
-    fields: [games.whiteId],
-    references: [members.id],
     relationName: "white",
   }),
   gamesAsBlack: many(games, {
-    fields: [games.blackId],
-    references: [members.id],
     relationName: "black",
   }),
   payments: many(payments),

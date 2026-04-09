@@ -7,17 +7,14 @@ import { eq } from "drizzle-orm";
 import { users } from "@/lib/db/schema";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db),
+  // Use type assertion to resolve adapter type mismatch
+  // between @auth/drizzle-adapter and next-auth versions
+  adapter: DrizzleAdapter(db) as never,
   providers: [
     GitHub({
       clientId: process.env.GITHUB_ID,
       clientSecret: process.env.GITHUB_SECRET,
     }),
-    // Lichess OAuth can be added here
-    // Lichess({
-    //   clientId: process.env.LICHESS_CLIENT_ID,
-    //   clientSecret: process.env.LICHESS_CLIENT_SECRET,
-    // }),
     Credentials({
       name: "credentials",
       credentials: {
@@ -36,7 +33,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user) return null;
 
         // In production, verify password hash here
-        return user;
+        return {
+          ...user,
+          role: user.role ?? "mitglied",
+          permissions: user.permissions ?? [],
+          memberId: user.memberId,
+        };
       },
     }),
   ],
@@ -51,9 +53,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
-        token.permissions = user.permissions;
-        token.memberId = user.memberId;
+        token.role = (user as typeof user & { role: string }).role;
+        token.permissions = (user as typeof user & { permissions: string[] }).permissions;
+        token.memberId = (user as typeof user & { memberId: string | null }).memberId;
       }
       return token;
     },
