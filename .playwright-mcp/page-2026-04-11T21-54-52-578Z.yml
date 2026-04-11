@@ -1,0 +1,57 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: ♔
+        - generic [ref=e7]: Schachverein
+      - navigation [ref=e8]:
+        - link "Verein" [ref=e9] [cursor=pointer]:
+          - /url: /vereinswebsite
+        - link "Mannschaften" [ref=e10] [cursor=pointer]:
+          - /url: /vereinswebsite/teams
+        - link "Turniere" [ref=e11] [cursor=pointer]:
+          - /url: /vereinswebsite/tournaments
+        - link "Kontakt" [ref=e12] [cursor=pointer]:
+          - /url: /vereinswebsite/contact
+        - link "Anmelden" [ref=e13] [cursor=pointer]:
+          - /url: /login
+          - button "Anmelden" [ref=e14]
+  - main [ref=e15]:
+    - generic [ref=e17]:
+      - text: ♔
+      - heading "Willkommen im Schachverein" [level=1] [ref=e18]
+      - paragraph [ref=e19]: Mitgliederverwaltung, Turniere, Mannschaften und mehr — alles an einem Ort. Verwalte deinen Verein modern und effizient.
+      - generic [ref=e20]:
+        - link "Jetzt anmelden" [ref=e21] [cursor=pointer]:
+          - /url: /login
+          - button "Jetzt anmelden" [ref=e22]
+        - link "Mehr erfahren" [ref=e23] [cursor=pointer]:
+          - /url: /vereinswebsite
+          - button "Mehr erfahren" [ref=e24]
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - text: 👥
+        - heading "Mitgliederverwaltung" [level=3] [ref=e29]
+        - paragraph [ref=e30]: Mitglieder, Familienzuordnungen, DWZ/Elo-Tracking und Rollen — alles im Blick.
+      - generic [ref=e31]:
+        - text: ♟️
+        - heading "Mannschaften & Ligabetrieb" [level=3] [ref=e32]
+        - paragraph [ref=e33]: Brettreihenfolgen, Mannschaftsaufstellungen und Ergebniserfassung je Brett.
+      - generic [ref=e34]:
+        - text: 🏆
+        - heading "Turnierverwaltung" [level=3] [ref=e35]
+        - paragraph [ref=e36]: Schweizer System, Rundenturniere, Schnellschach und PGN-Import/Export.
+      - generic [ref=e37]:
+        - text: 💰
+        - heading "Beitraege & SEPA" [level=3] [ref=e38]
+        - paragraph [ref=e39]: SEPA-Lastschrift, Beitragsverwaltung und Erinnerungen — DSGVO-konform.
+      - generic [ref=e40]:
+        - text: 📅
+        - heading "Kalender & Events" [level=3] [ref=e41]
+        - paragraph [ref=e42]: Training, Turniere, Mannschaftskaempfe — alles zentral verwaltet.
+      - generic [ref=e43]:
+        - text: 📱
+        - heading "PWA & Offline" [level=3] [ref=e44]
+        - paragraph [ref=e45]: Auch ohne Internet nutzbar — Ergebnisse an Spieltagen offline eintragen.
+  - contentinfo [ref=e46]:
+    - paragraph [ref=e48]: © 2026 Schachverein. Alle Rechte vorbehalten.

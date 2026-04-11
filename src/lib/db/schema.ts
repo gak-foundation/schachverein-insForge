@@ -137,6 +137,9 @@ export const membersRelations = relations(members, ({ many, one }) => ({
     relationName: "black",
   }),
   payments: many(payments),
+  dwzEntries: many(dwzHistory),
+  availabilityEntries: many(availability),
+  uploadedDocuments: many(documents),
 }));
 
 // ─── Seasons ──────────────────────────────────────────────────
@@ -180,6 +183,8 @@ export const teamsRelations = relations(teams, ({ one, many }) => ({
   }),
   boardOrders: many(boardOrders),
   teamMemberships: many(teamMemberships),
+  homeMatches: many(matches, { relationName: "homeMatches" }),
+  awayMatches: many(matches, { relationName: "awayMatches" }),
 }));
 
 // ─── Board Orders (Brettreihenfolge) ──────────────────────────
@@ -420,13 +425,229 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
 export const auditLog = pgTable("audit_log", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id"),
-  action: varchar("action", { length: 50 }).notNull(), // create, update, delete, login
-  entity: varchar("entity", { length: 50 }).notNull(), // member, payment, etc.
+  action: varchar("action", { length: 50 }).notNull(),
+  entity: varchar("entity", { length: 50 }).notNull(),
   entityId: uuid("entity_id"),
-  changes: jsonb("changes"), // { field: { old, new } }
+  changes: jsonb("changes"),
   ipAddress: varchar("ip_address", { length: 45 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// ─── DWZ History ──────────────────────────────────────────────
+
+export const dwzHistory = pgTable(
+  "dwz_history",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => members.id),
+    dwz: integer("dwz").notNull(),
+    elo: integer("elo"),
+    source: varchar("source", { length: 50 }).default("manual"),
+    recordedAt: date("recorded_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    memberDateIdx: index("dwz_history_member_date_idx").on(
+      table.memberId,
+      table.recordedAt,
+    ),
+  }),
+);
+
+export const dwzHistoryRelations = relations(dwzHistory, ({ one }) => ({
+  member: one(members, {
+    fields: [dwzHistory.memberId],
+    references: [members.id],
+  }),
+}));
+
+// ─── Availability ────────────────────────────────────────────
+
+export const availabilityStatusEnum = pgEnum("availability_status", [
+  "available",
+  "unavailable",
+  "maybe",
+]);
+
+export const availability = pgTable("availability", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  memberId: uuid("member_id")
+    .notNull()
+    .references(() => members.id),
+  date: date("date").notNull(),
+  status: availabilityStatusEnum("status").default("available").notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const availabilityRelations = relations(availability, ({ one }) => ({
+  member: one(members, {
+    fields: [availability.memberId],
+    references: [members.id],
+  }),
+}));
+
+// ─── Documents ───────────────────────────────────────────────
+
+export const documentCategoryEnum = pgEnum("document_category", [
+  "statute",
+  "protocol",
+  "certificate",
+  "other",
+]);
+
+export const documents = pgTable("documents", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 300 }).notNull(),
+  fileName: varchar("file_name", { length: 500 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  category: documentCategoryEnum("category").default("other").notNull(),
+  mimeType: varchar("mime_type", { length: 100 }),
+  fileSize: integer("file_size"),
+  uploadedBy: uuid("uploaded_by").references(() => members.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const documentsRelations = relations(documents, ({ one }) => ({
+  uploader: one(members, {
+    fields: [documents.uploadedBy],
+    references: [members.id],
+  }),
+}));
+
+// ─── Contribution Rates ──────────────────────────────────────
+
+export const contributionFrequencyEnum = pgEnum("contribution_frequency", [
+  "yearly",
+  "quarterly",
+  "monthly",
+]);
+
+export const contributionRates = pgTable("contribution_rates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  frequency: contributionFrequencyEnum("frequency").default("yearly").notNull(),
+  description: text("description"),
+  validFrom: date("valid_from"),
+  validUntil: date("valid_until"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Matches (Mannschaftskaempfe) ────────────────────────────
+
+export const matchStatusEnum = pgEnum("match_status", [
+  "scheduled",
+  "in_progress",
+  "completed",
+  "cancelled",
+]);
+
+export const matches = pgTable(
+  "matches",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id),
+    tournamentId: uuid("tournament_id").references(() => tournaments.id),
+    homeTeamId: uuid("home_team_id")
+      .notNull()
+      .references(() => teams.id),
+    awayTeamId: uuid("away_team_id")
+      .notNull()
+      .references(() => teams.id),
+    matchDate: date("match_date"),
+    location: varchar("location", { length: 300 }),
+    homeScore: decimal("home_score", { precision: 5, scale: 1 }),
+    awayScore: decimal("away_score", { precision: 5, scale: 1 }),
+    status: matchStatusEnum("status").default("scheduled").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    seasonIdx: index("matches_season_idx").on(table.seasonId),
+    dateIdx: index("matches_date_idx").on(table.matchDate),
+  }),
+);
+
+export const matchesRelations = relations(matches, ({ one }) => ({
+  season: one(seasons, {
+    fields: [matches.seasonId],
+    references: [seasons.id],
+  }),
+  tournament: one(tournaments, {
+    fields: [matches.tournamentId],
+    references: [tournaments.id],
+  }),
+  homeTeam: one(teams, {
+    fields: [matches.homeTeamId],
+    references: [teams.id],
+    relationName: "homeMatches",
+  }),
+  awayTeam: one(teams, {
+    fields: [matches.awayTeamId],
+    references: [teams.id],
+    relationName: "awayMatches",
+  }),
+}));
+
+// ─── Match Results (Einzelergebnisse je Brett) ───────────────
+
+export const matchResults = pgTable("match_results", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  matchId: uuid("match_id")
+    .notNull()
+    .references(() => matches.id),
+  gameId: uuid("game_id").references(() => games.id),
+  boardNumber: integer("board_number").notNull(),
+  homePlayerId: uuid("home_player_id").references(() => members.id),
+  awayPlayerId: uuid("away_player_id").references(() => members.id),
+  result: gameResultEnum("result"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const matchResultsRelations = relations(matchResults, ({ one }) => ({
+  match: one(matches, {
+    fields: [matchResults.matchId],
+    references: [matches.id],
+  }),
+  game: one(games, {
+    fields: [matchResults.gameId],
+    references: [games.id],
+  }),
+  homePlayer: one(members, {
+    fields: [matchResults.homePlayerId],
+    references: [members.id],
+    relationName: "homePlayer",
+  }),
+  awayPlayer: one(members, {
+    fields: [matchResults.awayPlayerId],
+    references: [members.id],
+    relationName: "awayPlayer",
+  }),
+}));
+
+// ─── Newsletters ─────────────────────────────────────────────
+
+export const newsletters = pgTable("newsletters", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  subject: varchar("subject", { length: 300 }).notNull(),
+  body: text("body").notNull(),
+  sentAt: timestamp("sent_at"),
+  sentBy: uuid("sent_by").references(() => members.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const newslettersRelations = relations(newsletters, ({ one }) => ({
+  sender: one(members, {
+    fields: [newsletters.sentBy],
+    references: [members.id],
+  }),
+}));
 
 // ─── Auth (for NextAuth/Drizzle adapter) ─────────────────────
 
@@ -436,9 +657,17 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: timestamp("email_verified"),
   image: text("image"),
-  memberId: uuid("member_id").references(() => members.id), // Link to club member
+  memberId: uuid("member_id").references(() => members.id),
   role: memberRoleEnum("role").default("mitglied").notNull(),
   permissions: jsonb("permissions").$type<string[]>().default([]),
+  passwordHash: varchar("password_hash", { length: 255 }),
+  failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
+  lockedUntil: timestamp("locked_until"),
+  passwordResetAt: timestamp("password_reset_at"),
+  // 2FA fields
+  twoFactorSecret: varchar("two_factor_secret", { length: 255 }),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  twoFactorBackupCodes: jsonb("two_factor_backup_codes").$type<string[]>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -476,3 +705,29 @@ export const verificationTokens = pgTable("verification_tokens", {
   token: varchar("token", { length: 255 }).notNull().unique(),
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
+
+export const refreshTokens = pgTable(
+  "refresh_tokens",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: varchar("token_hash", { length: 255 }).notNull(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    revokedAt: timestamp("revoked_at"),
+    replacedByToken: varchar("replaced_by_token", { length: 255 }),
+  },
+  (table) => ({
+    userIdIdx: index("refresh_tokens_user_id_idx").on(table.userId),
+    tokenHashIdx: index("refresh_tokens_token_hash_idx").on(table.tokenHash),
+  }),
+);
+
+export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [refreshTokens.userId],
+    references: [users.id],
+  }),
+}));

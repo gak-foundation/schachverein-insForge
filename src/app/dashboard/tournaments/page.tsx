@@ -17,7 +17,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
+import { Trophy } from "lucide-react";
 
 const typeLabels: Record<string, string> = {
   swiss: "Schweizer System",
@@ -53,11 +55,12 @@ export default async function TournamentsPage() {
       </div>
 
       {allTournaments.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-gray-500">
-            Noch keine Turniere angelegt. Klicke auf &ldquo;Neues Turnier&rdquo; um zu beginnen.
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Trophy}
+          title="Keine Turniere"
+          description="Noch keine Turniere angelegt. Erstelle ein neues Turnier, um loszulegen."
+          action={{ label: "Neues Turnier", href: "/dashboard/tournaments/new" }}
+        />
       ) : (
         <Card>
           <CardHeader>

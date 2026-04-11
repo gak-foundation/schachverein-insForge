@@ -10,6 +10,7 @@ declare module "next-auth" {
       role: string;
       permissions: string[];
       memberId: string | null;
+      emailVerified: Date | null;
     };
   }
 
@@ -20,6 +21,8 @@ declare module "next-auth" {
     role: string;
     permissions: string[];
     memberId: string | null;
+    emailVerified: Date | null;
+    refreshToken?: string;
   }
 }
 
@@ -29,5 +32,7 @@ declare module "next-auth/jwt" {
     role: string;
     permissions: string[];
     memberId: string | null;
+    emailVerified: Date | null;
+    refreshToken?: string;
   }
 }

@@ -128,3 +128,88 @@
     @apply font-sans;
   }
 }
+
+/* Print styles for member list */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print\:hidden,
+  [data-sidebar="true"],
+  nav,
+  button,
+  form[method="GET"],
+  a[href*="/new"] {
+    display: none !important;
+  }
+
+  .space-y-6 {
+    margin: 0 !important;
+  }
+
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #000 !important;
+    padding: 8px !important;
+    text-align: left !important;
+  }
+
+  th {
+    background-color: #f0f0f0 !important;
+    font-weight: bold !important;
+  }
+
+  h1 {
+    font-size: 18pt !important;
+    margin-bottom: 20px !important;
+  }
+
+  a {
+    text-decoration: none !important;
+    color: black !important;
+  }
+
+  /* Show URL for links in print */
+  a[href]::after {
+    content: none !important;
+  }
+}
+
+/* Print styles utility classes */
+@media print {
+  .print\:table-fixed {
+    table-layout: fixed !important;
+  }
+
+  .print\:break-inside-avoid {
+    break-inside: avoid !important;
+  }
+
+  .print\:break-before-page {
+    break-before: page !important;
+  }
+
+  .print\:text-black {
+    color: black !important;
+  }
+
+  .print\:bg-white {
+    background-color: white !important;
+  }
+
+  .print\:border-black {
+    border-color: black !important;
+  }
+}
