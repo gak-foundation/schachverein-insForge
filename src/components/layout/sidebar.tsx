@@ -9,7 +9,7 @@ import {
   type Permission,
 } from "@/lib/auth/permissions";
 import { useState } from "react";
-import { signOut } from "next-auth/react";
+import { authClient } from "@/lib/auth/client";
 
 type NavItem = {
   name: string;
@@ -113,7 +113,10 @@ export function Sidebar({ role, permissions }: SidebarProps) {
       <div className="border-t px-3 py-3">
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={async () => {
+            await authClient.signOut();
+            window.location.href = "/auth/login";
+          }}
           className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
         >
           <span className="text-base">🚪</span>

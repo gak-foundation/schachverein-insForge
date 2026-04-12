@@ -1,0 +1,23 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - img [ref=e5]
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - img [ref=e13]
+        - generic [ref=e20]:
+          - heading "Passwort vergessen?" [level=1] [ref=e21]
+          - paragraph [ref=e22]: Wir senden Ihnen einen Link zum Zurücksetzen
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]: E-Mail
+          - textbox "E-Mail" [ref=e27]:
+            - /placeholder: name@verein.de
+        - button "Reset-Link senden" [ref=e29]:
+          - img
+          - text: Reset-Link senden
+      - paragraph [ref=e30]:
+        - link "Zurück zum Login" [ref=e31] [cursor=pointer]:
+          - /url: /auth/login
+  - button "Open Next.js Dev Tools" [ref=e37] [cursor=pointer]:
+    - img [ref=e38]
+  - alert [ref=e41]

@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -47,8 +47,8 @@ export default async function TeamDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
-  if (!session) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
 
   const { id } = await params;
   const team = await getTeamById(id);
@@ -57,7 +57,7 @@ export default async function TeamDetailPage({
     notFound();
   }
 
-  const canEdit = hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.TEAMS_WRITE);
+  const canEdit = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.TEAMS_WRITE);
   const [teamMembers, captain, teamMatches] = await Promise.all([
     getTeamMembers(id),
     team.captainId ? getMemberById(team.captainId) : Promise.resolve(null),

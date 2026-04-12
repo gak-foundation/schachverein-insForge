@@ -16,7 +16,7 @@ Vollständige Next.js 16 Anwendung für Schachvereins-Verwaltung mit enterprise-
 | UI Components | shadcn/ui |
 | ORM | Drizzle ORM |
 | Database | PostgreSQL |
-| Auth | Auth.js v5 (NextAuth) |
+| Auth | Better Auth |
 | State | Zustand (client-side) |
 | Validation | Zod |
 | Chess | chess.js + react-chessboard |
@@ -118,8 +118,7 @@ POST /auth/forgot-password → Token generieren → E-Mail senden → Link klick
 - `/dashboard/protocols` - Audit-Logs
 
 ### API Routes
-- `/api/auth/[...nextauth]` - NextAuth
-- `/api/auth/refresh` - Token Refresh
+- `/api/auth/*` - Better Auth Endpoints
 
 ---
 
@@ -168,7 +167,7 @@ Mit `hasPermission(role, permissions[], PERMISSION)` prüfbar.
 ## Build Commands
 
 ```bash
-npm run dev        # Development (Turbopack)
+npm run dev        # Development (Turbopack - Next.js 16 default)
 npm run build      # Production Build + TypeScript Check
 npm run lint       # ESLint
 npm run db:generate # Drizzle Migration generieren
@@ -185,9 +184,9 @@ npm run test       # Vitest
 # Database
 DATABASE_URL=postgresql://...
 
-# NextAuth
-AUTH_SECRET=...
-AUTH_URL=http://localhost:3000
+# Better Auth
+BETTER_AUTH_SECRET=...
+BETTER_AUTH_URL=http://localhost:3000
 
 # OAuth
 GITHUB_ID=...

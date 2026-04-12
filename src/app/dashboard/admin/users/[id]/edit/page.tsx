@@ -1,6 +1,6 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { users, members } from "@/lib/db/schema";
+import { authUsers, members } from "@/lib/db/schema";
 import { PERMISSIONS, hasPermission, getPermissionsForRole } from "@/lib/auth/permissions";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
@@ -49,18 +49,18 @@ const ALL_PERMISSIONS = [
 async function getUserById(id: string) {
   const [user] = await db
     .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      role: users.role,
-      permissions: users.permissions,
-      memberId: users.memberId,
+      id: authUsers.id,
+      name: authUsers.name,
+      email: authUsers.email,
+      role: authUsers.role,
+      permissions: authUsers.permissions,
+      memberId: authUsers.memberId,
       firstName: members.firstName,
       lastName: members.lastName,
     })
-    .from(users)
-    .leftJoin(members, eq(users.memberId, members.id))
-    .where(eq(users.id, id));
+    .from(authUsers)
+    .leftJoin(members, eq(authUsers.memberId, members.id))
+    .where(eq(authUsers.id, id));
 
   return user;
 }
@@ -70,13 +70,13 @@ export default async function EditUserPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
-  if (!hasPermission(session.user.role, session.user.permissions || [], PERMISSIONS.ADMIN_USERS)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions || [], PERMISSIONS.ADMIN_USERS)) {
     redirect("/dashboard");
   }
 
@@ -84,7 +84,7 @@ export default async function EditUserPage({
   const user = await getUserById(id);
 
   if (!user) {
-    redirect("/dashboard/admin/users");
+    redirect("/dashboard/admin/authUsers");
   }
 
   const rolePermissions = new Set(getPermissionsForRole(user.role));
@@ -94,7 +94,7 @@ export default async function EditUserPage({
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Link href="/dashboard/admin/users" className="hover:text-gray-900">
+          <Link href="/dashboard/admin/authUsers" className="hover:text-gray-900">
             Benutzer
           </Link>
           <span>/</span>
@@ -206,7 +206,7 @@ export default async function EditUserPage({
               Speichern
             </button>
             <Link
-              href="/dashboard/admin/users"
+              href="/dashboard/admin/authUsers"
               className="text-sm font-medium text-gray-600 hover:text-gray-900"
             >
               Abbrechen

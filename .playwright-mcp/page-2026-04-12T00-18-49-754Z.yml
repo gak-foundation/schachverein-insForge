@@ -1,0 +1,29 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: ♔
+    - generic [ref=e6]: Schachverein
+    - generic [ref=e7]: Melden Sie sich an, um auf die Vereinsverwaltung zuzugreifen
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: E-Mail
+        - textbox "E-Mail" [ref=e12]:
+          - /placeholder: name@verein.de
+          - text: admin@schachverein.de
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - generic [ref=e15]: Passwort
+          - link "Passwort vergessen?" [ref=e16] [cursor=pointer]:
+            - /url: /auth/forgot-password
+        - textbox "Passwort" [ref=e17]: admin123
+      - button "Anmelden" [ref=e18]
+    - generic [ref=e19]:
+      - separator [ref=e21]
+      - generic [ref=e23]: oder
+    - button "Mit GitHub anmelden" [ref=e25]:
+      - img
+      - text: Mit GitHub anmelden
+    - paragraph [ref=e26]:
+      - text: Noch kein Konto?
+      - link "Registrieren" [ref=e27] [cursor=pointer]:
+        - /url: /signup

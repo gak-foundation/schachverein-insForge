@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getSeasons } from "@/lib/actions";
 import { createTournament } from "@/lib/actions";
@@ -19,8 +19,8 @@ export const metadata = {
 };
 
 export default async function NewTournamentPage() {
-  const session = await auth();
-  if (!session) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
 
   const allSeasons = await getSeasons();
 

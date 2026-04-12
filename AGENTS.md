@@ -4,7 +4,7 @@
 - **Framework**: Next.js 16 (App Router, Server Components, Server Actions)
 - **Language**: TypeScript (strict mode)
 - **ORM**: Drizzle ORM with PostgreSQL
-- **Auth**: Auth.js v5 (JWT strategy)
+- **Auth**: Better Auth (formerly Auth.js v5 - migrated)
 - **UI**: shadcn/ui + Tailwind CSS 4
 - **State**: Zustand (client-side)
 - **Chess**: chess.js + react-chessboard
@@ -23,7 +23,7 @@
 ## Architecture
 - Server Components by default, Client Components only when needed ("use client")
 - Server Actions in `src/lib/actions.ts` for all mutations
-- All route pages validate auth with `auth()` and redirect to `/login` if unauthenticated
+- All route pages validate auth with `getSession()` from `src/lib/auth/session.ts`
 - RBAC via `hasPermission(role, permissions, PERMISSIONS.XXX)` from `src/lib/auth/permissions.ts`
 - Audit logging via `logAudit()` in `src/lib/audit.ts`
 - Zod schemas in `src/lib/validations/index.ts`
@@ -39,7 +39,9 @@
 ## Key Files
 - `src/lib/db/schema.ts` - All database tables and relations
 - `src/lib/auth/permissions.ts` - RBAC permission matrix (8 roles, 23 permissions)
-- `src/lib/auth/index.ts` - NextAuth v5 configuration
+- `src/lib/auth/better-auth.ts` - Better Auth configuration
+- `src/lib/auth/client.ts` - Better Auth client-side hooks
+- `src/lib/auth/session.ts` - Server-side session utilities
 - `src/lib/actions.ts` - All server actions
 - `src/lib/validations/index.ts` - Zod validation schemas
 - `src/proxy.ts` - Next.js middleware (route protection)

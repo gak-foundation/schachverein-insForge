@@ -3,14 +3,11 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { XCircle, ArrowLeft, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { AuthCard } from "@/components/auth/auth-card";
 
 const ERROR_MESSAGES: Record<string, string> = {
   Configuration: "Ein Konfigurationsfehler ist aufgetreten.",
@@ -29,37 +26,65 @@ function AuthErrorContent() {
   const message = ERROR_MESSAGES[error] ?? ERROR_MESSAGES.Default;
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-4 text-5xl">♔</div>
-        <CardTitle className="text-2xl">Fehler</CardTitle>
-        <CardDescription>{message}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2">
-        <Link href="/login">
-          <Button className="w-full">Zum Login</Button>
+    <>
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 200 }}
+        className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-500/20"
+      >
+        <XCircle className="h-10 w-10 text-red-400" />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="text-center space-y-2"
+      >
+        <h1 className="text-2xl font-bold text-white">Fehler</h1>
+        <p className="text-slate-300">{message}</p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="flex flex-col gap-3 pt-4"
+      >
+        <Link href="/auth/login">
+          <Button className="w-full bg-gradient-to-r from-blue-600 to-violet-600 font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-500 hover:to-violet-500">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Zum Login
+          </Button>
         </Link>
+        
         <Link href="/">
-          <Button variant="outline" className="w-full">Zur Startseite</Button>
+          <Button variant="outline" className="w-full border-white/10 text-white hover:bg-white/5">
+            <Home className="mr-2 h-4 w-4" />
+            Zur Startseite
+          </Button>
         </Link>
-      </CardContent>
-    </Card>
+      </motion.div>
+    </>
   );
 }
 
 export default function AuthErrorPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <Suspense fallback={
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 text-5xl">♔</div>
-            <CardTitle className="text-2xl">Fehler</CardTitle>
-          </CardHeader>
-        </Card>
-      }>
-        <AuthErrorContent />
-      </Suspense>
-    </div>
+    <AuthLayout>
+      <AuthCard>
+        <div className="flex flex-col items-center space-y-6">
+          <Suspense fallback={
+            <div className="space-y-4 text-center">
+              <div className="mx-auto h-20 w-20 animate-pulse rounded-full bg-slate-700" />
+              <div className="mt-4 h-6 w-32 animate-pulse rounded bg-slate-700 mx-auto" />
+            </div>
+          }>
+            <AuthErrorContent />
+          </Suspense>
+        </div>
+      </AuthCard>
+    </AuthLayout>
   );
 }

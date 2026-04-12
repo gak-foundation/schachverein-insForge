@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -43,13 +43,13 @@ export default async function MembersPage({
     page?: string;
   }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
-  if (!hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.MEMBERS_READ)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.MEMBERS_READ)) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Keine Berechtigung fuer die Mitgliederverwaltung.</p>
@@ -160,7 +160,7 @@ export default async function MembersPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.MEMBERS_WRITE) && (
+          {hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.MEMBERS_WRITE) && (
             <>
               <Link href="/dashboard/members/import">
                 <Button variant="outline" size="sm">
@@ -227,7 +227,7 @@ export default async function MembersPage({
                   : "Noch keine Mitglieder im System."
               }
               action={
-                hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.MEMBERS_WRITE)
+                hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.MEMBERS_WRITE)
                   ? { label: "Erstes Mitglied anlegen", href: "/dashboard/members/new" }
                   : undefined
               }

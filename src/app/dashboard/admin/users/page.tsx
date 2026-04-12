@@ -1,6 +1,6 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { users, members } from "@/lib/db/schema";
+import { authUsers, members } from "@/lib/db/schema";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { redirect } from "next/navigation";
 import { eq, desc, ilike, or } from "drizzle-orm";
@@ -25,35 +25,35 @@ async function getUsers(search?: string, roleFilter?: string) {
     const escapedSearch = search.replace(/[%_]/g, "\\$&");
     conditions.push(
       or(
-        ilike(users.name, `%${escapedSearch}%`),
-        ilike(users.email, `%${escapedSearch}%`),
+        ilike(authUsers.name, `%${escapedSearch}%`),
+        ilike(authUsers.email, `%${escapedSearch}%`),
       ),
     );
   }
 
   if (roleFilter) {
-    conditions.push(eq(users.role, roleFilter as typeof users.role.enumValues[number]));
+    conditions.push(eq(authUsers.role, roleFilter as typeof authUsers.role.enumValues[number]));
   }
 
   return db
     .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      role: users.role,
-      permissions: users.permissions,
-      memberId: users.memberId,
+      id: authUsers.id,
+      name: authUsers.name,
+      email: authUsers.email,
+      role: authUsers.role,
+      permissions: authUsers.permissions,
+      memberId: authUsers.memberId,
       firstName: members.firstName,
       lastName: members.lastName,
-      createdAt: users.createdAt,
+      createdAt: authUsers.createdAt,
     })
-    .from(users)
-    .leftJoin(members, eq(users.memberId, members.id))
+    .from(authUsers)
+    .leftJoin(members, eq(authUsers.memberId, members.id))
     .where(conditions.length > 0 ? or(...conditions) : undefined)
-    .orderBy(desc(users.createdAt));
+    .orderBy(desc(authUsers.createdAt));
 }
 
-function UsersTable({ users: userList }: { users: Awaited<ReturnType<typeof getUsers>> }) {
+function UsersTable({ authUsers: userList }: { authUsers: Awaited<ReturnType<typeof getUsers>> }) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -105,7 +105,7 @@ function UsersTable({ users: userList }: { users: Awaited<ReturnType<typeof getU
               </td>
               <td className="whitespace-nowrap px-6 py-4 text-right">
                 <Link
-                  href={`/dashboard/admin/users/${user.id}/edit`}
+                  href={`/dashboard/admin/authUsers/${user.id}/edit`}
                   className="text-sm font-medium text-blue-600 hover:text-blue-800"
                 >
                   Bearbeiten
@@ -184,7 +184,7 @@ async function UsersContent({
           <p className="text-gray-600">Keine Benutzer gefunden</p>
         </div>
       ) : (
-        <UsersTable users={userList} />
+        <UsersTable authUsers={userList} />
       )}
     </>
   );
@@ -195,13 +195,13 @@ export default async function AdminUsersPage({
 }: {
   searchParams: Promise<{ search?: string; role?: string }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
-  if (!hasPermission(session.user.role, session.user.permissions || [], PERMISSIONS.ADMIN_USERS)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions || [], PERMISSIONS.ADMIN_USERS)) {
     redirect("/dashboard");
   }
 
@@ -248,7 +248,7 @@ export default async function AdminUsersPage({
         </button>
         {(search || role) && (
           <Link
-            href="/dashboard/admin/users"
+            href="/dashboard/admin/authUsers"
             className="text-sm text-gray-600 hover:text-gray-900"
           >
             Filter zurücksetzen

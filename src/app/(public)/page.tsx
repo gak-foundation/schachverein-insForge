@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  ChessKnight, 
+  Circle, 
   Calendar, 
   Users, 
   Trophy, 
@@ -51,7 +51,7 @@ export default async function HomePage() {
 
         {/* Decorative chess pieces */}
         <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-10 hidden lg:block">
-          <ChessKnight className="h-96 w-96" />
+          <Circle className="h-96 w-96" />
         </div>
       </section>
 
@@ -75,7 +75,7 @@ export default async function HomePage() {
             </Card>
             <Card className="text-center">
               <CardContent className="pt-6">
-                <ChessKnight className="h-10 w-10 text-blue-600 mx-auto mb-4" />
+                <Circle className="h-10 w-10 text-blue-600 mx-auto mb-4" />
                 <div className="text-4xl font-bold text-gray-900">{stats.matchesThisYear}</div>
                 <p className="text-gray-600 mt-2">Spiele diese Saison</p>
               </CardContent>

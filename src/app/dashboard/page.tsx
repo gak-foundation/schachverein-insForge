@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getDashboardStats } from "@/lib/actions";
 import {
@@ -25,17 +25,21 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
+  const user = session.user;
+  const role = user?.role as string ?? "mitglied";
+  const permissions = (user?.permissions as string[]) ?? [];
+
   const stats = await getDashboardStats();
-  const firstName = session.user.name?.split(" ")[0] ?? "Mitglied";
-  const canWriteMembers = hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.MEMBERS_WRITE);
-  const canWriteTournaments = hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.TOURNAMENTS_WRITE);
-  const canWriteTeams = hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.TEAMS_WRITE);
+  const firstName = user?.name?.split(" ")[0] ?? "Mitglied";
+  const canWriteMembers = hasPermission(role, permissions, PERMISSIONS.MEMBERS_WRITE);
+  const canWriteTournaments = hasPermission(role, permissions, PERMISSIONS.TOURNAMENTS_WRITE);
+  const canWriteTeams = hasPermission(role, permissions, PERMISSIONS.TEAMS_WRITE);
 
   return (
     <div className="space-y-8">
@@ -251,10 +255,10 @@ export default async function DashboardPage() {
         <CardContent>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-              {session.user.role}
+              {role}
             </span>
             <span className="text-sm text-gray-500">
-              {session.user.permissions.length} Berechtigung(en)
+              {permissions.length} Berechtigung(en)
             </span>
           </div>
         </CardContent>

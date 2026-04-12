@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -40,10 +40,10 @@ export const metadata = {
 };
 
 export default async function ProtocolsPage() {
-  const session = await auth();
-  if (!session) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
 
-  if (!hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.ADMIN_AUDIT)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.ADMIN_AUDIT)) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Keine Berechtigung fuer die Audit-Protokolle.</p>

@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { createGame, getTournaments, getMembers } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,8 @@ export const metadata = {
 };
 
 export default async function NewGamePage() {
-  const session = await auth();
-  if (!session) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
 
   const [allTournaments, allMembers] = await Promise.all([
     getTournaments(),

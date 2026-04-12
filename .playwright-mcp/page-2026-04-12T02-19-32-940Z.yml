@@ -1,0 +1,45 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - img [ref=e5]
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - img [ref=e13]
+        - generic [ref=e20]:
+          - heading "Willkommen zurück" [level=1] [ref=e21]
+          - paragraph [ref=e22]: Melden Sie sich an, um Ihren Schachverein zu verwalten
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: E-Mail
+          - textbox "E-Mail" [active] [ref=e26]:
+            - /placeholder: name@verein.de
+            - text: admin@schachverein.de
+        - generic [ref=e27]:
+          - generic [ref=e28]:
+            - generic [ref=e29]: Passwort
+            - link "Passwort vergessen?" [ref=e30] [cursor=pointer]:
+              - /url: /auth/forgot-password
+          - generic [ref=e31]:
+            - textbox "Passwort" [ref=e32]:
+              - /placeholder: Ihr Passwort
+              - text: admin123
+            - button [ref=e33]:
+              - img [ref=e34]
+        - button "Anmelden" [ref=e38]
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - separator [ref=e42]
+          - generic [ref=e44]: oder
+        - generic [ref=e46]:
+          - generic [ref=e51]: Oder weiter mit
+          - button "GitHub" [ref=e52]:
+            - img [ref=e56]
+            - generic [ref=e59]: GitHub
+      - paragraph [ref=e60]:
+        - text: Noch kein Konto?
+        - link "Registrieren" [ref=e61] [cursor=pointer]:
+          - /url: /auth/signup
+      - link "← Zurück zur Startseite" [ref=e63] [cursor=pointer]:
+        - /url: /
+  - button "Open Next.js Dev Tools" [ref=e69] [cursor=pointer]:
+    - img [ref=e70]
+  - alert [ref=e73]

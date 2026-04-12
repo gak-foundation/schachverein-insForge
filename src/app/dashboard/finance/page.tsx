@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -43,10 +43,10 @@ export const metadata = {
 };
 
 export default async function FinancePage() {
-  const session = await auth();
-  if (!session) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
 
-  if (!hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.FINANCE_READ)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_READ)) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Keine Berechtigung fuer die Finanzverwaltung.</p>
@@ -62,7 +62,7 @@ export default async function FinancePage() {
 
   const memberMap = new Map(allMembers.map((m) => [m.id, `${m.firstName} ${m.lastName}`]));
 
-  const canWrite = hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.FINANCE_WRITE);
+  const canWrite = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_WRITE);
 
   return (
     <div className="space-y-6">

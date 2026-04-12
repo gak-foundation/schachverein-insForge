@@ -24,7 +24,7 @@ export default function HomePage() {
             <Link href="/vereinswebsite/contact" className="text-sm text-gray-600 hover:text-gray-900">
               Kontakt
             </Link>
-            <Link href="/login">
+            <Link href="/auth/login">
               <Button variant="outline" size="sm">
                 Anmelden
               </Button>
@@ -46,7 +46,7 @@ export default function HomePage() {
               Verwalte deinen Verein modern und effizient.
             </p>
             <div className="mt-8 flex justify-center gap-4">
-              <Link href="/login">
+              <Link href="/auth/login">
                 <Button size="lg">
                   Jetzt anmelden
                 </Button>

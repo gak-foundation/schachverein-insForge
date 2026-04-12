@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChessKnight, Mail, MapPin, Phone } from "lucide-react";
+import { Circle, Mail, MapPin, Phone } from "lucide-react";
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
@@ -11,7 +11,7 @@ export function PublicFooter() {
           {/* About */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <ChessKnight className="h-6 w-6 text-blue-400" />
+              <Circle className="h-6 w-6 text-blue-400" />
               <span className="text-lg font-bold text-white">Schachverein</span>
             </div>
             <p className="text-sm text-gray-400">
@@ -47,7 +47,7 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/login" className="text-sm hover:text-white transition-colors">
+                <Link href="/auth/login" className="text-sm hover:text-white transition-colors">
                   Mitgliederbereich
                 </Link>
               </li>

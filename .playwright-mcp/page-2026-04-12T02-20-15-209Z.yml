@@ -1,0 +1,23 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - img [ref=e5]
+    - generic [ref=e9]:
+      - generic:
+        - img
+      - generic [ref=e10]:
+        - heading "Fehler" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Ein Fehler ist aufgetreten.
+      - generic [ref=e13]:
+        - link "Zum Login" [ref=e14] [cursor=pointer]:
+          - /url: /auth/login
+          - button "Zum Login" [ref=e15]:
+            - img
+            - text: Zum Login
+        - link "Zur Startseite" [ref=e16] [cursor=pointer]:
+          - /url: /
+          - button "Zur Startseite" [ref=e17]:
+            - img
+            - text: Zur Startseite
+  - button "Open Next.js Dev Tools" [ref=e23] [cursor=pointer]:
+    - img [ref=e24]
+  - alert [ref=e27]

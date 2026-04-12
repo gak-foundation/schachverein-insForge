@@ -1,0 +1,42 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - img [ref=e5]
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - img [ref=e13]
+        - generic [ref=e20]:
+          - heading "Konto erstellen" [level=1] [ref=e21]
+          - paragraph [ref=e22]: Werden Sie Teil Ihres Schachvereins
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: Name
+          - textbox "Name" [active] [ref=e26]:
+            - /placeholder: Max Mustermann
+        - generic [ref=e27]:
+          - generic [ref=e28]: E-Mail
+          - textbox "E-Mail" [ref=e29]:
+            - /placeholder: name@verein.de
+        - generic [ref=e30]:
+          - generic [ref=e31]: Passwort
+          - generic [ref=e32]:
+            - textbox "Passwort" [ref=e33]:
+              - /placeholder: Sicheres Passwort
+            - button [ref=e34]:
+              - img [ref=e35]
+        - generic [ref=e38]:
+          - generic [ref=e39]: Passwort bestätigen
+          - generic [ref=e40]:
+            - textbox "Passwort bestätigen" [ref=e41]:
+              - /placeholder: Passwort wiederholen
+            - button [ref=e42]:
+              - img [ref=e43]
+        - button "Konto erstellen" [ref=e47]
+      - paragraph [ref=e48]:
+        - text: Bereits ein Konto?
+        - link "Anmelden" [ref=e49] [cursor=pointer]:
+          - /url: /auth/login
+      - link "← Zurück zur Startseite" [ref=e51] [cursor=pointer]:
+        - /url: /
+  - button "Open Next.js Dev Tools" [ref=e57] [cursor=pointer]:
+    - img [ref=e58]
+  - alert [ref=e61]

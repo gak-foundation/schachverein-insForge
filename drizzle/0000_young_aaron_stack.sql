@@ -8,21 +8,6 @@ CREATE TYPE "public"."membership_status" AS ENUM('active', 'inactive', 'resigned
 CREATE TYPE "public"."payment_status" AS ENUM('pending', 'paid', 'overdue', 'cancelled', 'refunded');--> statement-breakpoint
 CREATE TYPE "public"."season_type" AS ENUM('bundesliga', 'bezirksliga', 'kreisklasse', 'club_internal');--> statement-breakpoint
 CREATE TYPE "public"."tournament_type" AS ENUM('swiss', 'round_robin', 'rapid', 'blitz', 'team_match', 'club_championship');--> statement-breakpoint
-CREATE TABLE "accounts" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" uuid NOT NULL,
-	"type" varchar(255) NOT NULL,
-	"provider" varchar(255) NOT NULL,
-	"provider_account_id" varchar(255) NOT NULL,
-	"refresh_token" text,
-	"access_token" text,
-	"expires_at" integer,
-	"token_type" varchar(255),
-	"scope" varchar(255),
-	"id_token" text,
-	"session_state" varchar(255)
-);
---> statement-breakpoint
 CREATE TABLE "audit_log" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid,
@@ -32,6 +17,71 @@ CREATE TABLE "audit_log" (
 	"changes" jsonb,
 	"ip_address" varchar(45),
 	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "auth_account" (
+	"id" varchar(36) PRIMARY KEY NOT NULL,
+	"user_id" varchar(36) NOT NULL,
+	"account_id" varchar(255) NOT NULL,
+	"provider_id" varchar(255) NOT NULL,
+	"access_token" text,
+	"refresh_token" text,
+	"access_token_expires_at" timestamp,
+	"refresh_token_expires_at" timestamp,
+	"scope" varchar(255),
+	"id_token" text,
+	"password" varchar(255),
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "auth_session" (
+	"id" varchar(128) PRIMARY KEY NOT NULL,
+	"user_id" varchar(36) NOT NULL,
+	"token" varchar(128) NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"ip_address" varchar(45),
+	"user_agent" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "auth_session_token_unique" UNIQUE("token")
+);
+--> statement-breakpoint
+CREATE TABLE "auth_two_factor" (
+	"id" varchar(36) PRIMARY KEY NOT NULL,
+	"user_id" varchar(36) NOT NULL,
+	"secret" varchar(255) NOT NULL,
+	"backup_codes" jsonb DEFAULT '[]'::jsonb,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "auth_user" (
+	"id" varchar(36) PRIMARY KEY NOT NULL,
+	"name" varchar(255),
+	"email" varchar(255) NOT NULL,
+	"email_verified" boolean DEFAULT false NOT NULL,
+	"image" text,
+	"password" varchar(255),
+	"member_id" uuid,
+	"role" "member_role" DEFAULT 'mitglied' NOT NULL,
+	"permissions" jsonb DEFAULT '[]'::jsonb,
+	"failed_login_attempts" integer DEFAULT 0 NOT NULL,
+	"locked_until" timestamp,
+	"password_reset_at" timestamp,
+	"two_factor_enabled" boolean DEFAULT false,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "auth_user_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
+CREATE TABLE "auth_verification" (
+	"id" varchar(36) PRIMARY KEY NOT NULL,
+	"identifier" varchar(255) NOT NULL,
+	"value" varchar(255) NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "availability" (
@@ -198,16 +248,6 @@ CREATE TABLE "payments" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "refresh_tokens" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" uuid NOT NULL,
-	"token_hash" varchar(255) NOT NULL,
-	"expires" timestamp NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"revoked_at" timestamp,
-	"replaced_by_token" varchar(255)
-);
---> statement-breakpoint
 CREATE TABLE "seasons" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(100) NOT NULL,
@@ -216,14 +256,6 @@ CREATE TABLE "seasons" (
 	"start_date" date,
 	"end_date" date,
 	"created_at" timestamp DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "sessions" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"session_token" varchar(255) NOT NULL,
-	"user_id" uuid NOT NULL,
-	"expires" timestamp NOT NULL,
-	CONSTRAINT "sessions_session_token_unique" UNIQUE("session_token")
 );
 --> statement-breakpoint
 CREATE TABLE "team_memberships" (
@@ -273,32 +305,10 @@ CREATE TABLE "tournaments" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "users" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"name" varchar(200),
-	"email" varchar(255) NOT NULL,
-	"email_verified" timestamp,
-	"image" text,
-	"member_id" uuid,
-	"role" "member_role" DEFAULT 'mitglied' NOT NULL,
-	"permissions" jsonb DEFAULT '[]'::jsonb,
-	"password_hash" varchar(255),
-	"failed_login_attempts" integer DEFAULT 0 NOT NULL,
-	"locked_until" timestamp,
-	"password_reset_at" timestamp,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "users_email_unique" UNIQUE("email")
-);
---> statement-breakpoint
-CREATE TABLE "verification_tokens" (
-	"identifier" varchar(255) NOT NULL,
-	"token" varchar(255) NOT NULL,
-	"expires" timestamp NOT NULL,
-	CONSTRAINT "verification_tokens_token_unique" UNIQUE("token")
-);
---> statement-breakpoint
-ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_account" ADD CONSTRAINT "auth_account_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_session" ADD CONSTRAINT "auth_session_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_two_factor" ADD CONSTRAINT "auth_two_factor_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "auth_user" ADD CONSTRAINT "auth_user_member_id_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "availability" ADD CONSTRAINT "availability_member_id_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "board_orders" ADD CONSTRAINT "board_orders_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "board_orders" ADD CONSTRAINT "board_orders_season_id_seasons_id_fk" FOREIGN KEY ("season_id") REFERENCES "public"."seasons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -319,8 +329,6 @@ ALTER TABLE "matches" ADD CONSTRAINT "matches_home_team_id_teams_id_fk" FOREIGN 
 ALTER TABLE "matches" ADD CONSTRAINT "matches_away_team_id_teams_id_fk" FOREIGN KEY ("away_team_id") REFERENCES "public"."teams"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "newsletters" ADD CONSTRAINT "newsletters_sent_by_members_id_fk" FOREIGN KEY ("sent_by") REFERENCES "public"."members"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payments" ADD CONSTRAINT "payments_member_id_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "team_memberships" ADD CONSTRAINT "team_memberships_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "team_memberships" ADD CONSTRAINT "team_memberships_member_id_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "team_memberships" ADD CONSTRAINT "team_memberships_season_id_seasons_id_fk" FOREIGN KEY ("season_id") REFERENCES "public"."seasons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -329,7 +337,14 @@ ALTER TABLE "teams" ADD CONSTRAINT "teams_captain_id_members_id_fk" FOREIGN KEY 
 ALTER TABLE "tournament_participants" ADD CONSTRAINT "tournament_participants_tournament_id_tournaments_id_fk" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tournament_participants" ADD CONSTRAINT "tournament_participants_member_id_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tournaments" ADD CONSTRAINT "tournaments_season_id_seasons_id_fk" FOREIGN KEY ("season_id") REFERENCES "public"."seasons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "users" ADD CONSTRAINT "users_member_id_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "auth_account_user_id_idx" ON "auth_account" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "auth_account_provider_idx" ON "auth_account" USING btree ("provider_id","account_id");--> statement-breakpoint
+CREATE INDEX "auth_session_user_id_idx" ON "auth_session" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "auth_session_token_idx" ON "auth_session" USING btree ("token");--> statement-breakpoint
+CREATE UNIQUE INDEX "auth_two_factor_user_id_idx" ON "auth_two_factor" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "auth_user_email_idx" ON "auth_user" USING btree ("email");--> statement-breakpoint
+CREATE INDEX "auth_user_member_id_idx" ON "auth_user" USING btree ("member_id");--> statement-breakpoint
+CREATE INDEX "auth_verification_identifier_idx" ON "auth_verification" USING btree ("identifier");--> statement-breakpoint
 CREATE INDEX "board_orders_team_season_idx" ON "board_orders" USING btree ("team_id","season_id");--> statement-breakpoint
 CREATE INDEX "dwz_history_member_date_idx" ON "dwz_history" USING btree ("member_id","recorded_at");--> statement-breakpoint
 CREATE INDEX "games_tournament_round_idx" ON "games" USING btree ("tournament_id","round");--> statement-breakpoint
@@ -339,6 +354,4 @@ CREATE INDEX "matches_season_idx" ON "matches" USING btree ("season_id");--> sta
 CREATE INDEX "matches_date_idx" ON "matches" USING btree ("match_date");--> statement-breakpoint
 CREATE UNIQUE INDEX "members_email_idx" ON "members" USING btree ("email");--> statement-breakpoint
 CREATE INDEX "members_dwz_id_idx" ON "members" USING btree ("dwz_id");--> statement-breakpoint
-CREATE INDEX "members_parent_id_idx" ON "members" USING btree ("parent_id");--> statement-breakpoint
-CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "refresh_tokens_token_hash_idx" ON "refresh_tokens" USING btree ("token_hash");
+CREATE INDEX "members_parent_id_idx" ON "members" USING btree ("parent_id");

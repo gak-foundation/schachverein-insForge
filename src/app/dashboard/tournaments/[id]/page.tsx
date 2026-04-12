@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -52,8 +52,8 @@ export default async function TournamentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
-  if (!session) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
 
   const { id } = await params;
   const [tournament, participants, allGames, allMembers] = await Promise.all([
@@ -68,7 +68,7 @@ export default async function TournamentDetailPage({
   }
 
   const canEdit = hasPermission(
-    session.user.role,
+    session.user.role ?? "mitglied",
     session.user.permissions ?? [],
     PERMISSIONS.TOURNAMENTS_WRITE,
   );

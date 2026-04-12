@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, ChessKnight } from "lucide-react";
+import { Menu, X, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -22,7 +22,7 @@ export function PublicNavbar() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <ChessKnight className="h-8 w-8 text-blue-600" />
+            <Circle className="h-8 w-8 text-blue-600" />
             <span className="text-xl font-bold">Schachverein</span>
           </Link>
 
@@ -41,7 +41,7 @@ export function PublicNavbar() {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/login">
+            <Link href="/auth/login">
               <Button variant="outline" size="sm">Mitglieder-Login</Button>
             </Link>
           </div>
@@ -70,7 +70,7 @@ export function PublicNavbar() {
                   {item.label}
                 </Link>
               ))}
-              <Link href="/login" className="px-2 py-2">
+              <Link href="/auth/login" className="px-2 py-2">
                 <Button variant="outline" className="w-full" size="sm">Mitglieder-Login</Button>
               </Link>
             </nav>

@@ -1,15 +1,16 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { members, teams, seasons, tournaments, games, events, payments, matches, users, dwzHistory, auditLog, verificationTokens, tournamentParticipants, teamMemberships, boardOrders } from "@/lib/db/schema";
+import { members, teams, seasons, tournaments, games, events, payments, matches, dwzHistory, auditLog, tournamentParticipants, teamMemberships, boardOrders, authUsers } from "@/lib/db/schema";
 import { eq, desc, sql, and, or } from "drizzle-orm";
 import { createMemberSchema } from "@/lib/validations";
 import { generateRoundRobinPairings, Round } from "@/lib/pairings/round-robin";
-import { hashPassword } from "@/lib/auth/password";
 import { revalidatePath } from "next/cache";
 import { parseMemberCSV, exportMembersToCSV } from "@/lib/csv/members";
 import { parseTRF, validateTRF } from "@/lib/trf/parser";
-import type { CreateMemberInput } from "@/lib/validations";
+import { auth } from "@/lib/auth/better-auth";
+import { logAudit, logAuthAction, logMemberAction, logFinanceAction } from "@/lib/audit";
+import { createInvitation, validateInvitation, consumeInvitation } from "@/lib/auth/invitations";
 
 // ─── Members ──────────────────────────────────────────────────
 
@@ -98,19 +99,18 @@ export async function createMember(formData: FormData) {
     })
     .returning();
 
-  // Optionally create a user account for the member
+  await logMemberAction("CREATED", member.id, {
+    firstName: { old: null, new: member.firstName },
+    lastName: { old: null, new: member.lastName },
+    email: { old: null, new: member.email },
+    role: { old: null, new: member.role },
+  });
+
   const createAccount = formData.get("createAccount") === "on";
   if (createAccount) {
-    const password = formData.get("password") as string;
-    if (password) {
-      const hashedPassword = await hashPassword(password);
-      await db.insert(users).values({
-        name: `${validated.firstName} ${validated.lastName}`,
-        email: validated.email,
-        role: validated.role,
-        memberId: member.id,
-        // Password will be stored via credentials provider
-      });
+    const result = await createInvitation(member.id);
+    if (result.success) {
+      console.log(`Einladung erstellt fuer ${validated.email}: ${result.inviteUrl}`);
     }
   }
 
@@ -118,7 +118,15 @@ export async function createMember(formData: FormData) {
 }
 
 export async function deleteMember(id: string) {
+  const member = await getMemberById(id);
   await db.delete(members).where(eq(members.id, id));
+  
+  await logMemberAction("DELETED", id, {
+    firstName: { old: member?.firstName, new: null },
+    lastName: { old: member?.lastName, new: null },
+    email: { old: member?.email, new: null },
+  });
+  
   revalidatePath("/dashboard/members");
 }
 
@@ -384,18 +392,28 @@ export async function createPayment(formData: FormData) {
   const year = Number(formData.get("year"));
   const dueDate = (formData.get("dueDate") as string) || null;
 
-  await db.insert(payments).values({
+  const [payment] = await db.insert(payments).values({
     memberId,
     amount,
     description,
     year,
     dueDate,
+  }).returning();
+
+  await logFinanceAction("PAYMENT_CREATED", payment.id, {
+    memberId: { old: null, new: memberId },
+    amount: { old: null, new: amount },
+    description: { old: null, new: description },
+    year: { old: null, new: year },
+    status: { old: null, new: "pending" },
   });
 
   revalidatePath("/dashboard/finance");
 }
 
 export async function updatePaymentStatus(paymentId: string, newStatus: string, formData: FormData) {
+  const [oldPayment] = await db.select().from(payments).where(eq(payments.id, paymentId));
+
   const updateData: Record<string, unknown> = {
     status: newStatus,
     updatedAt: new Date(),
@@ -408,6 +426,11 @@ export async function updatePaymentStatus(paymentId: string, newStatus: string, 
     .update(payments)
     .set(updateData)
     .where(eq(payments.id, paymentId));
+
+  await logFinanceAction("PAYMENT_UPDATED", paymentId, {
+    status: { old: oldPayment?.status, new: newStatus },
+    paidAt: { old: oldPayment?.paidAt, new: newStatus === "paid" ? new Date() : oldPayment?.paidAt },
+  });
 
   revalidatePath("/dashboard/finance");
 }
@@ -957,6 +980,8 @@ export async function updateUserRole(formData: FormData) {
   const role = formData.get("role") as string;
   const permissionsStr = (formData.get("permissions") as string) || "[]";
   
+  const [oldUser] = await db.select().from(authUsers).where(eq(authUsers.id, userId));
+  
   let permissions: string[] = [];
   try {
     permissions = JSON.parse(permissionsStr);
@@ -965,14 +990,27 @@ export async function updateUserRole(formData: FormData) {
   }
 
   await db
-    .update(users)
+    .update(authUsers)
     .set({ role: role as any, permissions })
-    .where(eq(users.id, userId));
+    .where(eq(authUsers.id, userId));
 
-  revalidatePath("/dashboard/admin/users");
+  await logAudit({
+    action: "ROLE_CHANGED",
+    entity: "user",
+    entityId: userId,
+    category: "ADMIN",
+    changes: {
+      role: { old: oldUser?.role, new: role },
+      permissions: { old: oldUser?.permissions, new: permissions },
+    },
+  });
+
+  revalidatePath("/dashboard/admin/authUsers");
 }
 
 export async function updateMember(id: string, formData: FormData) {
+  const oldMember = await getMemberById(id);
+
   const rawData = {
     firstName: formData.get("firstName") as string,
     lastName: formData.get("lastName") as string,
@@ -1000,68 +1038,57 @@ export async function updateMember(id: string, formData: FormData) {
     })
     .where(eq(members.id, id));
 
+  const changes: Record<string, { old: unknown; new: unknown }> = {};
+  for (const [key, value] of Object.entries(validated)) {
+    if (value !== undefined && oldMember?.[key as keyof typeof oldMember] !== value) {
+      changes[key] = {
+        old: oldMember?.[key as keyof typeof oldMember],
+        new: value,
+      };
+    }
+  }
+
+  if (Object.keys(changes).length > 0) {
+    await logMemberAction("UPDATED", id, changes);
+  }
+
   revalidatePath("/dashboard/members");
   revalidatePath(`/dashboard/members/${id}`);
 }
 
 // ─── Password Reset ───────────────────────────────────────────
 
+import { authClient } from "@/lib/auth/client";
+
 export async function requestPasswordReset(formData: FormData) {
   const email = formData.get("email") as string;
 
-  const [user] = await db
-    .select({ id: users.id, email: users.email })
-    .from(users)
-    .where(eq(users.email, email));
-
-  if (!user) {
-    // Don't reveal if email exists
-    return { success: true };
-  }
-
-  // Generate reset token
-  const token = crypto.randomUUID();
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-  await db.insert(verificationTokens).values({
-    identifier: user.email,
-    token,
-    expires,
+  // Use Better Auth's password reset API
+  const result = await authClient.requestPasswordReset({
+    email,
+    redirectTo: "/auth/reset-password",
   });
 
-  // TODO: Send email with reset link
-  // For now, just log it
-  console.log(`Password reset token for ${email}: ${token}`);
+  if (result.error) {
+    return { success: false, error: result.error.message };
+  }
 
   return { success: true };
 }
 
 export async function resetPassword(formData: FormData) {
   const token = formData.get("token") as string;
-  const password = formData.get("password") as string;
+  const newPassword = formData.get("password") as string;
 
-  // Find valid token
-  const [vt] = await db
-    .select()
-    .from(verificationTokens)
-    .where(eq(verificationTokens.token, token));
+  // Use Better Auth's password reset API
+  const result = await authClient.resetPassword({
+    token,
+    newPassword,
+  });
 
-  if (!vt || new Date() > new Date(vt.expires)) {
-    return { success: false, error: "Ungültiger oder abgelaufener Token" };
+  if (result.error) {
+    return { success: false, error: result.error.message };
   }
-
-  // Hash password
-  const { hashPassword } = await import("@/lib/auth/password");
-  const hashedPassword = await hashPassword(password);
-
-  // Update user password
-  await db
-    .update(users)
-    .set({ passwordHash: hashedPassword, updatedAt: new Date() })
-    .where(eq(users.email, vt.identifier));
-
-  // Delete used token
-  await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
 
   return { success: true };
 }
@@ -1069,24 +1096,14 @@ export async function resetPassword(formData: FormData) {
 export async function verifyEmail(formData: FormData) {
   const token = formData.get("token") as string;
 
-  // Find valid token
-  const [vt] = await db
-    .select()
-    .from(verificationTokens)
-    .where(eq(verificationTokens.token, token));
+  // Use Better Auth's email verification API
+  const result = await authClient.verifyEmail({
+    query: { token },
+  });
 
-  if (!vt || new Date() > new Date(vt.expires)) {
-    return { success: false, error: "Ungültiger oder abgelaufener Token" };
+  if (result.error) {
+    return { success: false, error: result.error.message };
   }
-
-  // Mark email as verified
-  await db
-    .update(users)
-    .set({ emailVerified: new Date(), updatedAt: new Date() })
-    .where(eq(users.email, vt.identifier));
-
-  // Delete used token
-  await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
 
   return { success: true };
 }
@@ -1101,72 +1118,31 @@ export async function registerUser(formData: FormData) {
     throw new Error("Passwoerter stimmen nicht ueberein");
   }
 
-  // Check if user exists
-  const [existing] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, email));
-
-  if (existing) {
-    throw new Error("E-Mail bereits registriert");
+  // Use Better Auth's server-side sign up API
+  try {
+    await auth.api.signUpEmail({
+      body: {
+        name,
+        email,
+        password,
+      },
+    });
+  } catch (error: any) {
+    throw new Error(error.message ?? "Registrierung fehlgeschlagen");
   }
-
-  // Create user
-  const { hashPassword } = await import("@/lib/auth/password");
-  const hashedPassword = await hashPassword(password);
-
-  await db.insert(users).values({
-    name,
-    email,
-    passwordHash: hashedPassword,
-    role: "mitglied",
-  });
-
-  // Create verification token
-  const token = crypto.randomUUID();
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-  await db.insert(verificationTokens).values({
-    identifier: email,
-    token,
-    expires,
-  });
-
-  // TODO: Send verification email
-  console.log(`Verification token for ${email}: ${token}`);
 }
 
 // ─── Member Invitation ────────────────────────────────────────
 
 export async function inviteMember(memberId: string) {
-  const member = await db.select().from(members).where(eq(members.id, memberId)).limit(1);
+  const result = await createInvitation(memberId);
+  return result;
+}
 
-  if (member.length === 0) {
-    throw new Error("Mitglied nicht gefunden");
-  }
+export async function validateMemberInvitation(token: string) {
+  return validateInvitation(token);
+}
 
-  const m = member[0];
-
-  // Check if user account already exists
-  const existingUser = await db.select().from(users).where(eq(users.email, m.email)).limit(1);
-
-  if (existingUser.length > 0) {
-    return { success: false, error: "Ein Account mit dieser E-Mail existiert bereits" };
-  }
-
-  // Generate invitation token
-  const token = crypto.randomUUID();
-  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-  await db.insert(verificationTokens).values({
-    identifier: m.email,
-    token,
-    expires,
-  });
-
-  // TODO: Send invitation email with link
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/register?token=${token}`;
-  console.log(`Invitation for ${m.email}: ${inviteUrl}`);
-
-  return { success: true, message: "Einladung versendet" };
+export async function acceptMemberInvitation(token: string, userId: string) {
+  return consumeInvitation(token, userId);
 }

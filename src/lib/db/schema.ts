@@ -18,6 +18,7 @@ import { relations } from "drizzle-orm";
 // ─── Enums ────────────────────────────────────────────────────
 
 export const memberRoleEnum = pgEnum("member_role", [
+  "user",
   "admin",
   "vorstand",
   "sportwart",
@@ -649,85 +650,111 @@ export const newslettersRelations = relations(newsletters, ({ one }) => ({
   }),
 }));
 
-// ─── Auth (for NextAuth/Drizzle adapter) ─────────────────────
+// ─── Better Auth Tables ──────────────────────────────────────
 
-export const users = pgTable("users", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: varchar("name", { length: 200 }),
+export const authUsers = pgTable("auth_user", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull().unique(),
-  emailVerified: timestamp("email_verified"),
+  emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  password: varchar("password", { length: 255 }),
   memberId: uuid("member_id").references(() => members.id),
   role: memberRoleEnum("role").default("mitglied").notNull(),
   permissions: jsonb("permissions").$type<string[]>().default([]),
-  passwordHash: varchar("password_hash", { length: 255 }),
   failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
   lockedUntil: timestamp("locked_until"),
   passwordResetAt: timestamp("password_reset_at"),
-  // 2FA fields
-  twoFactorSecret: varchar("two_factor_secret", { length: 255 }),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
-  twoFactorBackupCodes: jsonb("two_factor_backup_codes").$type<string[]>().default([]),
+  banned: boolean("banned").default(false),
+  banReason: varchar("ban_reason", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  emailIdx: uniqueIndex("auth_user_email_idx").on(table.email),
+  memberIdIdx: index("auth_user_member_id_idx").on(table.memberId),
+}));
 
-export const accounts = pgTable("accounts", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
+export const authUsersRelations = relations(authUsers, ({ one, many }) => ({
+  member: one(members, {
+    fields: [authUsers.memberId],
+    references: [members.id],
+  }),
+  accounts: many(authAccounts),
+  sessions: many(authSessions),
+}));
+
+export const authSessions = pgTable("auth_session", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 })
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  type: varchar("type", { length: 255 }).notNull(),
-  provider: varchar("provider", { length: 255 }).notNull(),
-  providerAccountId: varchar("provider_account_id", {
-    length: 255,
-  }).notNull(),
-  refresh_token: text("refresh_token"),
-  access_token: text("access_token"),
-  expires_at: integer("expires_at"),
-  token_type: varchar("token_type", { length: 255 }),
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("auth_session_user_id_idx").on(table.userId),
+  tokenIdx: index("auth_session_token_idx").on(table.token),
+}));
+
+export const authSessionsRelations = relations(authSessions, ({ one }) => ({
+  user: one(authUsers, {
+    fields: [authSessions.userId],
+    references: [authUsers.id],
+  }),
+}));
+
+export const authAccounts = pgTable("auth_account", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 })
+    .notNull()
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+  accountId: varchar("account_id", { length: 255 }).notNull(),
+  providerId: varchar("provider_id", { length: 255 }).notNull(),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at", { mode: "date" }),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { mode: "date" }),
   scope: varchar("scope", { length: 255 }),
-  id_token: text("id_token"),
-  session_state: varchar("session_state", { length: 255 }),
-});
+  idToken: text("id_token"),
+  password: varchar("password", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("auth_account_user_id_idx").on(table.userId),
+  providerIdx: uniqueIndex("auth_account_provider_idx").on(table.providerId, table.accountId),
+}));
 
-export const sessions = pgTable("sessions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  sessionToken: varchar("session_token", { length: 255 }).notNull().unique(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expires: timestamp("expires", { mode: "date" }).notNull(),
-});
+export const authAccountsRelations = relations(authAccounts, ({ one }) => ({
+  user: one(authUsers, {
+    fields: [authAccounts.userId],
+    references: [authUsers.id],
+  }),
+}));
 
-export const verificationTokens = pgTable("verification_tokens", {
+export const authVerifications = pgTable("auth_verification", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   identifier: varchar("identifier", { length: 255 }).notNull(),
-  token: varchar("token", { length: 255 }).notNull().unique(),
-  expires: timestamp("expires", { mode: "date" }).notNull(),
-});
+  value: varchar("value", { length: 255 }).notNull(),
+  expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  identifierIdx: index("auth_verification_identifier_idx").on(table.identifier),
+}));
 
-export const refreshTokens = pgTable(
-  "refresh_tokens",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    tokenHash: varchar("token_hash", { length: 255 }).notNull(),
-    expires: timestamp("expires", { mode: "date" }).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    revokedAt: timestamp("revoked_at"),
-    replacedByToken: varchar("replaced_by_token", { length: 255 }),
-  },
-  (table) => ({
-    userIdIdx: index("refresh_tokens_user_id_idx").on(table.userId),
-    tokenHashIdx: index("refresh_tokens_token_hash_idx").on(table.tokenHash),
-  }),
-);
-
-export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
-  user: one(users, {
-    fields: [refreshTokens.userId],
-    references: [users.id],
-  }),
+export const authTwoFactors = pgTable("auth_two_factor", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 })
+    .notNull()
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+  secret: varchar("secret", { length: 255 }).notNull(),
+  backupCodes: jsonb("backup_codes").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: uniqueIndex("auth_two_factor_user_id_idx").on(table.userId),
 }));

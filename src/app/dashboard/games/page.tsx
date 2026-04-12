@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -29,10 +29,10 @@ export const metadata = {
 };
 
 export default async function GamesPage() {
-  const session = await auth();
-  if (!session) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
 
-  const canWrite = hasPermission(session.user.role, session.user.permissions ?? [], PERMISSIONS.GAMES_WRITE);
+  const canWrite = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.GAMES_WRITE);
   const allGames = await getGames();
 
   const allMemberIds = new Set<string>();

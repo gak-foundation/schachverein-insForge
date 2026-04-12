@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getMemberById, getDwzHistory } from "@/lib/actions";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -32,8 +32,8 @@ export default async function MemberDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
-  if (!session) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
 
   const { id } = await params;
   const member = await getMemberById(id);
@@ -43,13 +43,13 @@ export default async function MemberDetailPage({
   }
 
   const canEdit = hasPermission(
-    session.user.role,
+    session.user.role ?? "mitglied",
     session.user.permissions ?? [],
     PERMISSIONS.MEMBERS_WRITE,
   );
 
   const canDelete = hasPermission(
-    session.user.role,
+    session.user.role ?? "mitglied",
     session.user.permissions ?? [],
     PERMISSIONS.MEMBERS_DELETE,
   );

@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { createEvent } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,8 @@ export const metadata = {
 };
 
 export default async function NewEventPage() {
-  const session = await auth();
-  if (!session) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
