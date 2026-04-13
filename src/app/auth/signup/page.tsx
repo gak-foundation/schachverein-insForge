@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -91,155 +90,129 @@ export default function SignupPage() {
           subtitle="Werden Sie Teil Ihres Schachvereins"
         />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-2"
-          >
-            <Label htmlFor="name" className="text-sm font-medium text-slate-200">
-              Name
-            </Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="Max Mustermann"
-              required
-              autoComplete="name"
-              autoFocus
-              className="h-11 border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-2"
-          >
-            <Label htmlFor="email" className="text-sm font-medium text-slate-200">
-              E-Mail
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="name@verein.de"
-              required
-              autoComplete="email"
-              className="h-11 border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="space-y-2"
-          >
-            <Label htmlFor="password" className="text-sm font-medium text-slate-200">
-              Passwort
-            </Label>
-            <div className="relative">
+        <div className="mt-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium text-slate-900 dark:text-slate-200">
+                Name
+              </Label>
               <Input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Sicheres Passwort"
+                id="name"
+                name="name"
+                type="text"
+                placeholder="Max Mustermann"
                 required
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11 border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20 pr-12"
+                autoComplete="name"
+                autoFocus
+                className="h-11"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-white transition-colors"
-                tabIndex={-1}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
             </div>
 
-            {password && (
-              <div className="space-y-2 pt-1">
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-700">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${getStrengthColor(strength)}`}
-                    style={{ width: `${strength}%` }}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-1">
-                  {PASSWORD_REQUIREMENTS.map((req) => (
-                    <p
-                      key={req.label}
-                      className={`text-xs ${
-                        req.test(password) ? "text-green-400" : "text-slate-500"
-                      }`}
-                    >
-                      {req.test(password) ? "✓" : "○"} {req.label}
-                    </p>
-                  ))}
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-slate-900 dark:text-slate-200">
+                E-Mail
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="name@verein.de"
+                required
+                autoComplete="email"
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium text-slate-900 dark:text-slate-200">
+                Passwort
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Sicheres Passwort"
+                  required
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-11 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
-            )}
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-            className="space-y-2"
-          >
-            <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-200">
-              Passwort bestätigen
-            </Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Passwort wiederholen"
-                required
-                autoComplete="new-password"
-                className="h-11 border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20 pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-white transition-colors"
-                tabIndex={-1}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+              {password && (
+                <div className="space-y-2 pt-1">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${getStrengthColor(strength)}`}
+                      style={{ width: `${strength}%` }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {PASSWORD_REQUIREMENTS.map((req) => (
+                      <p
+                        key={req.label}
+                        className={`text-xs ${
+                          req.test(password) ? "text-green-600 dark:text-green-500" : "text-slate-500"
+                        }`}
+                      >
+                        {req.test(password) ? "✓" : "○"} {req.label}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </motion.div>
 
-          <AnimatePresence mode="wait">
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-900 dark:text-slate-200">
+                Passwort bestätigen
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Passwort wiederholen"
+                  required
+                  autoComplete="new-password"
+                  className="h-11 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
             {error && (
               <ErrorMessage message={error} onDismiss={() => setError(null)} />
             )}
-          </AnimatePresence>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
             <Button
               type="submit"
-              className="h-12 w-full bg-gradient-to-r from-blue-600 to-violet-600 font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-500 hover:to-violet-500 hover:shadow-blue-500/40 disabled:opacity-70"
+              className="h-11 w-full font-medium"
               disabled={loading}
             >
               {loading ? (
@@ -247,37 +220,27 @@ export default function SignupPage() {
               ) : null}
               {loading ? "Wird registriert..." : "Konto erstellen"}
             </Button>
-          </motion.div>
-        </form>
+          </form>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="mt-6 text-center text-sm text-slate-400"
-        >
-          Bereits ein Konto?{" "}
-          <Link
-            href="/auth/login"
-            className="font-medium text-blue-400 transition-colors hover:text-blue-300"
-          >
-            Anmelden
-          </Link>
-        </motion.p>
+          <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
+            Bereits ein Konto?{" "}
+            <Link
+              href="/auth/login"
+              className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Anmelden
+            </Link>
+          </p>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mt-6 text-center"
-        >
-          <Link
-            href="/"
-            className="text-xs text-slate-500 transition-colors hover:text-slate-300"
-          >
-            ← Zurück zur Startseite
-          </Link>
-        </motion.div>
+          <div className="mt-6 text-center">
+            <Link
+              href="/"
+              className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            >
+              ← Zurück zur Startseite
+            </Link>
+          </div>
+        </div>
       </AuthCard>
     </AuthLayout>
   );

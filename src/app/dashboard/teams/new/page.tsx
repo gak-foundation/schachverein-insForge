@@ -1,7 +1,8 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { getSeasons, getMembers } from "@/lib/actions";
-import { createTeam } from "@/lib/actions";
+import { getSeasons } from "@/lib/actions/events";
+import { getMembers } from "@/lib/actions/members";
+import { createTeam } from "@/lib/actions/teams";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

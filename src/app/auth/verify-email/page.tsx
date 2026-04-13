@@ -25,15 +25,13 @@ function VerifyEmailContent() {
 
     async function verify() {
       try {
-        const formData = new FormData();
-        formData.set("token", token!);
-        const { verifyEmail } = await import("@/lib/actions");
-        const result = await verifyEmail(formData);
-        if (result.success) {
+        const response = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(token!)}`);
+        if (response.ok) {
           setStatus("success");
         } else {
+          const data = await response.json().catch(() => ({ error: "Verifizierung fehlgeschlagen" }));
           setStatus("error");
-          setErrorMessage(result.error || "Verifizierung fehlgeschlagen.");
+          setErrorMessage(data.error || "Verifizierung fehlgeschlagen.");
         }
       } catch {
         setStatus("error");

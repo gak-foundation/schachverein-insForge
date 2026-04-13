@@ -112,10 +112,12 @@ export async function getUpcomingMatches(limit = 5) {
 
   // Get team names separately to avoid complex join
   const teamIds = [...new Set([...result.map(m => m.homeTeamId), ...result.map(m => m.awayTeamId)])];
-  const teamData = await db
-    .select({ id: teams.id, name: teams.name })
-    .from(teams)
-    .where(sql`${teams.id} IN ${teamIds}`);
+  const teamData = teamIds.length > 0
+    ? await db
+        .select({ id: teams.id, name: teams.name })
+        .from(teams)
+        .where(sql`${teams.id} IN ${teamIds}`)
+    : [];
 
   const teamMap = new Map(teamData.map(t => [t.id, t.name]));
 

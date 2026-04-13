@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { importTRF } from "@/lib/actions";
+import { importTRF } from "@/lib/actions/tournaments";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

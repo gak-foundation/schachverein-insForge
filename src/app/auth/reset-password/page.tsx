@@ -78,7 +78,7 @@ function ResetPasswordContent() {
       formData.set("token", token);
       formData.set("password", password);
       formData.set("confirmPassword", confirmPassword);
-      const { resetPassword } = await import("@/lib/actions");
+      const { resetPassword } = await import("@/lib/actions/auth");
       const result = await resetPassword(formData);
       if (result.success) {
         setSuccess(true);

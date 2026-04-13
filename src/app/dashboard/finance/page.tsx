@@ -2,8 +2,8 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getPayments, getPaymentStats, getMembers } from "@/lib/actions";
-import { createPayment, updatePaymentStatus } from "@/lib/actions";
+import { getPayments, createPayment, getPaymentStats, updatePaymentStatus } from "@/lib/actions/finance";
+import { getMembers } from "@/lib/actions/members";
 import {
   Card,
   CardContent,

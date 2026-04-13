@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { generateTRF } from "@/lib/actions";
+import { generateTRF } from "@/lib/actions/tournaments";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
 

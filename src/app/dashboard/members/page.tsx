@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getMembers } from "@/lib/actions";
+import { getMembers } from "@/lib/actions/members";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowUpDown, Users, ChevronLeft, ChevronRight, Upload, Download } from "lucide-react";
-import { exportMembersToCSVAction } from "@/lib/actions";
+import { exportMembersToCSVAction } from "@/lib/actions/import-export";
 import { PrintButton } from "@/components/print-button";
 
 export const metadata = {

@@ -1,4 +1,4 @@
-import { createAuthClient } from "better-auth/client";
+import { createAuthClient } from "better-auth/react";
 import { twoFactorClient } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
@@ -7,17 +7,5 @@ export const authClient = createAuthClient({
     twoFactorClient(),
   ],
 });
-
-export const { 
-  signIn, 
-  signOut, 
-  signUp, 
-  useSession, 
-  twoFactor: {
-    enable: enableTwoFactor,
-    disable: disableTwoFactor,
-    verifyTotp: verifyTwoFactor,
-  },
-} = authClient;
 
 export type Session = typeof authClient.$Infer.Session;

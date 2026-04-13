@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { importMembersCSV, exportMembersToCSVAction } from "@/lib/actions";
+import { importMembersCSV, exportMembersToCSVAction } from "@/lib/actions/import-export";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";

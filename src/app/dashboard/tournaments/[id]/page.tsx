@@ -2,7 +2,9 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getTournamentById, getTournamentParticipants, getGames, getMembers, addTournamentParticipantForm, removeTournamentParticipantForm, getMemberById } from "@/lib/actions";
+import { getTournamentById, getTournamentParticipants, addTournamentParticipantForm, removeTournamentParticipantForm, updateTournamentResults } from "@/lib/actions/tournaments";
+import { getGames } from "@/lib/actions/games";
+import { getMembers, getMemberById } from "@/lib/actions/members";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -95,9 +97,7 @@ export default async function TournamentDetailPage({
   const totalRounds = tournament.numberOfRounds || Math.max(...sortedRounds, 0);
 
   const sortedParticipants = [...participants].sort((a, b) => {
-    if (b.score !== a.score) return parseFloat(b.score || "0") - parseFloat(a.score || "0");
-    if (b.sonnebornBerger !== a.sonnebornBerger) return parseFloat(b.sonnebornBerger || "0") - parseFloat(a.sonnebornBerger || "0");
-    return parseFloat(b.buchholz || "0") - parseFloat(a.buchholz || "0");
+    return parseFloat(b.score || "0") - parseFloat(a.score || "0");
   });
 
   return (
@@ -301,12 +301,11 @@ export default async function TournamentDetailPage({
                           </td>
                           <td className="py-3 px-4">
                             <Link href={`/dashboard/members/${p.memberId}`} className="hover:underline font-medium">
-                              {p.firstName} {p.lastName}
+                              {p.member.firstName} {p.member.lastName}
                             </Link>
                           </td>
-                          <td className="py-3 px-4 text-right tabular-nums">{p.dwz ?? "—"}</td>
+                          <td className="py-3 px-4 text-right tabular-nums">{p.member.dwz ?? "—"}</td>
                           <td className="py-3 px-4 text-right tabular-nums font-semibold">{p.score ?? "0"}</td>
-                          <td className="py-3 px-4 text-right tabular-nums text-gray-500">{p.buchholz ?? "—"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -429,11 +428,11 @@ export default async function TournamentDetailPage({
                         <tr key={p.id} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-4">
                             <Link href={`/dashboard/members/${p.memberId}`} className="hover:underline font-medium">
-                              {p.firstName} {p.lastName}
+                              {p.member.firstName} {p.member.lastName}
                             </Link>
                           </td>
-                          <td className="py-3 px-4 text-right tabular-nums">{p.dwz ?? "—"}</td>
-                          <td className="py-3 px-4 text-right tabular-nums">{p.elo ?? "—"}</td>
+                          <td className="py-3 px-4 text-right tabular-nums">{p.member.dwz ?? "—"}</td>
+                          <td className="py-3 px-4 text-right tabular-nums">—</td>
                           {canEdit && (
                             <td className="py-3 px-4 text-right">
                               <form action={removeTournamentParticipantForm}>

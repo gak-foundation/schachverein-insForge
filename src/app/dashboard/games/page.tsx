@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getGames } from "@/lib/actions";
+import { getGames } from "@/lib/actions/games";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -121,7 +121,7 @@ export default async function GamesPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-gray-500">
-                      {game.opening ?? game.ecoCode ?? "—"}
+                      —
                     </TableCell>
                   </TableRow>
                 ))}

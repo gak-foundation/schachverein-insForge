@@ -24,10 +24,12 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.set("email", email);
-      const { requestPasswordReset } = await import("@/lib/actions");
-      await requestPasswordReset(formData);
+      const response = await fetch("/api/auth/forget-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) throw new Error("Request failed");
       setSent(true);
     } catch {
       setError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");

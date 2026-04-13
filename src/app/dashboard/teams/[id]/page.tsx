@@ -2,7 +2,8 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getTeamById, getTeamMembers, getMemberById, getMatches } from "@/lib/actions";
+import { getTeamById, getTeamMembers, getMatches } from "@/lib/actions/teams";
+import { getMemberById } from "@/lib/actions/members";
 import { db } from "@/lib/db";
 import { teams, members, matches, seasons } from "@/lib/db/schema";
 import { eq, desc, and, or } from "drizzle-orm";
@@ -78,7 +79,7 @@ export default async function TeamDetailPage({
   ]);
 
   const avgDwz = teamMembers.length > 0
-    ? Math.round(teamMembers.filter(m => m.dwz).reduce((sum, m) => sum + (m.dwz || 0), 0) / teamMembers.filter(m => m.dwz).length) || 0
+    ? Math.round(teamMembers.filter(m => m.member.dwz).reduce((sum, m) => sum + (m.member.dwz || 0), 0) / teamMembers.filter(m => m.member.dwz).length) || 0
     : 0;
 
   return (
@@ -194,10 +195,10 @@ export default async function TeamDetailPage({
                   description="Noch keine Spieler dieser Mannschaft zugeordnet."
                 />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Brett</TableHead>
+                   <Table>
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead>Typ</TableHead>
                       <TableHead>Spieler</TableHead>
                       <TableHead className="text-right">DWZ</TableHead>
                       <TableHead>Status</TableHead>
@@ -205,25 +206,27 @@ export default async function TeamDetailPage({
                   </TableHeader>
                   <TableBody>
                     {teamMembers
-                      .sort((a, b) => (a.boardNumber ?? 99) - (b.boardNumber ?? 99))
+                      .sort((a, b) => (a.member.dwz ?? 0) - (b.member.dwz ?? 0))
                       .map((tm) => (
                         <TableRow key={tm.id} className="hover:bg-gray-50">
                           <TableCell className="font-medium">
-                            {tm.boardNumber ? (
+                            {tm.isRegular ? (
                               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
-                                {tm.boardNumber}
+                                Stamm
                               </span>
                             ) : (
-                              "—"
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-bold text-sm">
+                                Ers
+                              </span>
                             )}
                           </TableCell>
                           <TableCell>
                             <Link href={`/dashboard/members/${tm.memberId}`} className="hover:underline font-medium">
-                              {tm.firstName} {tm.lastName}
+                              {tm.member.firstName} {tm.member.lastName}
                             </Link>
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {tm.dwz ?? "—"}
+                            {tm.member.dwz ?? "—"}
                           </TableCell>
                           <TableCell>
                             <Badge variant={tm.isRegular ? "default" : "secondary"} className="text-xs">

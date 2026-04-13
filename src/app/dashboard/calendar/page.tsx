@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getEvents } from "@/lib/actions";
+import { getEvents } from "@/lib/actions/events";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {

@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
-import { createMember } from "@/lib/actions";
+import { createMember } from "@/lib/actions/members";
 
 export const metadata = {
   title: "Neues Mitglied",

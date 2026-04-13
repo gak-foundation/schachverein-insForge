@@ -73,6 +73,12 @@ export async function proxy(request: NextRequest) {
     "/auth/reset-password",
     "/auth/invite",
     "/vereinswebsite",
+    "/mannschaften",
+    "/turniere",
+    "/termine",
+    "/kontakt",
+    "/impressum",
+    "/datenschutz",
   ];
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
     if (session && (pathname === "/auth/login" || pathname === "/auth/signup")) {

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
-import { PublicNavbar } from "@/components/public/Navbar";
-import { PublicFooter } from "@/components/public/Footer";
+import { MarketingNavbar } from "@/components/marketing/navbar";
+import { MarketingFooter } from "@/components/marketing/footer";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Schachverein",
-  description: "Willkommen beim Schachverein - Spielen, Lernen, Spaß haben",
+  title: "schach.studio | Die moderne Schachvereins-Verwaltung",
+  description: "Organisiere deinen Schachverein effizient: Mitglieder, Turniere, Finanzen und mehr an einem zentralen Ort.",
 };
 
 export default function PublicLayout({
@@ -25,10 +25,10 @@ export default function PublicLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className={`${geistSans.variable} ${geistMono.variable} min-h-screen flex flex-col`}>
-      <PublicNavbar />
+    <div className={`${geistSans.variable} ${geistMono.variable} min-h-screen flex flex-col font-sans`}>
+      <MarketingNavbar />
       <main className="flex-1">{children}</main>
-      <PublicFooter />
+      <MarketingFooter />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { getMemberById } from "@/lib/actions";
-import { updateMember } from "@/lib/actions";
+import { getMemberById, updateMember } from "@/lib/actions/members";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,7 +49,8 @@ export default async function EditMemberPage({
         </h1>
       </div>
 
-      <form action={updateMember.bind(null, id)} className="space-y-6">
+      <form action={updateMember} className="space-y-6">
+        <input type="hidden" name="id" value={id} />
         <Card>
           <CardHeader>
             <CardTitle>Persoenliche Daten</CardTitle>

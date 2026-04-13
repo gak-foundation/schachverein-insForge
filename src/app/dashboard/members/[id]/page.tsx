@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { getMemberById, getDwzHistory } from "@/lib/actions";
+import { getMemberById, getDwzHistory } from "@/lib/actions/members";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import Link from "next/link";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
-import { deleteMember } from "@/lib/actions";
+import { deleteMember } from "@/lib/actions/members";
 
 export const metadata = {
   title: "Mitglied",

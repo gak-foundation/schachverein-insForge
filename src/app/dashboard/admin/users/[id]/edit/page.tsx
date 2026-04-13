@@ -5,7 +5,7 @@ import { PERMISSIONS, hasPermission, getPermissionsForRole } from "@/lib/auth/pe
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
-import { updateUserRole } from "@/lib/actions";
+import { updateUserRole } from "@/lib/actions/members";
 
 const ROLES = [
   { value: "admin", label: "Admin" },

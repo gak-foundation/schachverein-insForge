@@ -13,18 +13,27 @@ const routeLabels: Record<string, string> = {
   tournaments: "Turniere",
   games: "Partien",
   calendar: "Kalender",
+  seasons: "Saisons",
   finance: "Finanzen",
   settings: "Einstellungen",
   profile: "Profil",
   new: "Neu",
   edit: "Bearbeiten",
+  admin: "Administration",
+  users: "Benutzer",
+  protocols: "Protokolle",
 };
 
 export function Breadcrumbs({ className }: { className?: string }) {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
 
-  if (segments.length <= 1) return null;
+  if (segments.length <= 1 && segments[0] === "dashboard") return (
+    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+       <LayoutDashboard className="h-4 w-4 mr-2" />
+       <span className="font-semibold text-foreground">Übersicht</span>
+    </div>
+  );
 
   const breadcrumbs = segments.map((segment, index) => {
     const href = "/" + segments.slice(0, index + 1).join("/");
@@ -39,23 +48,23 @@ export function Breadcrumbs({ className }: { className?: string }) {
   });
 
   return (
-    <nav className={cn("flex items-center gap-1 text-sm text-gray-500 mb-4", className)}>
+    <nav className={cn("flex items-center gap-1 text-sm text-muted-foreground", className)}>
       <Link
         href="/dashboard"
-        className="flex items-center gap-1 hover:text-gray-700 transition-colors"
+        className="flex items-center gap-1 hover:text-foreground transition-colors"
       >
         <Home className="h-4 w-4" />
       </Link>
       
       {breadcrumbs.map((crumb, index) => (
         <React.Fragment key={crumb.href}>
-          <ChevronRight className="h-4 w-4 mx-1" />
+          <ChevronRight className="h-4 w-4 mx-0.5 opacity-50" />
           {crumb.isLast ? (
-            <span className="font-medium text-gray-900">{crumb.label}</span>
+            <span className="font-semibold text-foreground">{crumb.label}</span>
           ) : (
             <Link
               href={crumb.href}
-              className="hover:text-gray-700 transition-colors"
+              className="hover:text-foreground transition-colors"
             >
               {crumb.label}
             </Link>
@@ -65,3 +74,5 @@ export function Breadcrumbs({ className }: { className?: string }) {
     </nav>
   );
 }
+
+import { LayoutDashboard } from "lucide-react";

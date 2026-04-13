@@ -4,7 +4,7 @@ import * as React from "react";
 import { X, CheckCircle, AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface Toast {
+export interface Toast {
   id: string;
   title: string;
   description?: string;
@@ -46,6 +46,22 @@ export function useToast() {
     throw new Error("useToast must be used within ToastProvider");
   }
   return context;
+}
+
+// Helper function to add toast without using hook
+let toastContext: ToastContextType | null = null;
+
+export function setToastContext(ctx: ToastContextType) {
+  toastContext = ctx;
+}
+
+export function toast(toastData: Omit<Toast, "id">) {
+  if (typeof window !== "undefined" && toastContext) {
+    toastContext.addToast(toastData);
+  } else {
+    // Fallback for server-side
+    console.log("Toast:", toastData);
+  }
 }
 
 function ToastContainer() {

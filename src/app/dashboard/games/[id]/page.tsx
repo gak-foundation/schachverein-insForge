@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { getGameById } from "@/lib/actions";
+import { getGameById } from "@/lib/actions/games";
 import { db } from "@/lib/db";
 import { members } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -71,12 +71,8 @@ export default async function GameDetailPage({
               <dd className="font-medium text-lg">{game.result ?? "Noch nicht eingetragen"}</dd>
             </div>
             <div>
-              <dt className="text-sm text-gray-500">Eroeffnung</dt>
-              <dd className="font-medium">{game.opening ?? game.ecoCode ?? "—"}</dd>
-            </div>
-            <div>
               <dt className="text-sm text-gray-500">Bedenkzeit</dt>
-              <dd className="font-medium">{game.timeControl ?? "—"}</dd>
+              <dd className="font-medium">—</dd>
             </div>
             <div>
               <dt className="text-sm text-gray-500">Gespielt am</dt>
