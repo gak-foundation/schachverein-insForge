@@ -9,7 +9,7 @@ import { documents, newsletters } from "./documents";
 import { contributionRates } from "./finance";
 
 export const clubsRelations = relations(clubs, ({ many }) => ({
-  memberships: many(clubMemberships),
+  memberships: many(clubMemberships, { relationName: "memberships" }),
   seasons: many(seasons),
   teams: many(teams),
   tournaments: many(tournaments),

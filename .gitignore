@@ -47,3 +47,12 @@ next-env.d.ts
 # docker volumes
 docker/postgres-data/
 docker/redis-data/
+
+# kilo plans
+.kilo/plans/
+
+# playwright-mcp
+.playwright-mcp/
+
+# screenshots
+*.png

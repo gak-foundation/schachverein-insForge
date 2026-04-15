@@ -95,12 +95,14 @@ export function TRFImportDialog({ tournamentId }: TRFImportDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button variant="outline" size="sm" className="gap-1">
-          <Upload className="h-4 w-4" />
-          TRF Import
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button variant="outline" size="sm" className="gap-1">
+            <Upload className="h-4 w-4" />
+            TRF Import
+          </Button>
+        }
+      />
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

@@ -33,6 +33,7 @@ export const clubMembershipsRelations = relations(clubMemberships, ({ one }) => 
   club: one(clubs, {
     fields: [clubMemberships.clubId],
     references: [clubs.id],
+    relationName: "memberships",
   }),
   member: one(members, {
     fields: [clubMemberships.memberId],

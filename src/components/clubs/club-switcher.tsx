@@ -9,6 +9,7 @@ import { useClub } from "@/lib/club-context";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -20,7 +21,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,45 +77,43 @@ export function ClubSwitcher({ minimal = false }: ClubSwitcherProps) {
   }
 
   return (
-    <div className="px-3 py-2">
+      <div className="px-3 py-2">
       <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 h-auto py-3 px-2 hover:bg-accent"
-            disabled={isLoading}
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary overflow-hidden">
-              {activeClub.logoUrl ? (
-                <img
-                  src={activeClub.logoUrl}
-                  alt={activeClub.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <Building2 className="h-5 w-5" />
-              )}
-            </div>
-            <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
-              <span className="text-sm font-semibold truncate w-full">
-                {activeClub.name}
-              </span>
-              <Badge
-                variant="secondary"
-                className={cn("text-[10px] px-1.5 py-0", planColors[activeClub.plan])}
-              >
-                {planLabels[activeClub.plan]}
-              </Badge>
-            </div>
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-          </Button>
+        <DropdownMenuTrigger
+          disabled={isLoading}
+          className="group/button inline-flex w-full cursor-pointer items-center justify-start gap-3 rounded-lg border border-transparent bg-clip-padding px-2 py-3 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 dark:hover:bg-muted/50"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary overflow-hidden">
+            {activeClub.logoUrl ? (
+              <img
+                src={activeClub.logoUrl}
+                alt={activeClub.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <Building2 className="h-5 w-5" />
+            )}
+          </div>
+          <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
+            <span className="text-sm font-semibold truncate w-full text-left">
+              {activeClub.name}
+            </span>
+            <Badge
+              variant="secondary"
+              className={cn("text-[10px] px-1.5 py-0", planColors[activeClub.plan])}
+            >
+              {planLabels[activeClub.plan]}
+            </Badge>
+          </div>
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-[280px]">
-          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-            Meine Vereine
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {userClubs.map((club) => (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+              Meine Vereine
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {userClubs.map((club) => (
             <DropdownMenuItem
               key={club.id}
               className="gap-3 py-2 cursor-pointer"
@@ -153,6 +151,7 @@ export function ClubSwitcher({ minimal = false }: ClubSwitcherProps) {
               )}
             </DropdownMenuItem>
           ))}
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
             <Link
@@ -164,15 +163,16 @@ export function ClubSwitcher({ minimal = false }: ClubSwitcherProps) {
             </Link>
           </DropdownMenuItem>
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger>
-              <DropdownMenuItem
-                className="gap-3 py-2 cursor-pointer"
-                onSelect={(e) => e.preventDefault()}
-              >
-                <Plus className="h-4 w-4 shrink-0" />
-                <span>Neuen Verein erstellen</span>
-              </DropdownMenuItem>
-            </DialogTrigger>
+            <DropdownMenuItem
+              className="gap-3 py-2 cursor-pointer"
+              onSelect={(e) => {
+                e.preventDefault();
+                setCreateDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 shrink-0" />
+              <span>Neuen Verein erstellen</span>
+            </DropdownMenuItem>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle>Neuen Verein erstellen</DialogTitle>

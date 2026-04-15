@@ -36,6 +36,11 @@ import {
 import { TRFImportDialog } from "@/components/tournaments/trf-import-dialog";
 import { TRFExportButton } from "@/components/tournaments/trf-export-button";
 
+import { GameResultDialog } from "@/components/tournaments/game-result-dialog";
+import { GenerateRoundsDialog } from "@/components/tournaments/generate-rounds-dialog";
+import { CrossTableDialog } from "@/components/tournaments/cross-table-dialog";
+import { generateCrossTable } from "@/lib/pairings/round-robin";
+
 const typeLabels: Record<string, string> = {
   swiss: "Schweizer System",
   round_robin: "Rundenturnier",
@@ -69,11 +74,53 @@ export default async function TournamentDetailPage({
     notFound();
   }
 
+  // Fetch player details for games
+  const gamePlayerIds = new Set<string>();
+  allGames.forEach(game => {
+    gamePlayerIds.add(game.whiteId);
+    gamePlayerIds.add(game.blackId);
+  });
+  
+  const gamePlayers = await Promise.all(
+    Array.from(gamePlayerIds).map(async (playerId) => {
+      try {
+        return await getMemberById(playerId);
+      } catch {
+        return null;
+      }
+    })
+  );
+  
+  const playerMap = new Map(
+    gamePlayers.filter((p): p is NonNullable<typeof p> => p !== null).map(p => [p.id, p])
+  );
+
   const canEdit = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
     PERMISSIONS.TOURNAMENTS_WRITE,
   );
+
+  // Generate cross table data for round-robin tournaments
+  let crossTableData = null;
+  if ((tournament.type === "round_robin" || tournament.type === "club_championship") && allGames.length > 0) {
+    const rrParticipants = participants.map(p => ({
+      id: p.memberId,
+      name: `${p.member.firstName} ${p.member.lastName}`,
+    }));
+    
+    const gamesWithResults = allGames
+      .filter(g => g.result)
+      .map(g => ({
+        whiteId: g.whiteId,
+        blackId: g.blackId,
+        result: g.result as "1-0" | "0-1" | "1/2-1/2" | null,
+      }));
+    
+    if (gamesWithResults.length > 0) {
+      crossTableData = generateCrossTable(rrParticipants, gamesWithResults);
+    }
+  }
 
   const resultLabels: Record<string, string> = {
     "1-0": "1-0",
@@ -130,6 +177,17 @@ export default async function TournamentDetailPage({
             <div className="flex items-center gap-2">
               <TRFImportDialog tournamentId={id} />
               <TRFExportButton tournamentId={id} />
+              {(tournament.type === "round_robin" || tournament.type === "club_championship") && (
+                <>
+                  <GenerateRoundsDialog tournamentId={id} participantCount={participants.length} />
+                  {crossTableData && (
+                    <CrossTableDialog 
+                      entries={crossTableData} 
+                      participantNames={participants.map(p => `${p.member.firstName} ${p.member.lastName}`)}
+                    />
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
@@ -342,14 +400,20 @@ export default async function TournamentDetailPage({
                         {gamesByRound[round]
                           .sort((a, b) => (a.boardNumber || 0) - (b.boardNumber || 0))
                           .map((game) => (
-                          <div
-                            key={game.id}
-                            className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors"
-                          >
+                          <div key={game.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
                             <div className="flex items-center gap-4 flex-1">
                               <span className="text-xs text-gray-400 font-medium w-8">Brett {game.boardNumber ?? "—"}</span>
                               <div className="flex-1 text-left">
-                                <span className="font-medium">—</span>
+                                {(() => {
+                                  const player = playerMap.get(game.whiteId);
+                                  return player ? (
+                                    <Link href={`/dashboard/members/${game.whiteId}`} className="font-medium hover:underline">
+                                      {player.firstName} {player.lastName}
+                                    </Link>
+                                  ) : (
+                                    <span className="font-medium text-gray-400">—</span>
+                                  );
+                                })()}
                                 <span className="text-gray-400 mx-2">(Weiss)</span>
                               </div>
                               <div className="px-3 py-1 rounded bg-gray-100">
@@ -360,10 +424,33 @@ export default async function TournamentDetailPage({
                                 )}
                               </div>
                               <div className="flex-1 text-right">
-                                <span className="font-medium">—</span>
+                                {(() => {
+                                  const player = playerMap.get(game.blackId);
+                                  return player ? (
+                                    <Link href={`/dashboard/members/${game.blackId}`} className="font-medium hover:underline">
+                                      {player.firstName} {player.lastName}
+                                    </Link>
+                                  ) : (
+                                    <span className="font-medium text-gray-400">—</span>
+                                  );
+                                })()}
                                 <span className="text-gray-400 mx-2">(Schwarz)</span>
                               </div>
                             </div>
+                            {canEdit && (
+                              <GameResultDialog
+                                gameId={game.id}
+                                whiteName={(() => {
+                                  const player = playerMap.get(game.whiteId);
+                                  return player ? `${player.firstName} ${player.lastName}` : "Unbekannt";
+                                })()}
+                                blackName={(() => {
+                                  const player = playerMap.get(game.blackId);
+                                  return player ? `${player.firstName} ${player.lastName}` : "Unbekannt";
+                                })()}
+                                currentResult={game.result}
+                              />
+                            )}
                           </div>
                         ))}
                       </div>

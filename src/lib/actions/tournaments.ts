@@ -1,10 +1,13 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { tournaments, seasons, clubMemberships, tournamentParticipants, members } from "@/lib/db/schema";
+import { tournaments, seasons, clubMemberships, tournamentParticipants, members, games } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "./utils";
+import { generateRoundRobinPairings } from "@/lib/pairings/round-robin";
+import { generateSwissPairings } from "@/lib/pairings/swiss";
+import { generateTRFFromTournament } from "@/lib/trf/generator";
 
 export async function getTournaments() {
   const clubId = await requireClubId();
@@ -240,6 +243,84 @@ export async function removeTournamentParticipant(id: string) {
   await db.delete(tournamentParticipants).where(eq(tournamentParticipants.id, id));
 
   revalidatePath("/dashboard/tournaments");
+}
+
+export async function generateRoundRobinRounds(tournamentId: string) {
+  const clubId = await requireClubId();
+
+  const [tournament] = await db
+    .select()
+    .from(tournaments)
+    .where(and(
+      eq(tournaments.id, tournamentId),
+      eq(tournaments.clubId, clubId)
+    ));
+
+  if (!tournament) {
+    throw new Error("Turnier nicht gefunden");
+  }
+
+  if (tournament.type !== "round_robin" && tournament.type !== "club_championship") {
+    throw new Error("Nur für Rundenturnier und Vereinsmeisterschaft verfügbar");
+  }
+
+  const participants = await db
+    .select({
+      id: tournamentParticipants.memberId,
+      member: members,
+    })
+    .from(tournamentParticipants)
+    .innerJoin(members, eq(tournamentParticipants.memberId, members.id))
+    .where(eq(tournamentParticipants.tournamentId, tournamentId));
+
+  if (participants.length < 2) {
+    throw new Error("Mindestens 2 Teilnehmer erforderlich");
+  }
+
+  // Generate pairings using Berger table
+  const pairingParticipants = participants.map(p => ({
+    id: p.id,
+    name: `${p.member.firstName} ${p.member.lastName}`,
+    rating: p.member.dwz || p.member.elo || undefined,
+  }));
+
+  const rounds = generateRoundRobinPairings(pairingParticipants);
+
+  // Get existing games to avoid duplicates
+  const existingGames = await db
+    .select({ round: games.round })
+    .from(games)
+    .where(eq(games.tournamentId, tournamentId));
+
+  const existingRounds = new Set(existingGames.map(g => g.round));
+
+  // Create games for each round
+  for (const round of rounds) {
+    if (existingRounds.has(round.round)) {
+      continue; // Skip rounds that already exist
+    }
+
+    for (const pairing of round.pairings) {
+      await db.insert(games).values({
+        tournamentId,
+        round: round.round,
+        boardNumber: pairing.board || 1,
+        whiteId: pairing.white.id,
+        blackId: pairing.black.id,
+        result: null,
+      });
+    }
+  }
+
+  // Update number of rounds
+  await db
+    .update(tournaments)
+    .set({ numberOfRounds: rounds.length })
+    .where(eq(tournaments.id, tournamentId));
+
+  revalidatePath(`/dashboard/tournaments/${tournamentId}`);
+
+  return { success: true, rounds: rounds.length };
 }
 
 export async function updateTournamentResults(
