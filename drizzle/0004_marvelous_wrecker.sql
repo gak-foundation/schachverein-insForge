@@ -1,0 +1,1 @@
+ALTER TABLE "audit_log" ALTER COLUMN "user_id" SET DATA TYPE varchar(36);

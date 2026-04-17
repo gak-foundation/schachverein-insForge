@@ -14,7 +14,7 @@ export const auditLog = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     clubId: uuid("club_id").references(() => clubs.id, { onDelete: "cascade" }),
-    userId: uuid("user_id"),
+    userId: varchar("user_id", { length: 36 }),
     action: varchar("action", { length: 50 }).notNull(),
     entity: varchar("entity", { length: 50 }).notNull(),
     entityId: uuid("entity_id"),

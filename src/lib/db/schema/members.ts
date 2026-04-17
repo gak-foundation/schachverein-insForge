@@ -43,6 +43,8 @@ export const members = pgTable(
     sepaMandateReference: varchar("sepa_mandate_reference", { length: 35 }),
     sepaIban: varchar("sepa_iban", { length: 34 }),
     sepaBic: varchar("sepa_bic", { length: 11 }),
+    mandateSignedAt: date("mandate_signed_at"),
+    contributionRateId: uuid("contribution_rate_id"),
 
     notes: text("notes"),
     photoConsent: boolean("photo_consent").default(false),

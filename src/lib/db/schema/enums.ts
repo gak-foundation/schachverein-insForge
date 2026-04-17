@@ -63,6 +63,7 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "overdue",
   "cancelled",
   "refunded",
+  "collected",
 ]);
 
 export const seasonTypeEnum = pgEnum("season_type", [

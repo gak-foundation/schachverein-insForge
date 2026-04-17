@@ -52,6 +52,7 @@ export async function logAudit(params: AuditLogParams) {
   
   await db.insert(auditLog).values({
     userId: session?.user?.id ?? null,
+    clubId: session?.user?.activeClubId ?? null,
     action: params.action,
     entity: params.entity,
     entityId: params.entityId ?? null,

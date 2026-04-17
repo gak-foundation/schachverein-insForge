@@ -70,9 +70,10 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   }),
 }));
 
-export const contributionRatesRelations = relations(contributionRates, ({ one }) => ({
+export const contributionRatesRelations = relations(contributionRates, ({ one, many }) => ({
   club: one(clubs, {
     fields: [contributionRates.clubId],
     references: [clubs.id],
   }),
+  members: many(members),
 }));

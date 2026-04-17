@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { getMemberById, updateMember } from "@/lib/actions/members";
+import { getMemberById, updateMember, getContributionRatesForMemberSelect } from "@/lib/actions/members";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +25,10 @@ export default async function EditMemberPage({
   if (!session) redirect("/auth/login");
 
   const { id } = await params;
-  const member = await getMemberById(id);
+  const [member, contributionRates] = await Promise.all([
+    getMemberById(id),
+    getContributionRatesForMemberSelect(),
+  ]);
 
   if (!member) {
     return (
@@ -201,6 +204,70 @@ export default async function EditMemberPage({
                   className="h-4 w-4 rounded border-gray-300"
                 />
                 <Label htmlFor="resultPublicationConsent">Ergebnisse veroeffentlichen</Label>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Bankdaten & Beitrag</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="contributionRateId">Beitragsstufe</Label>
+              <select
+                id="contributionRateId"
+                name="contributionRateId"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                defaultValue={member.contributionRateId ?? ""}
+              >
+                <option value="">Keine Beitragsstufe</option>
+                {contributionRates.map((rate) => (
+                  <option key={rate.id} value={rate.id}>
+                    {rate.name} ({Number(rate.amount).toFixed(2)} EUR)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="sepaIban">SEPA-IBAN</Label>
+                <Input
+                  id="sepaIban"
+                  name="sepaIban"
+                  placeholder="DE00 0000 0000 0000 0000 00"
+                  defaultValue={member.sepaIban ?? ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sepaBic">SEPA-BIC</Label>
+                <Input
+                  id="sepaBic"
+                  name="sepaBic"
+                  placeholder="ABCDEF12"
+                  defaultValue={member.sepaBic ?? ""}
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="sepaMandateReference">Mandatsreferenz</Label>
+                <Input
+                  id="sepaMandateReference"
+                  name="sepaMandateReference"
+                  placeholder="MANDATE-001"
+                  defaultValue={member.sepaMandateReference ?? ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mandateSignedAt">Datum der Unterschrift</Label>
+                <Input
+                  id="mandateSignedAt"
+                  name="mandateSignedAt"
+                  type="date"
+                  defaultValue={member.mandateSignedAt ?? ""}
+                />
               </div>
             </div>
           </CardContent>

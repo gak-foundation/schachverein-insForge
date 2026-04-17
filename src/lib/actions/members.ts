@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { members, clubMemberships, dwzHistory, authUsers, seasons, tournaments, games } from "@/lib/db/schema";
+import { members, clubMemberships, dwzHistory, authUsers, seasons, tournaments, games, contributionRates } from "@/lib/db/schema";
 import { eq, desc, and, or, sql, SQL } from "drizzle-orm";
 import { createMemberSchema } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
@@ -78,6 +78,20 @@ export async function getMemberById(id: string) {
 
   const [member] = await db.select().from(members).where(eq(members.id, id));
   return member;
+}
+
+export async function getContributionRatesForMemberSelect() {
+  const clubId = await requireClubId();
+
+  return db
+    .select({
+      id: contributionRates.id,
+      name: contributionRates.name,
+      amount: contributionRates.amount,
+    })
+    .from(contributionRates)
+    .where(eq(contributionRates.clubId, clubId))
+    .orderBy(contributionRates.name);
 }
 
 export async function createMember(formData: FormData) {
@@ -198,6 +212,11 @@ export async function updateMember(formData: FormData) {
   const dwz = formData.get("dwz") ? Number(formData.get("dwz")) : null;
   const status = formData.get("status") as string;
   const role = formData.get("role") as string;
+  const sepaIban = (formData.get("sepaIban") as string) || null;
+  const sepaBic = (formData.get("sepaBic") as string) || null;
+  const sepaMandateReference = (formData.get("sepaMandateReference") as string) || null;
+  const mandateSignedAt = (formData.get("mandateSignedAt") as string) || null;
+  const contributionRateId = (formData.get("contributionRateId") as string) || null;
 
   await db
     .update(members)
@@ -208,6 +227,11 @@ export async function updateMember(formData: FormData) {
       phone,
       dwz,
       status: status as any,
+      sepaIban,
+      sepaBic,
+      sepaMandateReference,
+      mandateSignedAt,
+      contributionRateId,
     })
     .where(eq(members.id, id));
 

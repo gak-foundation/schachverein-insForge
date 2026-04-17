@@ -31,6 +31,8 @@ export const createMemberSchema = z.object({
   sepaMandateReference: z.string().max(35).optional(),
   sepaIban: z.string().max(34).optional(),
   sepaBic: z.string().max(11).optional(),
+  mandateSignedAt: z.string().date().optional().or(z.literal("")),
+  contributionRateId: z.string().uuid().optional(),
 });
 
 export const updateMemberSchema = createMemberSchema.partial();
