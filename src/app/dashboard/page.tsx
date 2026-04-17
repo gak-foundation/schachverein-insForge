@@ -22,7 +22,9 @@ import {
   TrendingUp,
   LayoutDashboard,
   ArrowUpRight,
-  MapPin
+  MapPin,
+  AlertCircle,
+  CircleCheck
 } from "lucide-react";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -44,6 +46,32 @@ export default async function DashboardPage() {
   const canWriteMembers = hasPermission(role, permissions, PERMISSIONS.MEMBERS_WRITE);
   const canWriteTournaments = hasPermission(role, permissions, PERMISSIONS.TOURNAMENTS_WRITE);
   const canWriteTeams = hasPermission(role, permissions, PERMISSIONS.TEAMS_WRITE);
+  const todayItems = [
+    {
+      label: "Offene Beiträge",
+      value: String(stats.pendingPayments),
+      hint: stats.pendingPayments > 0 ? "Jetzt prüfen" : "Alles erledigt",
+      href: "/dashboard/finance",
+      icon: stats.pendingPayments > 0 ? AlertCircle : CircleCheck,
+      tone: stats.pendingPayments > 0 ? "text-amber-600 bg-amber-50" : "text-emerald-600 bg-emerald-50",
+    },
+    {
+      label: "Nächste Kämpfe",
+      value: String(stats.upcomingMatches.length),
+      hint: stats.upcomingMatches.length > 0 ? "Termine im Blick behalten" : "Keine offenen Spieltage",
+      href: "/dashboard/teams",
+      icon: Swords,
+      tone: "text-indigo-600 bg-indigo-50",
+    },
+    {
+      label: "Laufende Turniere",
+      value: String(stats.activeTournaments),
+      hint: stats.activeTournaments > 0 ? "Ergebnisse aktualisieren" : "Derzeit nichts offen",
+      href: "/dashboard/tournaments",
+      icon: Trophy,
+      tone: "text-blue-600 bg-blue-50",
+    },
+  ];
 
   return (
     <div className="space-y-10">
@@ -86,7 +114,39 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-[1.3fr_1fr]">
+        <Card className="border-border/50 shadow-lg">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-xl">Heute wichtig</CardTitle>
+                <CardDescription>Die wichtigsten Aufgaben und Bereiche auf einen Blick</CardDescription>
+              </div>
+              <div className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+                Schnellstart
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-3">
+            {todayItems.map((item) => (
+              <Link key={item.label} href={item.href}>
+                <div className="flex h-full flex-col justify-between rounded-xl border border-border/60 bg-background p-4 transition-colors hover:border-primary/30 hover:bg-accent/40">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                      <p className="mt-1 text-3xl font-bold tracking-tight">{item.value}</p>
+                    </div>
+                    <div className={cn("rounded-lg p-2", item.tone)}>
+                      <item.icon className="h-4 w-4" />
+                    </div>
+                  </div>
+                  <p className="mt-4 text-sm text-muted-foreground">{item.hint}</p>
+                </div>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+
         <Card className="bg-card shadow-xl shadow-black/5 border-border/50 relative overflow-hidden group">
            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-500">
              <Target className="h-32 w-32" />
@@ -228,7 +288,12 @@ export default async function DashboardPage() {
             <CardContent>
               <div className="space-y-4">
                 {stats.upcomingEvents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-8 text-center border rounded-lg border-dashed">Keine Termine</p>
+                  <div className="rounded-lg border border-dashed py-8 text-center">
+                    <p className="text-sm text-muted-foreground">Keine Termine geplant.</p>
+                    <Link href="/dashboard/calendar/new" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+                      Termin anlegen
+                    </Link>
+                  </div>
                 ) : (
                   stats.upcomingEvents.map((event) => (
                     <div key={event.id} className="flex items-start gap-4 p-3 rounded-lg hover:bg-accent transition-colors">

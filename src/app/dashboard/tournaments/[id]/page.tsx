@@ -149,19 +149,22 @@ export default async function TournamentDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link 
-            href="/dashboard/tournaments" 
-            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span>Turniere</span>
-          </Link>
-          <div className="h-4 w-px bg-gray-300" />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+            <Link 
+              href="/dashboard/tournaments" 
+              className="flex items-center gap-1 transition-colors hover:text-gray-700"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Turniere</span>
+            </Link>
+            <span className="hidden h-4 w-px bg-gray-300 sm:block" />
+            <span>Detailansicht</span>
+          </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{tournament.name}</h1>
-            <div className="mt-1 flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{tournament.name}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="flex items-center gap-1">
                 <Trophy className="h-3 w-3" />
                 {typeLabels[tournament.type] ?? tournament.type}
@@ -173,24 +176,24 @@ export default async function TournamentDetailPage({
               )}
             </div>
           </div>
-          {canEdit && (
-            <div className="flex items-center gap-2">
-              <TRFImportDialog tournamentId={id} />
-              <TRFExportButton tournamentId={id} />
-              {(tournament.type === "round_robin" || tournament.type === "club_championship") && (
-                <>
-                  <GenerateRoundsDialog tournamentId={id} participantCount={participants.length} />
-                  {crossTableData && (
-                    <CrossTableDialog 
-                      entries={crossTableData} 
-                      participantNames={participants.map(p => `${p.member.firstName} ${p.member.lastName}`)}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-          )}
         </div>
+        {canEdit && (
+          <div className="flex flex-wrap gap-2 rounded-xl border bg-gray-50 p-3">
+            <TRFImportDialog tournamentId={id} />
+            <TRFExportButton tournamentId={id} />
+            {(tournament.type === "round_robin" || tournament.type === "club_championship") && (
+              <>
+                <GenerateRoundsDialog tournamentId={id} participantCount={participants.length} />
+                {crossTableData && (
+                  <CrossTableDialog 
+                    entries={crossTableData} 
+                    participantNames={participants.map(p => `${p.member.firstName} ${p.member.lastName}`)}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -300,16 +303,16 @@ export default async function TournamentDetailPage({
       </Card>
 
       <Tabs defaultValue="standings" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="standings" className="flex items-center gap-1">
+        <TabsList className="flex h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+          <TabsTrigger value="standings" className="flex items-center gap-1 rounded-full border bg-white px-4 py-2">
             <Crown className="h-4 w-4" />
             Rangliste
           </TabsTrigger>
-          <TabsTrigger value="games" className="flex items-center gap-1">
+          <TabsTrigger value="games" className="flex items-center gap-1 rounded-full border bg-white px-4 py-2">
             <Trophy className="h-4 w-4" />
             Partien
           </TabsTrigger>
-          <TabsTrigger value="participants" className="flex items-center gap-1">
+          <TabsTrigger value="participants" className="flex items-center gap-1 rounded-full border bg-white px-4 py-2">
             <Users className="h-4 w-4" />
             Teilnehmer
           </TabsTrigger>
@@ -330,7 +333,10 @@ export default async function TournamentDetailPage({
             </CardHeader>
             <CardContent>
               {sortedParticipants.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Noch keine Teilnehmer.</p>
+                <div className="rounded-lg border border-dashed px-4 py-8 text-center text-gray-500">
+                  <p>Noch keine Teilnehmer.</p>
+                  {canEdit && <p className="mt-2 text-sm">Füge zuerst Spieler im Tab „Teilnehmer“ hinzu.</p>}
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -385,7 +391,10 @@ export default async function TournamentDetailPage({
             </CardHeader>
             <CardContent>
               {allGames.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Noch keine Partien erfasst.</p>
+                <div className="rounded-lg border border-dashed px-4 py-8 text-center text-gray-500">
+                  <p>Noch keine Partien erfasst.</p>
+                  {canEdit && <p className="mt-2 text-sm">Erzeuge zuerst Runden oder importiere Ergebnisse.</p>}
+                </div>
               ) : (
                 <div className="space-y-6">
                   {sortedRounds.map((round) => (
@@ -498,7 +507,10 @@ export default async function TournamentDetailPage({
               )}
 
               {participants.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Noch keine Teilnehmer.</p>
+                <div className="rounded-lg border border-dashed px-4 py-8 text-center text-gray-500">
+                  <p>Noch keine Teilnehmer.</p>
+                  {canEdit && <p className="mt-2 text-sm">Lege jetzt das Teilnehmerfeld für dieses Turnier an.</p>}
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">

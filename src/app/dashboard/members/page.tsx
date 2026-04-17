@@ -20,8 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ArrowUpDown, Users, ChevronLeft, ChevronRight, Upload, Download } from "lucide-react";
-import { exportMembersToCSVAction } from "@/lib/actions/import-export";
+import { ArrowUpDown, Users, ChevronLeft, ChevronRight, Upload, Search, X } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
 
 export const metadata = {
@@ -113,20 +112,33 @@ export default async function MembersPage({
     currentPage * ITEMS_PER_PAGE
   );
   
-  function buildSortLink(field: SortField) {
+  function buildMembersLink(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams();
     if (filters.search) params.set("search", filters.search);
     if (filters.role) params.set("role", filters.role);
     if (filters.status) params.set("status", filters.status);
-    
-    params.set("sortBy", field);
-    if (filters.sortBy === field && filters.sortOrder !== "desc") {
-      params.set("sortOrder", "desc");
-    } else {
-      params.set("sortOrder", "asc");
+    if (filters.sortBy) params.set("sortBy", filters.sortBy);
+    if (filters.sortOrder) params.set("sortOrder", filters.sortOrder);
+    if (filters.page && filters.page !== "1") params.set("page", filters.page);
+
+    for (const [key, value] of Object.entries(overrides)) {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
     }
-    
-    return `/dashboard/members?${params.toString()}`;
+
+    const query = params.toString();
+    return query ? `/dashboard/members?${query}` : "/dashboard/members";
+  }
+
+  function buildSortLink(field: SortField) {
+    return buildMembersLink({
+      sortBy: field,
+      sortOrder: filters.sortBy === field && filters.sortOrder !== "desc" ? "desc" : "asc",
+      page: undefined,
+    });
   }
   
   function getSortIcon(field: SortField) {
@@ -149,6 +161,12 @@ export default async function MembersPage({
     resigned: "Ausgetreten",
     honorary: "Ehrenmitglied",
   };
+
+  const activeFilters = [
+    filters.search ? { label: `Suche: ${filters.search}`, href: buildMembersLink({ search: undefined, page: undefined }) } : null,
+    filters.role ? { label: `Rolle: ${filters.role}`, href: buildMembersLink({ role: undefined, page: undefined }) } : null,
+    filters.status ? { label: `Status: ${statusLabels[filters.status] ?? filters.status}`, href: buildMembersLink({ status: undefined, page: undefined }) } : null,
+  ].filter((value): value is { label: string; href: string } => value !== null);
 
   return (
     <div className="space-y-6">
@@ -180,35 +198,80 @@ export default async function MembersPage({
       </div>
 
       <Card>
-        <CardContent className="pt-6">
-          <form className="flex flex-wrap gap-4" method="GET" action="/dashboard/members">
-            <input
-              type="text"
-              name="search"
-              placeholder="Suche nach Name, E-Mail..."
-              defaultValue={filters.search ?? ""}
-              className="max-w-sm flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-            />
-            <select name="role" defaultValue={filters.role ?? ""} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
-              <option value="">Alle Rollen</option>
-              <option value="admin">Admin</option>
-              <option value="vorstand">Vorstand</option>
-              <option value="sportwart">Sportwart</option>
-              <option value="jugendwart">Jugendwart</option>
-              <option value="kassenwart">Kassenwart</option>
-              <option value="trainer">Trainer</option>
-              <option value="mitglied">Mitglied</option>
-              <option value="eltern">Eltern</option>
-            </select>
-            <select name="status" defaultValue={filters.status ?? ""} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
-              <option value="">Alle Status</option>
-              <option value="active">Aktiv</option>
-              <option value="inactive">Inaktiv</option>
-              <option value="resigned">Ausgetreten</option>
-              <option value="honorary">Ehrenmitglied</option>
-            </select>
-            <Button type="submit" variant="outline">Filtern</Button>
+        <CardContent className="space-y-4 pt-6">
+          <form className="flex flex-col gap-4 lg:flex-row lg:items-end" method="GET" action="/dashboard/members">
+            <div className="flex-1 space-y-2">
+              <label htmlFor="member-search" className="text-sm font-medium text-gray-700">
+                Mitglieder suchen
+              </label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  id="member-search"
+                  type="text"
+                  name="search"
+                  placeholder="Suche nach Name oder E-Mail"
+                  defaultValue={filters.search ?? ""}
+                  className="h-10 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm"
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:w-auto lg:grid-cols-2">
+              <div className="space-y-2">
+                <label htmlFor="role-filter" className="text-sm font-medium text-gray-700">
+                  Rolle
+                </label>
+                <select id="role-filter" name="role" defaultValue={filters.role ?? ""} className="h-10 rounded-md border border-gray-300 px-3 text-sm">
+                  <option value="">Alle Rollen</option>
+                  <option value="admin">Admin</option>
+                  <option value="vorstand">Vorstand</option>
+                  <option value="sportwart">Sportwart</option>
+                  <option value="jugendwart">Jugendwart</option>
+                  <option value="kassenwart">Kassenwart</option>
+                  <option value="trainer">Trainer</option>
+                  <option value="mitglied">Mitglied</option>
+                  <option value="eltern">Eltern</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="status-filter" className="text-sm font-medium text-gray-700">
+                  Status
+                </label>
+                <select id="status-filter" name="status" defaultValue={filters.status ?? ""} className="h-10 rounded-md border border-gray-300 px-3 text-sm">
+                  <option value="">Alle Status</option>
+                  <option value="active">Aktiv</option>
+                  <option value="inactive">Inaktiv</option>
+                  <option value="resigned">Ausgetreten</option>
+                  <option value="honorary">Ehrenmitglied</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 lg:pb-0.5">
+              <Button type="submit" className="min-w-28">Filtern</Button>
+              <Link href="/dashboard/members">
+                <Button type="button" variant="outline">
+                  <X className="mr-2 h-4 w-4" />
+                  Zurücksetzen
+                </Button>
+              </Link>
+            </div>
           </form>
+
+          {activeFilters.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Aktive Filter</span>
+              {activeFilters.map((filter) => (
+                <Link
+                  key={filter.label}
+                  href={filter.href}
+                  className="inline-flex items-center gap-1 rounded-full border bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:border-gray-400"
+                >
+                  {filter.label}
+                  <X className="h-3 w-3" />
+                </Link>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -234,9 +297,10 @@ export default async function MembersPage({
             />
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50">
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
                     <TableHead>
                       <Link href={buildSortLink("name")} className="flex items-center gap-1 hover:text-blue-600">
                         Name {getSortIcon("name")}
@@ -302,7 +366,8 @@ export default async function MembersPage({
                   ))}
                 </TableBody>
               </Table>
-              
+              </div>
+
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4 pt-4 border-t">
                   <p className="text-sm text-gray-500">
@@ -310,18 +375,7 @@ export default async function MembersPage({
                   </p>
                   <div className="flex gap-2">
                     {currentPage > 1 && (
-                      <Link
-                        href={`/dashboard/members?${(() => {
-                          const params = new URLSearchParams();
-                          if (filters.search) params.set("search", filters.search);
-                          if (filters.role) params.set("role", filters.role);
-                          if (filters.status) params.set("status", filters.status);
-                          if (filters.sortBy) params.set("sortBy", filters.sortBy);
-                          if (filters.sortOrder) params.set("sortOrder", filters.sortOrder);
-                          params.set("page", String(currentPage - 1));
-                          return params.toString();
-                        })()}`}
-                      >
+                      <Link href={buildMembersLink({ page: String(currentPage - 1) })}>
                         <Button variant="outline" size="sm">
                           <ChevronLeft className="h-4 w-4 mr-1" />
                           Zurück
@@ -329,18 +383,7 @@ export default async function MembersPage({
                       </Link>
                     )}
                     {currentPage < totalPages && (
-                      <Link
-                        href={`/dashboard/members?${(() => {
-                          const params = new URLSearchParams();
-                          if (filters.search) params.set("search", filters.search);
-                          if (filters.role) params.set("role", filters.role);
-                          if (filters.status) params.set("status", filters.status);
-                          if (filters.sortBy) params.set("sortBy", filters.sortBy);
-                          if (filters.sortOrder) params.set("sortOrder", filters.sortOrder);
-                          params.set("page", String(currentPage + 1));
-                          return params.toString();
-                        })()}`}
-                      >
+                      <Link href={buildMembersLink({ page: String(currentPage + 1) })}>
                         <Button variant="outline" size="sm">
                           Weiter
                           <ChevronRight className="h-4 w-4 ml-1" />
