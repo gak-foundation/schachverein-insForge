@@ -20,7 +20,7 @@ const runMigrate = async () => {
     await migrate(db, { migrationsFolder: "drizzle" });
     logger.info("✅ Migrationen erfolgreich abgeschlossen.");
   } catch (error) {
-    logger.error("❌ Fehler bei der Migration:", error);
+    logger.error(error as Error, "❌ Fehler bei der Migration:");
     process.exit(1);
   } finally {
     await migrationClient.end();

@@ -1,7 +1,7 @@
 import { Queue, Worker } from "bullmq";
 import { getRedisConnection } from "@/lib/auth/redis";
 import { db } from "@/lib/db";
-import { members, games } from "@/lib/db/schema";
+import { members, games, clubMemberships } from "@/lib/db/schema";
 import { fetchLichessGames } from "@/lib/lichess";
 import { eq, sql, and } from "drizzle-orm";
 
@@ -10,6 +10,7 @@ const QUEUE_NAME = "lichess-sync";
 interface LichessSyncJobData {
   memberId: string;
   lichessUsername: string;
+  clubId: string;
 }
 
 let lichessQueue: Queue<LichessSyncJobData> | null = null;
@@ -43,7 +44,7 @@ export function startLichessSyncWorker(): Worker<LichessSyncJobData> | null {
   const worker = new Worker<LichessSyncJobData>(
     QUEUE_NAME,
     async (job) => {
-      const { memberId, lichessUsername } = job.data;
+      const { memberId, lichessUsername, clubId } = job.data;
       
       const lichessGames = await fetchLichessGames(lichessUsername, 10);
       
@@ -78,6 +79,7 @@ export function startLichessSyncWorker(): Worker<LichessSyncJobData> | null {
         // For simplicity, we import if we have at least one club member
         if (whiteId || blackId) {
           await db.insert(games).values({
+            clubId,
             whiteId,
             blackId,
             result: lg.winner === "white" ? "1-0" : lg.winner === "black" ? "0-1" : "1/2-1/2",
@@ -99,15 +101,24 @@ export async function scheduleLichessSyncForAll() {
   if (!queue) return;
 
   const allMembers = await db
-    .select({ id: members.id, lichessUsername: members.lichessUsername })
+    .select({ 
+      id: members.id, 
+      lichessUsername: members.lichessUsername,
+      clubId: clubMemberships.clubId
+    })
     .from(members)
-    .where(sql`${members.lichessUsername} IS NOT NULL`);
+    .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
+    .where(and(
+      sql`${members.lichessUsername} IS NOT NULL`,
+      eq(clubMemberships.isPrimary, true)
+    ));
 
   for (const m of allMembers) {
-    if (m.lichessUsername) {
+    if (m.lichessUsername && m.clubId) {
       await queue.add(`lichess-${m.id}`, {
         memberId: m.id,
         lichessUsername: m.lichessUsername,
+        clubId: m.clubId,
       });
     }
   }

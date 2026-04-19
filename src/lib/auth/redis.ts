@@ -9,7 +9,6 @@ export function getRedis(): Redis | null {
   }
 
   if (redisInstance) return redisInstance;
-...
 
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) {

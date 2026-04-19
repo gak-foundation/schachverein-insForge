@@ -4,7 +4,7 @@ import { applySecurityHeaders } from "@/lib/auth/security-headers";
 import { auth } from "@/lib/auth/better-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/auth/rate-limit";
 
-export const runtime = "edge";
+export const runtime = "experimental-edge";
 
 async function getClientIP(request: NextRequest): Promise<string> {
   const forwarded = request.headers.get("x-forwarded-for");
