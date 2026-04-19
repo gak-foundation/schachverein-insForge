@@ -274,7 +274,8 @@ describe("Tournament Actions", () => {
 
   describe("generateRoundRobinRounds", () => {
     it("sollte Fehler werfen bei ungültigem Turniertyp", async () => {
-      mockDb.select.mockReturnValue(createSelectChain([mockTournament]));
+      const swissTournament = createMockTournament({ type: "swiss" });
+      mockDb.select.mockReturnValue(createSelectChain([swissTournament]));
 
       await expect(tournaments.generateRoundRobinRounds("tournament-1")).rejects.toThrow("Nur für Rundenturnier und Vereinsmeisterschaft verfügbar");
     });
@@ -352,7 +353,8 @@ describe("Tournament Actions", () => {
     });
 
     it("sollte Fehler werfen bei ungültigem Turniertyp", async () => {
-      mockDb.select.mockReturnValue(createSelectChain([mockTournament]));
+      const roundRobinTournament = createMockTournament({ type: "round_robin" });
+      mockDb.select.mockReturnValue(createSelectChain([roundRobinTournament]));
 
       await expect(tournaments.generateSwissRound("tournament-1")).rejects.toThrow("Nur für Schweizer System verfügbar");
     });
