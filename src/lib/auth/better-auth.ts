@@ -1,21 +1,20 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/lib/db";
-import * as schema from "@/lib/db/schema";
+import { authUsers, authSessions, authAccounts, authVerifications, authTwoFactors } from "@/lib/db/schema/auth";
 import { twoFactor, admin } from "better-auth/plugins";
 import { isAccountLockedByEmail, handleSuccessfulLogin, handleFailedLogin } from "./account-lockout";
 import { eq } from "drizzle-orm";
-import { authUsers } from "@/lib/db/schema";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
-      user: schema.authUsers,
-      session: schema.authSessions,
-      account: schema.authAccounts,
-      verification: schema.authVerifications,
-      twoFactor: schema.authTwoFactors,
+      user: authUsers,
+      session: authSessions,
+      account: authAccounts,
+      verification: authVerifications,
+      twoFactor: authTwoFactors,
     },
   }),
   secret: process.env.BETTER_AUTH_SECRET,

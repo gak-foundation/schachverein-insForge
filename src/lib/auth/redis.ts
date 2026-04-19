@@ -1,8 +1,6 @@
-import Redis from "ioredis";
+let redisInstance: any | null = null;
 
-let redisInstance: Redis | null = null;
-
-export function getRedis(): Redis | null {
+export function getRedis(): any | null {
   // Edge runtime check
   if (typeof process !== "undefined" && process.env && (process.env as any).NEXT_RUNTIME === "edge") {
     return null; // ioredis not supported in Edge
@@ -17,6 +15,7 @@ export function getRedis(): Redis | null {
   }
 
   try {
+    const Redis = require("ioredis");
     redisInstance = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
       retryStrategy(times) {
