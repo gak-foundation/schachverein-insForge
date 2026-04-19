@@ -85,6 +85,7 @@ export const auth = betterAuth({
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 7,
     path: "/",
+    domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN,
   },
   rateLimit: {
     enabled: true,

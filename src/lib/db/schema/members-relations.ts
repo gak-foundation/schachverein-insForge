@@ -4,7 +4,7 @@ import { teamMemberships } from "./teams";
 import { tournamentParticipants, games } from "./tournaments";
 import { documents } from "./documents";
 import { payments, contributionRates } from "./finance";
-import { availability, dwzHistory } from "./members-extended";
+import { availability, dwzHistory, memberStatusHistory } from "./members-extended";
 import { clubs } from "./clubs";
 
 export const membersRelations = relations(members, ({ many, one }) => ({
@@ -26,6 +26,7 @@ export const membersRelations = relations(members, ({ many, one }) => ({
   payments: many(payments),
   dwzEntries: many(dwzHistory),
   availabilityEntries: many(availability),
+  statusHistory: many(memberStatusHistory),
   uploadedDocuments: many(documents),
   contributionRate: one(contributionRates, {
     fields: [members.contributionRateId],

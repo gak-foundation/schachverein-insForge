@@ -13,11 +13,63 @@ async function getClientIP(request: NextRequest): Promise<string> {
 }
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const headers = new Headers(request.headers);
+  const url = request.nextUrl;
+  const originalPath = url.pathname;
 
+  // 0. Explicitly skip static files and other common excluded paths
+  // This ensures that even if the matcher is ignored, we don't rewrite these.
+  if (
+    originalPath.startsWith("/_next") ||
+    originalPath.startsWith("/favicon.ico") ||
+    originalPath.startsWith("/sw.js") ||
+    originalPath.startsWith("/manifest.json") ||
+    originalPath.startsWith("/icons/") ||
+    originalPath === "/sitemap.xml" ||
+    originalPath === "/robots.txt"
+  ) {
+    return NextResponse.next();
+  }
+
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
+  const host = request.headers.get("host") || "";
+  
+  // Normalize hostname for easier comparison
+  const hostname = host.replace(".localhost:3000", `.${rootDomain}`);
+
+  const searchParams = url.searchParams.toString();
+  
+  let targetPath = originalPath;
+  let isRewrite = false;
+
+  // 1. Subdomain / Multi-tenancy Logic
+  if (hostname === `admin.${rootDomain}`) {
+    targetPath = `/dashboard${originalPath === "/" ? "" : originalPath}`;
+    isRewrite = true;
+  } else if (
+    hostname !== rootDomain &&
+    hostname !== `www.${rootDomain}`
+  ) {
+    const slug = hostname.split(".")[0];
+    if (slug && slug !== "www" && slug !== "admin" && hostname.includes(".")) {
+      targetPath = `/clubs/${slug}${originalPath}`;
+      isRewrite = true;
+    }
+  }
+
+  // Use targetPath for Auth checks (effective path)
+  const pathname = targetPath;
+  const headers = new Headers(request.headers);
   let response: NextResponse;
 
+  // Helper to get either next or rewrite response
+  const getNextResponse = () => {
+    if (isRewrite) {
+      return NextResponse.rewrite(new URL(`${targetPath}${searchParams.length > 0 ? `?${searchParams}` : ""}`, request.url));
+    }
+    return NextResponse.next();
+  };
+
+  // 2. Auth & Security Logic (from old proxy.ts)
   if (pathname.startsWith("/api/auth")) {
     const ip = await getClientIP(request);
     
@@ -54,8 +106,7 @@ export async function proxy(request: NextRequest) {
       }
     }
     
-    response = NextResponse.next();
-    return response;
+    return getNextResponse();
   }
 
   const session = await auth.api.getSession({
@@ -80,18 +131,14 @@ export async function proxy(request: NextRequest) {
     "/impressum",
     "/datenschutz",
   ];
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+
+  // Also consider club public routes if needed, but for now we follow the existing list
+  if (publicRoutes.some((route) => pathname.startsWith(route)) || pathname.startsWith("/clubs/")) {
     if (session && (pathname === "/auth/login" || pathname === "/auth/signup")) {
       response = NextResponse.redirect(new URL("/dashboard", request.url));
       return applySecurityHeaders(response);
     }
-    response = NextResponse.next();
-    return applySecurityHeaders(response);
-  }
-
-  if (pathname.startsWith("/pgnviewer")) {
-    response = NextResponse.next();
-    return applySecurityHeaders(response);
+    return applySecurityHeaders(getNextResponse());
   }
 
   if (!session) {
@@ -118,8 +165,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  response = NextResponse.next();
-  return applySecurityHeaders(response);
+  return applySecurityHeaders(getNextResponse());
 }
 
 export const proxyConfig = {

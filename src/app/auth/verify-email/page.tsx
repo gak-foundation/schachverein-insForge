@@ -12,20 +12,25 @@ import { AuthHeader } from "@/components/auth/auth-header";
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
+  const token = searchParams.get("token");
+  const [status, setStatus] = useState<"loading" | "success" | "error">(() =>
+    token ? "loading" : "error",
+  );
+  const [errorMessage, setErrorMessage] = useState(() =>
+    token ? "" : "Kein Verifizierungs-Token gefunden.",
+  );
 
   useEffect(() => {
-    const token = searchParams.get("token");
     if (!token) {
-      setStatus("error");
-      setErrorMessage("Kein Verifizierungs-Token gefunden.");
       return;
     }
+    const verificationToken = token;
 
     async function verify() {
       try {
-        const response = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(token!)}`);
+        const response = await fetch(
+          `/api/auth/verify-email?token=${encodeURIComponent(verificationToken)}`,
+        );
         if (response.ok) {
           setStatus("success");
         } else {
@@ -39,8 +44,8 @@ function VerifyEmailContent() {
       }
     }
 
-    verify();
-  }, [searchParams]);
+    void verify();
+  }, [token]);
 
   return (
     <>

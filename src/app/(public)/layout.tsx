@@ -14,6 +14,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "schach.studio | Die moderne Schachvereins-Verwaltung",
   description: "Organisiere deinen Schachverein effizient: Mitglieder, Turniere, Finanzen und mehr an einem zentralen Ort.",

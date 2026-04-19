@@ -4,7 +4,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getTournamentById, getTournamentParticipants, addTournamentParticipantForm, removeTournamentParticipantForm, updateTournamentResults } from "@/lib/actions/tournaments";
 import { getGames } from "@/lib/actions/games";
-import { getMembers, getMemberById } from "@/lib/actions/members";
+import { getMembersForForms, getMemberById } from "@/lib/actions/members";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -66,8 +66,8 @@ export default async function TournamentDetailPage({
   const [tournament, participants, allGames, allMembers] = await Promise.all([
     getTournamentById(id),
     getTournamentParticipants(id),
-    getGames(id),
-    getMembers(),
+    getGames({ tournamentId: id }),
+    getMembersForForms(),
   ]);
 
   if (!tournament) {
@@ -77,8 +77,8 @@ export default async function TournamentDetailPage({
   // Fetch player details for games
   const gamePlayerIds = new Set<string>();
   allGames.forEach(game => {
-    gamePlayerIds.add(game.whiteId);
-    gamePlayerIds.add(game.blackId);
+    if (game.whiteId) gamePlayerIds.add(game.whiteId);
+    if (game.blackId) gamePlayerIds.add(game.blackId);
   });
   
   const gamePlayers = await Promise.all(
@@ -110,10 +110,10 @@ export default async function TournamentDetailPage({
     }));
     
     const gamesWithResults = allGames
-      .filter(g => g.result)
+      .filter(g => g.result && g.whiteId && g.blackId)
       .map(g => ({
-        whiteId: g.whiteId,
-        blackId: g.blackId,
+        whiteId: g.whiteId!,
+        blackId: g.blackId!,
         result: g.result as "1-0" | "0-1" | "1/2-1/2" | null,
       }));
     
@@ -132,6 +132,7 @@ export default async function TournamentDetailPage({
   };
 
   const gamesByRound = allGames.reduce((acc, game) => {
+    if (game.round === null) return acc;
     if (!acc[game.round]) acc[game.round] = [];
     acc[game.round].push(game);
     return acc;
@@ -414,7 +415,7 @@ export default async function TournamentDetailPage({
                               <span className="text-xs text-gray-400 font-medium w-8">Brett {game.boardNumber ?? "—"}</span>
                               <div className="flex-1 text-left">
                                 {(() => {
-                                  const player = playerMap.get(game.whiteId);
+                                  const player = game.whiteId ? playerMap.get(game.whiteId) : null;
                                   return player ? (
                                     <Link href={`/dashboard/members/${game.whiteId}`} className="font-medium hover:underline">
                                       {player.firstName} {player.lastName}
@@ -434,7 +435,7 @@ export default async function TournamentDetailPage({
                               </div>
                               <div className="flex-1 text-right">
                                 {(() => {
-                                  const player = playerMap.get(game.blackId);
+                                  const player = game.blackId ? playerMap.get(game.blackId) : null;
                                   return player ? (
                                     <Link href={`/dashboard/members/${game.blackId}`} className="font-medium hover:underline">
                                       {player.firstName} {player.lastName}
@@ -450,11 +451,11 @@ export default async function TournamentDetailPage({
                               <GameResultDialog
                                 gameId={game.id}
                                 whiteName={(() => {
-                                  const player = playerMap.get(game.whiteId);
+                                  const player = game.whiteId ? playerMap.get(game.whiteId) : null;
                                   return player ? `${player.firstName} ${player.lastName}` : "Unbekannt";
                                 })()}
                                 blackName={(() => {
-                                  const player = playerMap.get(game.blackId);
+                                  const player = game.blackId ? playerMap.get(game.blackId) : null;
                                   return player ? `${player.firstName} ${player.lastName}` : "Unbekannt";
                                 })()}
                                 currentResult={game.result}

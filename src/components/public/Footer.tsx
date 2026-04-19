@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone, ExternalLink } from "lucide-react";
 
-export function PublicFooter() {
+interface FooterProps {
+  clubName?: string;
+}
+
+export function Footer({ clubName }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -14,7 +18,7 @@ export function PublicFooter() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground text-primary shadow-lg">
                 <span className="text-2xl font-serif">♔</span>
               </div>
-              <span className="text-2xl font-bold tracking-tight text-white">Schachverein</span>
+              <span className="text-2xl font-bold tracking-tight text-white">{clubName || "Schachverein"}</span>
             </div>
             <p className="text-primary-foreground/70 max-w-md leading-relaxed mb-8">
               Gemeinschaft, Strategie und Leidenschaft für das königliche Spiel. 

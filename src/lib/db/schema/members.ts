@@ -51,6 +51,11 @@ export const members = pgTable(
     newsletterConsent: boolean("newsletter_consent").default(false),
     resultPublicationConsent: boolean("result_publication_consent").default(true),
 
+    deletionRequestedAt: timestamp("deletion_requested_at"),
+    anonymizedAt: timestamp("anonymized_at"),
+
+    heritageGameId: uuid("heritage_game_id"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

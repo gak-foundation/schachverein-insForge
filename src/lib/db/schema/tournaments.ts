@@ -63,28 +63,30 @@ export const games = pgTable(
   "games",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    tournamentId: uuid("tournament_id")
+    clubId: uuid("club_id")
       .notNull()
-      .references(() => tournaments.id),
-    round: integer("round").notNull(),
+      .references(() => clubs.id, { onDelete: "cascade" }),
+    tournamentId: uuid("tournament_id").references(() => tournaments.id),
+    round: integer("round"),
     boardNumber: integer("board_number"),
-    whiteId: uuid("white_id")
-      .notNull()
-      .references(() => members.id),
-    blackId: uuid("black_id")
-      .notNull()
-      .references(() => members.id),
+    whiteId: uuid("white_id").references(() => members.id),
+    blackId: uuid("black_id").references(() => members.id),
+    whiteName: varchar("white_name", { length: 200 }),
+    blackName: varchar("black_name", { length: 200 }),
     result: gameResultEnum("result"),
-    pgn: text("pgn"),
+    lichessUrl: text("lichess_url"),
     fen: varchar("fen", { length: 100 }),
     opening: varchar("opening", { length: 200 }),
     ecoCode: varchar("eco_code", { length: 10 }),
+    event: varchar("event", { length: 300 }),
+    date: varchar("date", { length: 20 }),
     timeControl: varchar("time_control", { length: 50 }),
     playedAt: timestamp("played_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => ({
+    clubIdx: index("games_club_idx").on(table.clubId),
     tournamentRoundIdx: index("games_tournament_round_idx").on(
       table.tournamentId,
       table.round,
@@ -122,6 +124,10 @@ export const tournamentParticipantsRelations = relations(
 );
 
 export const gamesRelations = relations(games, ({ one }) => ({
+  club: one(clubs, {
+    fields: [games.clubId],
+    references: [clubs.id],
+  }),
   tournament: one(tournaments, {
     fields: [games.tournamentId],
     references: [tournaments.id],

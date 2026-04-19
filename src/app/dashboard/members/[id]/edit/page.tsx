@@ -1,19 +1,13 @@
 import { getSession } from "@/lib/auth/session";
-import { redirect } from "next/navigation";
-import { getMemberById, updateMember, getContributionRatesForMemberSelect } from "@/lib/actions/members";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { redirect, notFound } from "next/navigation";
+import { getMemberById, getContributionRatesForMemberSelect } from "@/lib/actions/members";
 import Link from "next/link";
+import { MemberForm } from "@/components/members/member-form";
+import { ChevronLeft } from "lucide-react";
 
 export const metadata = {
-  title: "Mitglied bearbeiten",
+  title: "Mitglied bearbeiten | CheckMate Manager",
+  description: "Aktualisieren Sie die Daten eines Vereinsmitglieds.",
 };
 
 export default async function EditMemberPage({
@@ -31,271 +25,30 @@ export default async function EditMemberPage({
   ]);
 
   if (!member) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-gray-500">Mitglied nicht gefunden.</p>
-      </div>
-    );
+    notFound();
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="mx-auto max-w-3xl space-y-8 py-6">
+      <div className="flex flex-col gap-2">
         <Link
           href={`/dashboard/members/${id}`}
-          className="text-gray-500 hover:text-gray-700"
+          className="group flex w-fit items-center text-sm font-medium text-slate-500 hover:text-primary transition-colors"
         >
-          &larr; Zurueck
+          <ChevronLeft className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+          Zurück zu den Details
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {member.firstName} {member.lastName} bearbeiten
-        </h1>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            {member.firstName} {member.lastName}
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400">
+            Profil bearbeiten und Daten aktualisieren.
+          </p>
+        </div>
       </div>
 
-      <form action={updateMember} className="space-y-6">
-        <input type="hidden" name="id" value={id} />
-        <Card>
-          <CardHeader>
-            <CardTitle>Persoenliche Daten</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">Vorname *</Label>
-                <Input id="firstName" name="firstName" required defaultValue={member.firstName} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Nachname *</Label>
-                <Input id="lastName" name="lastName" required defaultValue={member.lastName} />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="email">E-Mail *</Label>
-                <Input id="email" name="email" type="email" required defaultValue={member.email} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefon</Label>
-                <Input id="phone" name="phone" defaultValue={member.phone ?? ""} />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">Geburtsdatum</Label>
-                <Input id="dateOfBirth" name="dateOfBirth" type="date" defaultValue={member.dateOfBirth ?? ""} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gender">Geschlecht</Label>
-                <select
-                  id="gender"
-                  name="gender"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-                  defaultValue={member.gender ?? ""}
-                >
-                  <option value="">Keine Angabe</option>
-                  <option value="maennlich">Maennlich</option>
-                  <option value="weiblich">Weiblich</option>
-                  <option value="divers">Divers</option>
-                </select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Schach-Daten</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="dwz">DWZ</Label>
-                <Input id="dwz" name="dwz" type="number" min="0" max="3000" defaultValue={member.dwz ?? ""} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="elo">Elo</Label>
-                <Input id="elo" name="elo" type="number" min="0" max="3500" defaultValue={member.elo ?? ""} />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="lichessUsername">Lichess-Username</Label>
-                <Input id="lichessUsername" name="lichessUsername" defaultValue={member.lichessUsername ?? ""} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="chesscomUsername">Chess.com-Username</Label>
-                <Input id="chesscomUsername" name="chesscomUsername" defaultValue={member.chesscomUsername ?? ""} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dwzId">DWZ-ID (DeWIS)</Label>
-              <Input id="dwzId" name="dwzId" defaultValue={member.dwzId ?? ""} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Mitgliedschaft</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="role">Rolle</Label>
-                <select
-                  id="role"
-                  name="role"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-                  defaultValue={member.role}
-                >
-                  <option value="mitglied">Mitglied</option>
-                  <option value="admin">Admin</option>
-                  <option value="vorstand">Vorstand</option>
-                  <option value="sportwart">Sportwart</option>
-                  <option value="jugendwart">Jugendwart</option>
-                  <option value="kassenwart">Kassenwart</option>
-                  <option value="trainer">Trainer</option>
-                  <option value="eltern">Eltern-Zugang</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <select
-                  id="status"
-                  name="status"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-                  defaultValue={member.status}
-                >
-                  <option value="active">Aktiv</option>
-                  <option value="inactive">Inaktiv</option>
-                  <option value="honorary">Ehrenmitglied</option>
-                  <option value="resigned">Ausgetreten</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="photoConsent"
-                  name="photoConsent"
-                  className="h-4 w-4 rounded border-gray-300"
-                  defaultChecked={member.photoConsent ?? false}
-                />
-                <Label htmlFor="photoConsent">Foto-Einwilligung</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="newsletterConsent"
-                  name="newsletterConsent"
-                  className="h-4 w-4 rounded border-gray-300"
-                  defaultChecked={member.newsletterConsent ?? false}
-                />
-                <Label htmlFor="newsletterConsent">Newsletter-Einwilligung</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="resultPublicationConsent"
-                  name="resultPublicationConsent"
-                  defaultChecked={member.resultPublicationConsent ?? true}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="resultPublicationConsent">Ergebnisse veroeffentlichen</Label>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Bankdaten & Beitrag</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="contributionRateId">Beitragsstufe</Label>
-              <select
-                id="contributionRateId"
-                name="contributionRateId"
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-                defaultValue={member.contributionRateId ?? ""}
-              >
-                <option value="">Keine Beitragsstufe</option>
-                {contributionRates.map((rate) => (
-                  <option key={rate.id} value={rate.id}>
-                    {rate.name} ({Number(rate.amount).toFixed(2)} EUR)
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="sepaIban">SEPA-IBAN</Label>
-                <Input
-                  id="sepaIban"
-                  name="sepaIban"
-                  placeholder="DE00 0000 0000 0000 0000 00"
-                  defaultValue={member.sepaIban ?? ""}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sepaBic">SEPA-BIC</Label>
-                <Input
-                  id="sepaBic"
-                  name="sepaBic"
-                  placeholder="ABCDEF12"
-                  defaultValue={member.sepaBic ?? ""}
-                />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="sepaMandateReference">Mandatsreferenz</Label>
-                <Input
-                  id="sepaMandateReference"
-                  name="sepaMandateReference"
-                  placeholder="MANDATE-001"
-                  defaultValue={member.sepaMandateReference ?? ""}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mandateSignedAt">Datum der Unterschrift</Label>
-                <Input
-                  id="mandateSignedAt"
-                  name="mandateSignedAt"
-                  type="date"
-                  defaultValue={member.mandateSignedAt ?? ""}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Notizen</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <textarea
-              id="notes"
-              name="notes"
-              rows={3}
-              className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400"
-              defaultValue={member.notes ?? ""}
-              placeholder="Interne Notizen zum Mitglied..."
-            />
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end gap-4">
-          <Link href={`/dashboard/members/${id}`}>
-            <Button variant="outline" type="button">Abbrechen</Button>
-          </Link>
-          <Button type="submit">Aenderungen speichern</Button>
-        </div>
-      </form>
+      <MemberForm member={member} mode="edit" contributionRates={contributionRates} />
     </div>
   );
 }

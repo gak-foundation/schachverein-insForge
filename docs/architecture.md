@@ -18,20 +18,20 @@ Die Schachvereins-Software ist als Multi-Tenant (Multi-Club) Anwendung konzipier
 | **State Management** | Zustand 5.0 (Client-seitig) |
 
 ### Schach-spezifische Bibliotheken
-- **chess.js**: Validierung von Zügen, FEN/PGN-Parsing.
+- **chess.js**: Validierung von Zügen, FEN-Parsing.
 - **react-chessboard**: Interaktives Frontend-Schachbrett.
 - **bbpPairings**: Schweizer System Pairing Engine (via Docker/CLI).
 
 ### Infrastruktur
 - **Redis**: Caching, Rate-Limiting und BullMQ-Backend.
 - **BullMQ**: Queue für E-Mail-Versand und Hintergrundprozesse.
-- **MinIO / S3**: Speicherung von Dokumenten und PGN-Dateien.
+- **MinIO / S3**: Speicherung von Dokumenten und Protokollen.
 
 ## Projektstruktur
 
 - src/app: Next.js App Router (Pages, Layouts)
 - src/components: Wiederverwendbare UI-Komponenten (shadcn/ui)
-- src/lib/actions.ts: Server Actions für Datenmutationen
+- src/lib/actions/: Server Actions für Datenmutationen (nach Thema aufgeteilt, Einstieg `index.ts`)
 - src/lib/db: Datenbank-Schema und Drizzle-Konfiguration
 - src/lib/auth: Authentifizierungs-Konfiguration und RBAC-Logik
 - src/lib/validations: Zod-Schemas für Formular-Validierung

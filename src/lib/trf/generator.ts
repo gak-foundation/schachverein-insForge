@@ -66,7 +66,7 @@ export async function generateTRFFromTournament(
 
   // Calculate max round
   const maxRound = tournamentGames.length > 0 
-    ? Math.max(...tournamentGames.map(g => g.round))
+    ? Math.max(...tournamentGames.map(g => g.round || 0))
     : tournament.numberOfRounds || 1;
 
   const currentRound = options.currentRound || maxRound;
@@ -107,7 +107,8 @@ export async function generateTRFFromTournament(
 
       if (game) {
         const isWhite = game.whiteId === p.memberId;
-        const opponentTrfId = playerMap.get(isWhite ? game.blackId : game.whiteId)?.trfId || "0000";
+        const opponentId = isWhite ? game.blackId : game.whiteId;
+        const opponentTrfId = (opponentId ? playerMap.get(opponentId)?.trfId : null) || "0000";
         
         let resultCode = " ";
         if (game.result) {

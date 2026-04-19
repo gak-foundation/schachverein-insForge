@@ -2,10 +2,10 @@
 
 import { db } from "@/lib/db";
 import { payments, clubMemberships, contributionRates, members, clubs } from "@/lib/db/schema";
-import { eq, desc, and, sql, gte, lte, isNull, or } from "drizzle-orm";
+import { eq, desc, and, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "./utils";
-import { generateSepaXML, SepaConfig, SepaPayment, generateMandateId, generateEndToEndId } from "@/lib/sepa/generator";
+import { generateSepaXML, SepaConfig, SepaPayment, generateEndToEndId } from "@/lib/sepa/generator";
 
 export async function getPayments() {
   const clubId = await requireClubId();
@@ -142,7 +142,7 @@ export async function updatePaymentStatus(paymentId: string, status: string) {
 
   await db
     .update(payments)
-    .set({ status: status as any })
+    .set({ status: status as typeof payments.$inferInsert.status })
     .where(eq(payments.id, paymentId));
 
   revalidatePath("/dashboard/finance");
@@ -261,8 +261,7 @@ export async function generateDuePayments(year: number) {
         .from(contributionRates)
         .where(and(
           eq(contributionRates.clubId, clubId),
-          sql`${contributionRates.id} IN (${rateIds.map(() => "?").join(",")})`,
-          ...rateIds.map(id => id!)
+          inArray(contributionRates.id, rateIds as string[]),
         ))
     : [];
 
@@ -296,6 +295,10 @@ export async function generateDuePayments(year: number) {
 export async function exportSepaXml(paymentIds: string[]) {
   const clubId = await requireClubId();
 
+  if (paymentIds.length === 0) {
+    throw new Error("Keine Zahlungen ausgewaehlt");
+  }
+
   const [club] = await db
     .select({
       creditorId: clubs.creditorId,
@@ -327,8 +330,7 @@ export async function exportSepaXml(paymentIds: string[]) {
     .innerJoin(members, eq(payments.memberId, members.id))
     .where(and(
       eq(payments.clubId, clubId),
-      sql`${payments.id} IN (${paymentIds.map(() => "?").join(",")})`,
-      ...paymentIds
+      inArray(payments.id, paymentIds),
     ));
 
   const validPayments = paymentsData.filter(p => 
@@ -366,16 +368,193 @@ export async function exportSepaXml(paymentIds: string[]) {
 
   await db
     .update(payments)
-    .set({ status: "collected" as any })
+    .set({ status: "collected" })
     .where(and(
       eq(payments.clubId, clubId),
-      sql`${payments.id} IN (${validPayments.map(() => "?").join(",")})`,
-      ...validPayments.map(p => p.id)
+      inArray(
+        payments.id,
+        validPayments.map((p) => p.id),
+      ),
     ));
 
   revalidatePath("/dashboard/finance");
 
   return { xml, filename: `sepa-export-${new Date().toISOString().slice(0, 10)}.xml` };
+}
+
+export async function generateAnnualPayments(year: number) {
+  const clubId = await requireClubId();
+
+  // 1. Get all active members with an assigned contribution rate
+  const activeMembers = await db
+    .select({
+      id: members.id,
+      firstName: members.firstName,
+      lastName: members.lastName,
+      contributionRateId: members.contributionRateId,
+      sepaMandateReference: members.sepaMandateReference,
+    })
+    .from(members)
+    .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
+    .where(and(
+      eq(clubMemberships.clubId, clubId),
+      eq(clubMemberships.status, "active"),
+      eq(members.status, "active"),
+      sql`${members.contributionRateId} IS NOT NULL`
+    ));
+
+  // 2. Check for existing payments for this year to avoid duplicates
+  const existingPayments = await db
+    .select({ memberId: payments.memberId })
+    .from(payments)
+    .where(and(
+      eq(payments.clubId, clubId),
+      eq(payments.year, year)
+    ));
+
+  const existingMemberIds = new Set(existingPayments.map(p => p.memberId));
+
+  // 3. Get rate details
+  const rates = await db
+    .select()
+    .from(contributionRates)
+    .where(eq(contributionRates.clubId, clubId));
+
+  const rateMap = new Map(rates.map(r => [r.id, r]));
+
+  // 4. Create missing payments
+  const newPayments = [];
+  for (const member of activeMembers) {
+    if (existingMemberIds.has(member.id)) continue;
+    
+    const rate = rateMap.get(member.contributionRateId!);
+    if (!rate) continue;
+
+    newPayments.push({
+      clubId,
+      memberId: member.id,
+      amount: rate.amount,
+      description: `Mitgliedsbeitrag ${year} (${rate.name})`,
+      year,
+      status: "pending" as const,
+      sepaMandateReference: member.sepaMandateReference || null,
+      dueDate: `${year}-03-01`, // Default due date
+    });
+  }
+
+  if (newPayments.length > 0) {
+    await db.insert(payments).values(newPayments);
+  }
+
+  revalidatePath("/dashboard/finance");
+  return { success: true, created: newPayments.length };
+}
+
+export async function getPaymentInvoiceData(paymentId: string) {
+  const clubId = await requireClubId();
+
+  const [payment] = await db
+    .select({
+      id: payments.id,
+      amount: payments.amount,
+      description: payments.description,
+      year: payments.year,
+      dueDate: payments.dueDate,
+      createdAt: payments.createdAt,
+      member: {
+        firstName: members.firstName,
+        lastName: members.lastName,
+        email: members.email,
+      },
+      club: {
+        name: clubs.name,
+        sepaIban: clubs.sepaIban,
+        sepaBic: clubs.sepaBic,
+        creditorId: clubs.creditorId,
+      }
+    })
+    .from(payments)
+    .innerJoin(members, eq(payments.memberId, members.id))
+    .innerJoin(clubs, eq(payments.clubId, clubs.id))
+    .where(and(
+      eq(payments.id, paymentId),
+      eq(payments.clubId, clubId)
+    ));
+
+  return payment || null;
+}
+
+/**
+ * Triggers a dunning run for the current club.
+ * Increments dunningLevel for all overdue payments and updates lastDunningAt.
+ */
+export async function triggerDunningRun() {
+  const clubId = await requireClubId();
+  const today = new Date().toISOString().split("T")[0];
+
+  const overduePayments = await db
+    .select()
+    .from(payments)
+    .where(and(
+      eq(payments.clubId, clubId),
+      eq(payments.status, "pending"),
+      sql`${payments.dueDate} < ${today}`
+    ));
+
+  if (overduePayments.length === 0) {
+    return { success: true, processed: 0 };
+  }
+
+  for (const p of overduePayments) {
+    await db
+      .update(payments)
+      .set({
+        dunningLevel: p.dunningLevel + 1,
+        lastDunningAt: new Date(),
+        status: "overdue",
+      })
+      .where(eq(payments.id, p.id));
+    
+    // Here we would normally trigger an email notification
+    // sendDunningEmail(p.memberId, p.dunningLevel + 1);
+  }
+
+  revalidatePath("/dashboard/finance");
+  return { success: true, processed: overduePayments.length };
+}
+
+export async function getDunningStats() {
+  const clubId = await requireClubId();
+
+  const result = await db
+    .select({
+      level: payments.dunningLevel,
+      count: sql<number>`COUNT(*)`,
+      amount: sql<string>`SUM(${payments.amount}::numeric)`,
+    })
+    .from(payments)
+    .where(and(
+      eq(payments.clubId, clubId),
+      eq(payments.status, "overdue")
+    ))
+    .groupBy(payments.dunningLevel);
+
+  return result;
+}
+
+export async function getClubBankSettings() {
+  const clubId = await requireClubId();
+
+  const [club] = await db
+    .select({
+      creditorId: clubs.creditorId,
+      sepaIban: clubs.sepaIban,
+      sepaBic: clubs.sepaBic,
+    })
+    .from(clubs)
+    .where(eq(clubs.id, clubId));
+
+  return club || null;
 }
 
 export async function updateClubBankSettings(formData: FormData) {
@@ -397,17 +576,3 @@ export async function updateClubBankSettings(formData: FormData) {
   revalidatePath("/dashboard/finance");
 }
 
-export async function getClubBankSettings() {
-  const clubId = await requireClubId();
-
-  const [club] = await db
-    .select({
-      creditorId: clubs.creditorId,
-      sepaIban: clubs.sepaIban,
-      sepaBic: clubs.sepaBic,
-    })
-    .from(clubs)
-    .where(eq(clubs.id, clubId));
-
-  return club;
-}

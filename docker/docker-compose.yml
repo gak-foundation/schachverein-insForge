@@ -1,15 +1,60 @@
 version: "3.9"
 
 services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: schachverein-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://schachverein:${POSTGRES_PASSWORD}@postgres:5432/schachverein
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT:-http://minio:9000}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-minioadmin}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD}}
+      - S3_BUCKET=${S3_BUCKET:-schachverein}
+      # Add your SMTP config here for production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: schachverein-worker
+    restart: always
+    command: ["node", "server.js"] # Adjust this if you have a separate worker entrypoint, or use a custom script to start BullMQ
+    environment:
+      - NODE_ENV=production
+      - IS_WORKER=true
+      - DATABASE_URL=postgres://schachverein:${POSTGRES_PASSWORD}@postgres:5432/schachverein
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     container_name: schachverein-db
+    restart: always
     environment:
       POSTGRES_USER: schachverein
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME_IN_PRODUCTION}
       POSTGRES_DB: schachverein
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,8 +66,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: schachverein-redis
-    ports:
-      - "6379:6379"
+    restart: always
     volumes:
       - redis_data:/data
     command: redis-server --requirepass ${REDIS_PASSWORD:-CHANGE_ME_IN_PRODUCTION}
@@ -32,10 +76,11 @@ services:
       timeout: 5s
       retries: 5
 
-  # MinIO (S3-compatible storage for PGN, documents, photos)
+  # MinIO (S3-compatible storage for documents, protocols, photos)
   minio:
     image: minio/minio:latest
     container_name: schachverein-storage
+    restart: always
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-CHANGE_ME_IN_PRODUCTION_MIN_8_CHARS}
@@ -60,7 +105,6 @@ services:
     command: ["bbpPairings", "--help"]
     profiles:
       - pairings
-    # Usage: docker compose --profile pairings run --rm bbpPairings bbpPairings --dutch /data/input.trf -o /data/output.trf
 
 volumes:
   postgres_data:

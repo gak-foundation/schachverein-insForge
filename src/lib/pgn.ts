@@ -1,45 +1,51 @@
 import { Chess } from "chess.js";
 
-export function parsePgn(pgn: string): {
-  valid: boolean;
-  fen: string | null;
-  moves: number;
-  result: string | null;
-  headers: Record<string, string>;
-  error?: string;
-} {
-  try {
-    const chess = new Chess();
-    chess.loadPgn(pgn);
-    const history = chess.history();
-    const headers: Record<string, string> = {};
+export function parsePgn(pgn: string) {
+  const gameTexts = splitPgnGames(pgn);
+  const games: {
+    white: string;
+    black: string;
+    result: string;
+    date: string | null;
+    event: string | null;
+    round: string | null;
+    pgn: string;
+    moves: number;
+  }[] = [];
 
-    const headerLines = pgn.split("\n").filter((l) => l.startsWith("["));
-    for (const line of headerLines) {
-      const match = line.match(/\[(\w+)\s+"(.*)"\]/);
-      if (match) {
-        headers[match[1]] = match[2];
+  for (const text of gameTexts) {
+    try {
+      const chess = new Chess();
+      chess.loadPgn(text);
+      const history = chess.history();
+      
+      const headers: Record<string, string> = {};
+      const headerLines = text.split("\n").filter((l) => l.startsWith("["));
+      for (const line of headerLines) {
+        const match = line.match(/\[(\w+)\s+"(.*)"\]/);
+        if (match) {
+          headers[match[1]] = match[2];
+        }
       }
-    }
 
-    return {
-      valid: true,
-      fen: chess.fen(),
-      moves: history.length,
-      result: headers.Result ?? null,
-      headers,
-    };
-  } catch (e) {
-    return {
-      valid: false,
-      fen: null,
-      moves: 0,
-      result: null,
-      headers: {},
-      error: e instanceof Error ? e.message : "Ungueltiges PGN",
-    };
+      games.push({
+        white: headers.White || "Unbekannt",
+        black: headers.Black || "Unbekannt",
+        result: headers.Result || "*",
+        date: headers.Date || null,
+        event: headers.Event || null,
+        round: headers.Round || null,
+        pgn: text,
+        moves: history.length,
+      });
+    } catch (e) {
+      console.error("Error parsing PGN game:", e);
+    }
   }
+
+  return games;
 }
+
 
 export function extractEcoFromPgn(pgn: string): string | null {
   const headerLines = pgn.split("\n").filter((l) => l.startsWith("["));

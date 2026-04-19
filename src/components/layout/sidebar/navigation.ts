@@ -9,8 +9,12 @@ import {
   CircleDollarSign, 
   FileText, 
   UserCog, 
+  Settings,
+  Globe,
+  ImageIcon,
   type LucideIcon
 } from "lucide-react";
+
 import { PERMISSIONS, type Permission } from "@/lib/auth/permissions";
 
 export type NavItem = {
@@ -44,16 +48,26 @@ export const navigation: NavGroup[] = [
     ],
   },
   {
+    label: "Website",
+    items: [
+      { name: "Seiten", href: "/dashboard/pages", icon: Globe, permission: PERMISSIONS.PAGES_READ },
+      { name: "Medien", href: "/dashboard/media", icon: ImageIcon, permission: PERMISSIONS.PAGES_READ },
+    ],
+  },
+  {
     label: "Verwaltung",
+
     items: [
       { name: "Finanzen", href: "/dashboard/finance", icon: CircleDollarSign, permission: PERMISSIONS.FINANCE_READ },
       { name: "Protokolle", href: "/dashboard/protocols", icon: FileText, permission: PERMISSIONS.ADMIN_AUDIT },
     ],
   },
   {
-    label: "Administration",
+    label: "Einstellungen",
     items: [
+      { name: "Mein Profil", href: "/dashboard/profile", icon: Settings, permission: PERMISSIONS.MEMBERS_READ },
       { name: "Benutzer", href: "/dashboard/admin/users", icon: UserCog, permission: PERMISSIONS.ADMIN_USERS },
     ],
   },
 ];
+

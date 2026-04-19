@@ -26,6 +26,7 @@ export const events = pgTable(
     endDate: timestamp("end_date"),
     location: varchar("location", { length: 300 }),
     isAllDay: boolean("is_all_day").default(false),
+    recurrenceRule: text("recurrence_rule"), // e.g., RRULE:FREQ=WEEKLY;BYDAY=TU
     createdBy: uuid("created_by").references(() => members.id),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },

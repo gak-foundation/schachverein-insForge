@@ -5,12 +5,15 @@ import {
   timestamp,
   text,
   integer,
+  jsonb,
+  boolean,
   index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { documentCategoryEnum } from "./enums";
 import { clubs } from "./clubs";
 import { members } from "./members";
+import { events } from "./events";
 
 export const documents = pgTable(
   "documents",
@@ -51,6 +54,40 @@ export const newsletters = pgTable(
   }),
 );
 
+export const meetingProtocols = pgTable(
+  "meeting_protocols",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    clubId: uuid("club_id")
+      .notNull()
+      .references(() => clubs.id, { onDelete: "cascade" }),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 300 }).notNull(),
+    location: varchar("location", { length: 300 }),
+    startTime: timestamp("start_time"),
+    endTime: timestamp("end_time"),
+    attendeesCount: integer("attendees_count").default(0),
+    isQuorate: boolean("is_quorate").default(true), // Beschlussfähig
+    agenda: jsonb("agenda").$type<{ 
+      title: string; 
+      description?: string; 
+      results?: string;
+      resolutions?: { title: string; for: number; against: number; abstained: number; result: string }[];
+    }[]>(),
+    notes: text("notes"),
+    signedAt: timestamp("signed_at"),
+    signedBy: uuid("signed_by").references(() => members.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    clubIdx: index("meeting_protocols_club_idx").on(table.clubId),
+    eventIdx: index("meeting_protocols_event_idx").on(table.eventId),
+  }),
+);
+
 export const documentsRelations = relations(documents, ({ one }) => ({
   club: one(clubs, {
     fields: [documents.clubId],
@@ -69,6 +106,21 @@ export const newslettersRelations = relations(newsletters, ({ one }) => ({
   }),
   sender: one(members, {
     fields: [newsletters.sentBy],
+    references: [members.id],
+  }),
+}));
+
+export const meetingProtocolsRelations = relations(meetingProtocols, ({ one }) => ({
+  club: one(clubs, {
+    fields: [meetingProtocols.clubId],
+    references: [clubs.id],
+  }),
+  event: one(events, {
+    fields: [meetingProtocols.eventId],
+    references: [events.id],
+  }),
+  signer: one(members, {
+    fields: [meetingProtocols.signedBy],
     references: [members.id],
   }),
 }));

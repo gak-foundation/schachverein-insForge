@@ -4,33 +4,23 @@
 ## Lokales Setup
 
 1. **Repository klonen**
-2. **Abhängigkeiten installieren**: \
-pm install\
-3. **Umgebung konfigurieren**: \cp .env.example .env\ (Werte anpassen)
-4. **Infrastruktur starten**: \
-pm run docker:up\ (startet Postgres, Redis, MinIO)
-5. **Datenbank vorbereiten**: \
-pm run db:push\ gefolgt von \
-pm run db:seed\
-6. **Entwicklungsserver starten**: \
-pm run dev\
+2. **Abhängigkeiten installieren**: `npm install`
+3. **Umgebung konfigurieren**: `cp .env.example .env` (Werte anpassen)
+4. **Infrastruktur starten**: `npm run docker:up` (startet Postgres, Redis, MinIO)
+5. **Datenbank vorbereiten**: `npm run db:push` gefolgt von `npm run db:seed`
+6. **Entwicklungsserver starten**: `npm run dev`
 
 ## Code-Style & Standards
 
 - **TypeScript**: Strict Mode ist aktiviert.
-- **Komponenten**: Nutze \shadcn/ui\ Komponenten aus \src/components/ui\.
+- **Komponenten**: Nutze shadcn/ui-Komponenten aus `src/components/ui`.
 - **Styling**: Tailwind CSS 4 Utility Classes.
-- **Server Actions**: Alle Mutationen in \src/lib/actions.ts\.
-- **Validierung**: Zod Schemas in \src/lib/validations/index.ts\.
+- **Server Actions**: Mutationen in `src/lib/actions/` (thematische Dateien, siehe `index.ts`).
+- **Validierung**: Zod-Schemas unter `src/lib/validations/` (Re-Exports in `index.ts` wo sinnvoll).
 
 ## Testing
 
-- **Unit Tests**: \
-pm run test\ (Vitest)
-- **E2E Tests**: \
-pm run test:e2e\ (Playwright)
+- **Unit Tests**: `npm run test` (Vitest, Watch-Modus) bzw. `npm run test:ci` (einmaliger Lauf, z. B. für CI)
+- **E2E Tests**: `npm run test:e2e` (Playwright; startet bei Bedarf den Dev-Server, siehe `playwright.config.ts`)
 
-Vor jedem Pull Request bitte \
-pm run lint\ und \
-pm run build\ lokal ausführen.
-
+Vor jedem Pull Request bitte `npm run build` und `npm run test:ci` lokal ausführen (mit gesetzten Umgebungsvariablen wie in `.env.example`). ESLint (`npm run lint`) lokal ausführen ist sinnvoll; im GitHub-Workflow **CI** ist Lint aktuell noch nicht enthalten, weil im Projekt noch viele bestehende ESLint-Fehler behoben werden müssen.

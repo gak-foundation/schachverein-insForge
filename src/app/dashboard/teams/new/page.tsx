@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getSeasons } from "@/lib/actions/events";
-import { getMembers } from "@/lib/actions/members";
+import { getMembersForForms } from "@/lib/actions/members";
 import { createTeam } from "@/lib/actions/teams";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ export default async function NewTeamPage() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  const [allSeasons, allMembers] = await Promise.all([getSeasons(), getMembers()]);
+  const [allSeasons, allMembers] = await Promise.all([getSeasons(), getMembersForForms()]);
 
   return (
     <div className="mx-auto max-w-lg space-y-6">

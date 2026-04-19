@@ -2,7 +2,11 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getMembers } from "@/lib/actions/members";
+import {
+  getMembers,
+  type MemberSortField,
+  type SortOrder as MembersListSortOrder,
+} from "@/lib/actions/members";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +26,8 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowUpDown, Users, ChevronLeft, ChevronRight, Upload, Search, X } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
+import { DwzSyncButton } from "@/components/clubs/dwz-sync-button";
+import { cn, calculateAge } from "@/lib/utils";
 
 export const metadata = {
   title: "Mitglieder",
@@ -57,60 +63,20 @@ export default async function MembersPage({
   }
 
   const filters = await searchParams;
-  const allMembers = await getMembers(filters.search, filters.role, filters.status);
-  
-  const ITEMS_PER_PAGE = 25;
   const currentPage = Number(filters.page) || 1;
+  const sortBy = (filters.sortBy || "name") as SortField;
+  const sortOrder = (filters.sortOrder || "asc") as SortOrder;
   
-  let sortedMembers = [...allMembers];
-  
-  if (filters.sortBy) {
-    const order = filters.sortOrder === "desc" ? -1 : 1;
-    sortedMembers.sort((a, b) => {
-      let aVal: string | number | null;
-      let bVal: string | number | null;
-      
-      switch (filters.sortBy) {
-        case "name":
-          aVal = `${a.lastName} ${a.firstName}`;
-          bVal = `${b.lastName} ${b.firstName}`;
-          break;
-        case "email":
-          aVal = a.email;
-          bVal = b.email;
-          break;
-        case "dwz":
-          aVal = a.dwz ?? 0;
-          bVal = b.dwz ?? 0;
-          break;
-        case "elo":
-          aVal = a.elo ?? 0;
-          bVal = b.elo ?? 0;
-          break;
-        case "role":
-          aVal = a.role;
-          bVal = b.role;
-          break;
-        case "status":
-          aVal = a.status;
-          bVal = b.status;
-          break;
-        default:
-          return 0;
-      }
-      
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return aVal.localeCompare(bVal) * order;
-      }
-      return ((aVal as number) - (bVal as number)) * order;
-    });
-  }
-  
-  const totalPages = Math.ceil(sortedMembers.length / ITEMS_PER_PAGE);
-  const paginatedMembers = sortedMembers.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+  const { members: allMembers, totalCount, totalPages } = await getMembers(
+    filters.search,
+    filters.role,
+    filters.status,
+    sortBy as MemberSortField,
+    sortOrder as MembersListSortOrder,
+    currentPage
   );
+  
+  const paginatedMembers = allMembers;
   
   function buildMembersLink(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams();
@@ -142,17 +108,17 @@ export default async function MembersPage({
   }
   
   function getSortIcon(field: SortField) {
-    if (filters.sortBy !== field) return <ArrowUpDown className="h-3 w-3 text-gray-400" />;
+    if (filters.sortBy !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground/50" />;
     return filters.sortOrder === "desc" 
-      ? <span className="text-blue-600">↓</span> 
-      : <span className="text-blue-600">↑</span>;
+      ? <span className="text-primary font-bold">↓</span> 
+      : <span className="text-primary font-bold">↑</span>;
   }
 
   const statusColors: Record<string, string> = {
-    active: "bg-green-100 text-green-800",
-    inactive: "bg-gray-100 text-gray-800",
-    resigned: "bg-red-100 text-red-800",
-    honorary: "bg-yellow-100 text-yellow-800",
+    active: "bg-green-100 text-green-900 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/50",
+    inactive: "bg-slate-100 text-slate-900 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
+    resigned: "bg-red-100 text-red-900 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50",
+    honorary: "bg-amber-100 text-amber-900 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50",
   };
 
   const statusLabels: Record<string, string> = {
@@ -174,10 +140,13 @@ export default async function MembersPage({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Mitglieder</h1>
           <p className="text-sm text-gray-500">
-            {allMembers.length} Mitglieder insgesamt
+            {totalCount} Mitglieder insgesamt
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.DWZ_SYNC) && (
+            <DwzSyncButton />
+          )}
           {hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.MEMBERS_WRITE) && (
             <>
               <Link href="/dashboard/members/import">
@@ -213,6 +182,7 @@ export default async function MembersPage({
                   placeholder="Suche nach Name oder E-Mail"
                   defaultValue={filters.search ?? ""}
                   className="h-10 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm"
+                  suppressHydrationWarning
                 />
               </div>
             </div>
@@ -277,7 +247,7 @@ export default async function MembersPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Mitgliederliste</CardTitle>
+          <CardTitle id="members-list-title">Mitgliederliste</CardTitle>
         </CardHeader>
         <CardContent>
           {allMembers.length === 0 ? (
@@ -297,37 +267,42 @@ export default async function MembersPage({
             />
           ) : (
             <>
-              <div className="overflow-x-auto rounded-md border">
-                <Table>
+              <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-slate-800">
+                <Table aria-labelledby="members-list-title">
                   <TableHeader>
-                    <TableRow className="bg-gray-50">
-                    <TableHead>
-                      <Link href={buildSortLink("name")} className="flex items-center gap-1 hover:text-blue-600">
+                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+                    <TableHead aria-sort={sortBy === "name" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                      <Link href={buildSortLink("name")} className="flex items-center gap-1 hover:text-primary transition-colors py-2">
                         Name {getSortIcon("name")}
                       </Link>
                     </TableHead>
                     <TableHead>
-                      <Link href={buildSortLink("email")} className="flex items-center gap-1 hover:text-blue-600">
+                      <span className="flex items-center gap-1 py-2 text-slate-500 font-medium">
+                        Alter
+                      </span>
+                    </TableHead>
+                    <TableHead aria-sort={sortBy === "email" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                      <Link href={buildSortLink("email")} className="flex items-center gap-1 hover:text-primary transition-colors py-2">
                         E-Mail {getSortIcon("email")}
                       </Link>
                     </TableHead>
-                    <TableHead className="text-right">
-                      <Link href={buildSortLink("dwz")} className="flex items-center justify-end gap-1 hover:text-blue-600">
+                    <TableHead className="text-right" aria-sort={sortBy === "dwz" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                      <Link href={buildSortLink("dwz")} className="flex items-center justify-end gap-1 hover:text-primary transition-colors py-2">
                         DWZ {getSortIcon("dwz")}
                       </Link>
                     </TableHead>
-                    <TableHead className="text-right">
-                      <Link href={buildSortLink("elo")} className="flex items-center justify-end gap-1 hover:text-blue-600">
+                    <TableHead className="text-right" aria-sort={sortBy === "elo" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                      <Link href={buildSortLink("elo")} className="flex items-center justify-end gap-1 hover:text-primary transition-colors py-2">
                         Elo {getSortIcon("elo")}
                       </Link>
                     </TableHead>
-                    <TableHead>
-                      <Link href={buildSortLink("role")} className="flex items-center gap-1 hover:text-blue-600">
+                    <TableHead aria-sort={sortBy === "role" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                      <Link href={buildSortLink("role")} className="flex items-center gap-1 hover:text-primary transition-colors py-2">
                         Rolle {getSortIcon("role")}
                       </Link>
                     </TableHead>
-                    <TableHead>
-                      <Link href={buildSortLink("status")} className="flex items-center gap-1 hover:text-blue-600">
+                    <TableHead aria-sort={sortBy === "status" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                      <Link href={buildSortLink("status")} className="flex items-center gap-1 hover:text-primary transition-colors py-2">
                         Status {getSortIcon("status")}
                       </Link>
                     </TableHead>
@@ -335,29 +310,39 @@ export default async function MembersPage({
                 </TableHeader>
                 <TableBody>
                   {paginatedMembers.map((member) => (
-                    <TableRow key={member.id} className="cursor-pointer hover:bg-gray-50">
-                      <TableCell className="font-medium">
-                        <Link href={`/dashboard/members/${member.id}`}>
+                    <TableRow 
+                      key={member.id} 
+                      className="group relative hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
+                    >
+                      <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
+                        <Link 
+                          href={`/dashboard/members/${member.id}`}
+                          className="after:absolute after:inset-0 after:z-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset rounded-sm"
+                        >
                           {member.firstName} {member.lastName}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-gray-500">{member.email}</TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-slate-600 dark:text-slate-400 tabular-nums">
+                        {calculateAge(member.dateOfBirth) ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-slate-500 dark:text-slate-400">{member.email}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium text-slate-700 dark:text-slate-300">
                         {member.dwz ?? "—"}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-right tabular-nums text-slate-500 dark:text-slate-400">
                         {member.elo ?? "—"}
                       </TableCell>
                       <TableCell>
-                        <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium">
+                        <span className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm">
                           {member.role}
                         </span>
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            statusColors[member.status] ?? "bg-gray-100 text-gray-800"
-                          }`}
+                          className={cn(
+                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border shadow-sm",
+                            statusColors[member.status] ?? "bg-slate-100 text-slate-800 border-slate-200"
+                          )}
                         >
                           {statusLabels[member.status] ?? member.status}
                         </span>
@@ -369,24 +354,24 @@ export default async function MembersPage({
               </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <p className="text-sm text-gray-500">
-                    Seite {currentPage} von {totalPages} ({allMembers.length} Einträge)
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <p className="text-sm text-slate-500 font-medium">
+                    Seite <span className="text-slate-900 dark:text-slate-100">{currentPage}</span> von <span className="text-slate-900 dark:text-slate-100">{totalPages}</span> ({totalCount} Einträge)
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     {currentPage > 1 && (
                       <Link href={buildMembersLink({ page: String(currentPage - 1) })}>
-                        <Button variant="outline" size="sm">
-                          <ChevronLeft className="h-4 w-4 mr-1" />
-                          Zurück
+                        <Button variant="outline" size="default" className="h-10 px-4">
+                          <ChevronLeft className="h-4 w-4 mr-2" />
+                          Vorherige
                         </Button>
                       </Link>
                     )}
                     {currentPage < totalPages && (
                       <Link href={buildMembersLink({ page: String(currentPage + 1) })}>
-                        <Button variant="outline" size="sm">
-                          Weiter
-                          <ChevronRight className="h-4 w-4 ml-1" />
+                        <Button variant="outline" size="default" className="h-10 px-4">
+                          Nächste
+                          <ChevronRight className="h-4 w-4 ml-2" />
                         </Button>
                       </Link>
                     )}

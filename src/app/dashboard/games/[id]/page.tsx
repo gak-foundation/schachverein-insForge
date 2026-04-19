@@ -34,8 +34,8 @@ export default async function GameDetailPage({
   }
 
   const [whitePlayer, blackPlayer] = await Promise.all([
-    db.select({ firstName: members.firstName, lastName: members.lastName }).from(members).where(eq(members.id, game.whiteId)).then((r) => r[0]),
-    db.select({ firstName: members.firstName, lastName: members.lastName }).from(members).where(eq(members.id, game.blackId)).then((r) => r[0]),
+    game.whiteId ? db.select({ firstName: members.firstName, lastName: members.lastName }).from(members).where(eq(members.id, game.whiteId)).then((r) => r[0]) : Promise.resolve(null),
+    game.blackId ? db.select({ firstName: members.firstName, lastName: members.lastName }).from(members).where(eq(members.id, game.blackId)).then((r) => r[0]) : Promise.resolve(null),
   ]);
 
   return (
@@ -84,15 +84,19 @@ export default async function GameDetailPage({
         </CardContent>
       </Card>
 
-      {game.pgn && (
+      {game.lichessUrl && (
         <Card>
           <CardHeader>
-            <CardTitle>PGN</CardTitle>
+            <CardTitle>Analyse auf Lichess</CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="whitespace-pre-wrap text-xs bg-gray-50 p-4 rounded-md font-mono">
-              {game.pgn}
-            </pre>
+            <Link 
+              href={game.lichessUrl} 
+              target="_blank" 
+              className="text-blue-600 hover:underline flex items-center gap-2"
+            >
+              Diese Partie auf Lichess.org ansehen &rarr;
+            </Link>
           </CardContent>
         </Card>
       )}

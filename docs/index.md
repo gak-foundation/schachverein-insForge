@@ -2,20 +2,34 @@
 
 Willkommen in der Dokumentation der Schachvereins-Software. Dieses Projekt ist eine Multi-Tenant SaaS-Plattform für die Verwaltung von Schachvereinen.
 
-## Inhaltsverzeichnis
+## 🏗️ Architektur & Technik
 
-1. [Architektur & Tech Stack](./architecture.md)
-2. [Authentifizierung & RBAC](./auth-rbac.md)
-3. [Datenbank-Schema](./database.md)
-4. [Deployment-Guide](./deployment.md)
-5. [Contributing & Entwicklung](./contributing.md)
+- [System-Architektur Overview](./architecture.md)
+- [All-Hetzner Deployment (Docker)](./architecture/hetzner-deploy.md)
+- [Detaillierter Tech-Stack](./architecture/techstack.md)
+- [Authentifizierung & RBAC](./architecture/auth-rbac.md)
+- [Datenbank-Schema](./architecture/database.md)
+- [Technische Blindspots](./architecture/blindspots.md)
 
----
+## 📋 Funktionen & Spezifikationen
 
-## Kurzübersicht
+- [Plattform-Übersicht](./features/platform-overview.md)
+- [Website-Block-Editor](./features/block-editor.md)
+- [User-Stories & Akzeptanzkriterien](./features/user-stories.md)
+- [Häufige Fragen (FAQ)](./faq.md)
 
-- **Framework**: Next.js 16 (App Router)
-- **Sprache**: TypeScript (strict mode)
-- **Datenbank**: PostgreSQL mit Drizzle ORM
-- **Authentifizierung**: Better Auth
-- **UI**: shadcn/ui + Tailwind CSS 4
+## 🚀 Roadmap & Strategie
+
+- [MVP-Phasen](./roadmap/mvp-phases.md)
+- [Strategische Erweiterung (Website-Pivot)](./roadmap/strategic-extension.md)
+
+## 🚢 Deployment & Betrieb
+
+- [Deployment Übersicht](./deployment/overview.md)
+- [Hetzner Setup Guide](../HETZNER_DEPLOYMENT.md)
+- [Sicherheitskonzepte](../SECURITY.md)
+
+## 🛠️ Entwicklung
+
+- [Contributing & Entwicklung](./contributing.md)
+- [KI-Agenten Konfiguration](./agents.md)

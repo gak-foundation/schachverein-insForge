@@ -151,7 +151,7 @@ export default function SaaSPage() {
             </div>
             <div className="bg-primary/5 rounded-2xl p-8 border border-primary/10">
               <blockquote className="text-2xl font-medium italic text-slate-800">
-                "Endlich haben wir ein System, das wirklich versteht, wie ein Schachverein funktioniert. Der Turnier-Manager ist ein Gamechanger."
+                „Endlich haben wir ein System, das wirklich versteht, wie ein Schachverein funktioniert. Der Turnier-Manager ist ein Gamechanger.“
               </blockquote>
               <div className="mt-6 flex items-center gap-4">
                 <div className="h-12 w-12 rounded-full bg-slate-200" />

@@ -12,10 +12,15 @@ const navItems = [
   { label: "Termine", href: "/termine" },
   { label: "Turniere", href: "/turniere" },
   { label: "Kontakt", href: "/kontakt" },
-  { label: "Impressum", href: "/impressum" },
 ];
 
-export function PublicNavbar() {
+interface NavbarProps {
+  clubName: string;
+  clubSlug: string;
+  logoUrl?: string | null;
+}
+
+export function Navbar({ clubName, clubSlug, logoUrl }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -24,12 +29,16 @@ export function PublicNavbar() {
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-transform group-hover:scale-105">
-              <span className="text-2xl font-serif">♔</span>
-            </div>
+            {logoUrl ? (
+              <img src={logoUrl} alt={clubName} className="h-10 w-10 object-contain rounded-lg" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-transform group-hover:scale-105">
+                <span className="text-2xl font-serif">♔</span>
+              </div>
+            )}
             <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight">Schachverein</span>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Gegründet 1920</span>
+              <span className="text-xl font-bold tracking-tight">{clubName}</span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Schach im Verein</span>
             </div>
           </Link>
 

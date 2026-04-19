@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,33 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthLayout>
+          <AuthCard>
+            <div className="space-y-6 animate-pulse">
+              <div className="h-8 w-48 rounded bg-slate-200 dark:bg-slate-700" />
+              <div className="h-4 w-full rounded bg-slate-200 dark:bg-slate-700" />
+              <div className="h-11 w-full rounded bg-slate-200 dark:bg-slate-700" />
+              <div className="h-11 w-full rounded bg-slate-200 dark:bg-slate-700" />
+            </div>
+          </AuthCard>
+        </AuthLayout>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
+  const searchParams = useSearchParams();
+  const invitationToken = searchParams.get("invitation");
+  const callbackURL = invitationToken 
+    ? `/auth/invitation?token=${invitationToken}`
+    : "/dashboard";
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -40,7 +68,7 @@ export default function LoginPage() {
       const result = await authClient.signIn.email({
         email,
         password,
-        callbackURL: "/dashboard",
+        callbackURL,
       });
 
       if (result.error) {
@@ -72,7 +100,7 @@ export default function LoginPage() {
   async function handleGithubSignIn() {
     await authClient.signIn.social({
       provider: "github",
-      callbackURL: "/dashboard",
+      callbackURL,
     });
   }
 

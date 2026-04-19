@@ -18,33 +18,56 @@ const ROLES = [
   { value: "eltern", label: "Eltern" },
 ] as const;
 
-const ALL_PERMISSIONS = [
-  { key: "MEMBERS_READ", label: "Mitglieder anzeigen" },
-  { key: "MEMBERS_READ_YOUTH", label: "Jugendmitglieder anzeigen" },
-  { key: "MEMBERS_WRITE", label: "Mitglieder bearbeiten" },
-  { key: "MEMBERS_DELETE", label: "Mitglieder löschen" },
-  { key: "FINANCE_READ", label: "Finanzen anzeigen" },
-  { key: "FINANCE_WRITE", label: "Finanzen bearbeiten" },
-  { key: "FINANCE_SEPA", label: "SEPA-Mandate verwalten" },
-  { key: "TEAMS_READ", label: "Mannschaften anzeigen" },
-  { key: "TEAMS_WRITE", label: "Mannschaften bearbeiten" },
-  { key: "TEAMS_LINEUP", label: "Aufstellung verwalten" },
-  { key: "TOURNAMENTS_READ", label: "Turniere anzeigen" },
-  { key: "TOURNAMENTS_WRITE", label: "Turniere bearbeiten" },
-  { key: "TOURNAMENTS_RESULTS", label: "Turnierergebnisse eingeben" },
-  { key: "GAMES_READ", label: "Partien anzeigen" },
-  { key: "GAMES_WRITE", label: "Partien bearbeiten" },
-  { key: "GAMES_IMPORT", label: "PGN-Import" },
-  { key: "EVENTS_READ", label: "Termine anzeigen" },
-  { key: "EVENTS_WRITE", label: "Termine bearbeiten" },
-  { key: "DWZ_READ", label: "DWZ anzeigen" },
-  { key: "DWZ_SYNC", label: "DWZ synchronisieren" },
-  { key: "ADMIN_USERS", label: "Benutzerverwaltung" },
-  { key: "ADMIN_ROLES", label: "Rollenverwaltung" },
-  { key: "ADMIN_AUDIT", label: "Audit-Log anzeigen" },
-  { key: "ADMIN_SETTINGS", label: "Einstellungen" },
-  { key: "PARENT_DASHBOARD", label: "Eltern-Dashboard" },
-] as const;
+const PERMISSION_GROUPS = [
+  {
+    title: "Mitglieder & Personen",
+    permissions: [
+      { key: "MEMBERS_READ", label: "Einsehen", description: "Mitgliederliste und Grunddaten lesen" },
+      { key: "MEMBERS_READ_YOUTH", label: "Jugend-Fokus", description: "Nur Zugriff auf Jugendmitglieder" },
+      { key: "MEMBERS_WRITE", label: "Bearbeiten", description: "Mitgliederdaten ändern" },
+      { key: "MEMBERS_DELETE", label: "Löschen", description: "Mitglieder (deaktivieren) löschen" },
+    ]
+  },
+  {
+    title: "Sportbetrieb & Teams",
+    permissions: [
+      { key: "TEAMS_READ", label: "Teams sehen", description: "Mannschaften und Aufstellungen einsehen" },
+      { key: "TEAMS_WRITE", label: "Teams verwalten", description: "Mannschaften erstellen/bearbeiten" },
+      { key: "TEAMS_LINEUP", label: "Aufstellungen", description: "Meldelisten und Brettfolgen festlegen" },
+      { key: "TOURNAMENTS_READ", label: "Turniere sehen", description: "Vereinsturniere einsehen" },
+      { key: "TOURNAMENTS_WRITE", label: "Turniere verwalten", description: "Turniere erstellen und runden auslosen" },
+      { key: "TOURNAMENTS_RESULTS", label: "Ergebnisse", description: "Ergebnisse in Turnieren eintragen" },
+    ]
+  },
+  {
+    title: "Finanzen & SEPA",
+    permissions: [
+      { key: "FINANCE_READ", label: "Finanzen sehen", description: "Zahlungsstatus und Beiträge einsehen" },
+      { key: "FINANCE_WRITE", label: "Finanzen verwalten", description: "Beiträge und Rechnungen bearbeiten" },
+      { key: "FINANCE_SEPA", label: "SEPA/Bank", description: "Bankdaten und SEPA-Mandate verwalten" },
+    ]
+  },
+  {
+    title: "Partien & DWZ",
+    permissions: [
+      { key: "GAMES_READ", label: "Partien sehen", description: "Partie-Archiv durchsuchen" },
+      { key: "GAMES_WRITE", label: "Partien verwalten", description: "Partien bearbeiten oder löschen" },
+      { key: "GAMES_IMPORT", label: "PGN-Import", description: "Massen-Upload von Partien" },
+      { key: "DWZ_READ", label: "DWZ sehen", description: "DWZ/ELO Historie einsehen" },
+      { key: "DWZ_SYNC", label: "DWZ Sync", description: "Manuellen DeWIS-Abgleich starten" },
+    ]
+  },
+  {
+    title: "System & Kommunikation",
+    permissions: [
+      { key: "EVENTS_READ", label: "Kalender sehen", description: "Vereinstermine einsehen" },
+      { key: "EVENTS_WRITE", label: "Kalender verwalten", description: "Termine erstellen und bearbeiten" },
+      { key: "ADMIN_USERS", label: "Benutzer-Admin", description: "Rollen und Berechtigungen anderer verwalten" },
+      { key: "ADMIN_AUDIT", label: "Audit-Log", description: "Systemweite Protokolle einsehen" },
+      { key: "PARENT_DASHBOARD", label: "Eltern-Portal", description: "Zugriff auf Daten der eigenen Kinder" },
+    ]
+  }
+];
 
 async function getUserById(id: string) {
   const [user] = await db
@@ -84,150 +107,163 @@ export default async function EditUserPage({
   const user = await getUserById(id);
 
   if (!user) {
-    redirect("/dashboard/admin/authUsers");
+    redirect("/dashboard/admin/users");
   }
 
   const rolePermissions = new Set(getPermissionsForRole(user.role));
   const additionalPermissions = user.permissions || [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Link href="/dashboard/admin/authUsers" className="hover:text-gray-900">
-            Benutzer
-          </Link>
-          <span>/</span>
-          <span>Bearbeiten</span>
-        </div>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">
-          {user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email}
-        </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Rolle und Berechtigungen bearbeiten
-        </p>
-      </div>
-
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <form action={updateUserRole} className="space-y-6">
-          <input type="hidden" name="userId" value={user.id} />
-
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Benutzerinformationen</h2>
-            <div className="mt-4 grid gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">E-Mail</label>
-                <p className="mt-1 text-sm text-gray-600">{user.email}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Aktuelle Rolle</label>
-                <p className="mt-1 text-sm text-gray-600">
-                  {ROLES.find((r) => r.value === user.role)?.label || user.role}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t pt-6">
-            <h2 className="text-lg font-semibold text-gray-900">Rolle ändern</h2>
-            <div className="mt-4">
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                Neue Rolle
-              </label>
-              <select
-                id="role"
-                name="role"
-                defaultValue={user.role}
-                className="mt-1 block w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                {ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Jede Rolle hat vordefinierte Berechtigungen. Zusätzliche Berechtigungen können unten vergeben werden.
-              </p>
-            </div>
-          </div>
-
-          <div className="border-t pt-6">
-            <h2 className="text-lg font-semibold text-gray-900">Zusätzliche Berechtigungen</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Wähle Berechtigungen, die über die Rollen-Berechtigungen hinausgehen sollen.
-            </p>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {ALL_PERMISSIONS.map((perm) => {
-                const permValue = PERMISSIONS[perm.key as keyof typeof PERMISSIONS];
-                const hasByRole = rolePermissions.has(permValue);
-                const hasAdditional = additionalPermissions.includes(permValue);
-
-                return (
-                  <label
-                    key={perm.key}
-                    className={`flex items-start gap-3 rounded-md border p-3 ${
-                      hasByRole
-                        ? "border-green-200 bg-green-50"
-                        : "border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      name="permissions"
-                      value={permValue}
-                      defaultChecked={hasByRole || hasAdditional}
-                      disabled={hasByRole}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                    />
-                    <div className="flex-1">
-                      <span className={`text-sm font-medium ${hasByRole ? "text-green-900" : "text-gray-900"}`}>
-                        {perm.label}
-                      </span>
-                      {hasByRole && (
-                        <span className="ml-2 inline-flex rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
-                          Rolle
-                        </span>
-                      )}
-                      <p className="text-xs text-gray-500">{permValue}</p>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 border-t pt-6">
-            <button
-              type="submit"
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              Speichern
-            </button>
-            <Link
-              href="/dashboard/admin/authUsers"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
-            >
-              Abbrechen
+    <div className="mx-auto max-w-5xl space-y-8 pb-12">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Link href="/dashboard/admin/users" className="hover:text-gray-900">
+              Benutzerverwaltung
             </Link>
+            <span className="text-gray-300">/</span>
+            <span className="text-gray-900 font-medium">Rechte bearbeiten</span>
           </div>
-        </form>
-      </div>
-
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <h3 className="text-sm font-semibold text-blue-900">Berechtigungen der aktuellen Rolle</h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {Array.from(rolePermissions).map((perm) => (
-            <span
-              key={perm}
-              className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800"
-            >
-              {perm}
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
+            {user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email}
+          </h1>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-sm text-gray-500">{user.email}</span>
+            <span className="h-1 w-1 rounded-full bg-gray-300" />
+            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+              {ROLES.find((r) => r.value === user.role)?.label || user.role}
             </span>
-          ))}
+          </div>
         </div>
       </div>
+
+      <form action={updateUserRole} className="space-y-8">
+        <input type="hidden" name="userId" value={user.id} />
+
+        {/* Role Selection Card */}
+        <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="border-b border-gray-200 bg-gray-50/50 px-6 py-4">
+            <h2 className="text-base font-semibold text-gray-900">Hauptrolle</h2>
+            <p className="text-sm text-gray-500">Die Rolle bestimmt die Basis-Berechtigungen des Benutzers.</p>
+          </div>
+          <div className="p-6">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {ROLES.map((r) => (
+                <label
+                  key={r.value}
+                  className={`relative flex cursor-pointer flex-col rounded-lg border p-4 focus:outline-none ${
+                    user.role === r.value
+                      ? "border-blue-600 ring-2 ring-blue-600 ring-opacity-10"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={r.value}
+                    defaultChecked={user.role === r.value}
+                    className="sr-only"
+                  />
+                  <span className="block text-sm font-semibold text-gray-900">{r.label}</span>
+                  <span className="mt-1 flex items-center text-xs text-gray-500">
+                    {r.value === 'admin' ? 'Vollzugriff' : 'Eingeschränkt'}
+                  </span>
+                  {user.role === r.value && (
+                    <div className="absolute right-3 top-3">
+                      <div className="h-2 w-2 rounded-full bg-blue-600" />
+                    </div>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Detailed Permissions */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">Feingranulare Berechtigungen</h2>
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="h-3 w-3 rounded bg-green-100 ring-1 ring-green-600/20" />
+                <span className="text-gray-600">Von Rolle geerbt</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="h-3 w-3 rounded border border-gray-300 bg-white" />
+                <span className="text-gray-600">Individuell anpassbar</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6">
+            {PERMISSION_GROUPS.map((group) => (
+              <div key={group.title} className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-600">{group.title}</h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {group.permissions.map((perm) => {
+                    const permValue = PERMISSIONS[perm.key as keyof typeof PERMISSIONS];
+                    const hasByRole = rolePermissions.has(permValue);
+                    const hasAdditional = additionalPermissions.includes(permValue);
+
+                    return (
+                      <label
+                        key={perm.key}
+                        className={`flex items-center justify-between px-6 py-4 transition-colors ${
+                          hasByRole ? "bg-green-50/30" : "hover:bg-gray-50 cursor-pointer"
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-semibold ${hasByRole ? "text-green-900" : "text-gray-900"}`}>
+                              {perm.label}
+                            </span>
+                            {hasByRole && (
+                              <span className="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-green-700 ring-1 ring-inset ring-green-600/20">
+                                Aktiv
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500">{perm.description}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            name="permissions"
+                            value={permValue}
+                            defaultChecked={hasByRole || hasAdditional}
+                            disabled={hasByRole}
+                            className={`h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-600 ${
+                              hasByRole ? "cursor-not-allowed opacity-50 bg-green-100 border-green-200" : ""
+                            }`}
+                          />
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="sticky bottom-6 flex items-center justify-end gap-3 rounded-xl border border-gray-200 bg-white/80 p-4 shadow-lg backdrop-blur-md">
+          <Link
+            href="/dashboard/admin/users"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          >
+            Abbrechen
+          </Link>
+          <button
+            type="submit"
+            className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            Änderungen speichern
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

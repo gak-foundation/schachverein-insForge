@@ -98,3 +98,17 @@ export const matchStatusEnum = pgEnum("match_status", [
   "completed",
   "cancelled",
 ]);
+
+export const pageStatusEnum = pgEnum("page_status", [
+  "draft",
+  "published",
+  "scheduled",
+  "archived",
+]);
+
+export const pageLayoutEnum = pgEnum("page_layout", [
+  "default",
+  "wide",
+  "landing",
+]);
+

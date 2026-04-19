@@ -39,13 +39,17 @@ export const PERMISSIONS = {
 
   // Admin
   ADMIN_USERS: "admin.users",
-  ADMIN_ROLES: "admin.roles",
   ADMIN_AUDIT: "admin.audit",
-  ADMIN_SETTINGS: "admin.settings",
 
   // Parent access
   PARENT_DASHBOARD: "parent.dashboard", // View child's data
+
+  // CMS / Website
+  PAGES_READ: "pages.read",
+  PAGES_WRITE: "pages.write",
+  PAGES_PUBLISH: "pages.publish",
 } as const;
+
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
@@ -65,6 +69,9 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.EVENTS_WRITE,
     PERMISSIONS.DWZ_READ,
     PERMISSIONS.ADMIN_AUDIT,
+    PERMISSIONS.PAGES_READ,
+    PERMISSIONS.PAGES_WRITE,
+    PERMISSIONS.PAGES_PUBLISH,
   ],
 
   sportwart: [
@@ -82,7 +89,10 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.EVENTS_WRITE,
     PERMISSIONS.DWZ_READ,
     PERMISSIONS.DWZ_SYNC,
+    PERMISSIONS.PAGES_READ,
+    PERMISSIONS.PAGES_WRITE,
   ],
+
 
   jugendwart: [
     PERMISSIONS.MEMBERS_READ_YOUTH,
@@ -161,4 +171,11 @@ export function hasAllPermissions(
   return permissions.every((p) =>
     hasPermission(role, additionalPermissions, p),
   );
+}
+
+export function hasRole(currentRole: string, targetRoles: string | string[]): boolean {
+  if (Array.isArray(targetRoles)) {
+    return targetRoles.includes(currentRole);
+  }
+  return currentRole === targetRoles;
 }

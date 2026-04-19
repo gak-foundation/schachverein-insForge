@@ -31,6 +31,8 @@ export const payments = pgTable(
     paidAt: timestamp("paid_at"),
     sepaMandateReference: varchar("sepa_mandate_reference", { length: 35 }),
     year: integer("year").notNull(),
+    dunningLevel: integer("dunning_level").default(0).notNull(),
+    lastDunningAt: timestamp("last_dunning_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

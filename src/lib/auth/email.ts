@@ -1,6 +1,6 @@
 import { Queue, Worker } from "bullmq";
 import { getRedisConnection } from "@/lib/auth/redis";
-import { emailVerificationTemplate, passwordResetTemplate } from "@/lib/email/templates";
+import { emailVerificationTemplate, passwordResetTemplate, clubInvitationTemplate } from "@/lib/email/templates";
 
 interface EmailJobData {
   to: string;
@@ -98,5 +98,24 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
   const baseUrl = process.env.AUTH_URL || "http://localhost:3000";
   const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`;
   const { subject, html, text } = passwordResetTemplate(resetUrl);
+  await enqueueEmail(email, subject, html, text);
+}
+
+export async function sendClubInvitationEmail(
+  email: string,
+  token: string,
+  clubName: string,
+  invitedBy?: string
+): Promise<void> {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.AUTH_URL ||
+    "http://localhost:3000";
+  const invitationUrl = `${baseUrl}/auth/invitation?token=${token}`;
+  const { subject, html, text } = clubInvitationTemplate(
+    invitationUrl,
+    clubName,
+    invitedBy
+  );
   await enqueueEmail(email, subject, html, text);
 }

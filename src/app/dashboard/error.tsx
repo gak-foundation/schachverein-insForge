@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { AlertCircle, RefreshCcw, Home } from "lucide-react";
+import Link from "next/link";
 
 export default function DashboardError({
   error,
@@ -9,11 +12,34 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // Log the error to an error reporting service
+    console.error("Dashboard Error Boundary caught an error:", error);
+  }, [error]);
+
   return (
-    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
-      <h2 className="text-xl font-semibold">Etwas ist schiefgelaufen</h2>
-      <p className="text-sm text-gray-500">{error.message}</p>
-      <Button onClick={reset} variant="outline">Erneut versuchen</Button>
+    <div className="flex min-h-[70vh] flex-col items-center justify-center p-6">
+      <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10 mb-6">
+          <AlertCircle className="h-10 w-10 text-destructive" />
+        </div>
+        <h2 className="text-2xl font-bold tracking-tight mb-2">Ein Fehler ist aufgetreten</h2>
+        <p className="text-sm text-muted-foreground mb-8">
+          {error.message || "Es gab ein Problem beim Laden dieser Seite. Bitte versuchen Sie es erneut oder navigieren Sie zurück."}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Button onClick={() => reset()} className="gap-2">
+            <RefreshCcw className="h-4 w-4" />
+            Erneut versuchen
+          </Button>
+          <Button variant="outline" asChild className="gap-2">
+            <Link href="/dashboard">
+              <Home className="h-4 w-4" />
+              Zum Dashboard
+            </Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

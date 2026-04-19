@@ -2,6 +2,11 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getDashboardStats } from "@/lib/actions/audit";
 import {
+  getUpcomingMatchesForAvailability,
+  getMemberAvailability,
+} from "@/lib/actions/availability";
+import { AvailabilityForm } from "@/components/teams/availability-form";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -41,7 +46,11 @@ export default async function DashboardPage() {
   const role = user?.role as string ?? "mitglied";
   const permissions = (user?.permissions as string[]) ?? [];
 
-  const stats = await getDashboardStats();
+  const [stats, availabilityMatches, memberAvailability] = await Promise.all([
+    getDashboardStats(),
+    getUpcomingMatchesForAvailability(),
+    user.memberId ? getMemberAvailability() : Promise.resolve([]),
+  ]);
   const firstName = user?.name?.split(" ")[0] ?? "Mitglied";
   const canWriteMembers = hasPermission(role, permissions, PERMISSIONS.MEMBERS_WRITE);
   const canWriteTournaments = hasPermission(role, permissions, PERMISSIONS.TOURNAMENTS_WRITE);
@@ -113,6 +122,26 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {user.memberId && availabilityMatches.length > 0 && (
+        <div className="grid gap-6">
+          <AvailabilityForm 
+            matches={availabilityMatches.map(m => ({
+              id: m.id,
+              date: m.date,
+              opponent: m.opponent,
+              isHome: m.homeTeamId === user.memberId, // simplified check
+            }))} 
+            initialAvailability={memberAvailability
+              .filter(a => a.matchId !== null)
+              .map(a => ({
+                matchId: a.matchId!,
+                status: a.status as "available" | "unavailable" | "maybe"
+              }))} 
+          />
+        </div>
+      )}
+
 
       <div className="grid gap-6 xl:grid-cols-[1.3fr_1fr]">
         <Card className="border-border/50 shadow-lg">

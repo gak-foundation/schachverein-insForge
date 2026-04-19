@@ -8,7 +8,7 @@ export interface Toast {
   id: string;
   title: string;
   description?: string;
-  variant?: "default" | "success" | "error" | "info";
+  variant?: "default" | "success" | "error" | "info" | "destructive";
   duration?: number;
 }
 
@@ -16,9 +16,26 @@ interface ToastContextType {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, "id">) => void;
   removeToast: (id: string) => void;
+  toast: (toast: Omit<Toast, "id">) => void;
 }
 
 const ToastContext = React.createContext<ToastContextType | null>(null);
+
+// Helper function to add toast without using hook
+let globalToastContext: ToastContextType | null = null;
+
+export function setToastContext(ctx: ToastContextType) {
+  globalToastContext = ctx;
+}
+
+export function toast(toastData: Omit<Toast, "id">) {
+  if (typeof window !== "undefined" && globalToastContext) {
+    globalToastContext.addToast(toastData);
+  } else {
+    // Fallback for server-side
+    console.log("Toast:", toastData);
+  }
+}
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
@@ -32,8 +49,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const contextValue = React.useMemo(() => ({ 
+    toasts, 
+    addToast, 
+    removeToast,
+    toast: addToast
+  }), [toasts, addToast, removeToast]);
+
+  React.useEffect(() => {
+    setToastContext(contextValue);
+  }, [contextValue]);
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <ToastContainer />
     </ToastContext.Provider>
@@ -46,22 +74,6 @@ export function useToast() {
     throw new Error("useToast must be used within ToastProvider");
   }
   return context;
-}
-
-// Helper function to add toast without using hook
-let toastContext: ToastContextType | null = null;
-
-export function setToastContext(ctx: ToastContextType) {
-  toastContext = ctx;
-}
-
-export function toast(toastData: Omit<Toast, "id">) {
-  if (typeof window !== "undefined" && toastContext) {
-    toastContext.addToast(toastData);
-  } else {
-    // Fallback for server-side
-    console.log("Toast:", toastData);
-  }
 }
 
 function ToastContainer() {
@@ -80,6 +92,7 @@ const toastIcons = {
   default: null,
   success: CheckCircle,
   error: AlertCircle,
+  destructive: AlertCircle,
   info: Info,
 };
 
@@ -87,6 +100,7 @@ const toastStyles = {
   default: "bg-white border-gray-200 text-gray-900",
   success: "bg-green-50 border-green-200 text-green-900",
   error: "bg-red-50 border-red-200 text-red-900",
+  destructive: "bg-red-600 border-red-700 text-white",
   info: "bg-blue-50 border-blue-200 text-blue-900",
 };
 

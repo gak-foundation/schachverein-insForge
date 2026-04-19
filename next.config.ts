@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   // Auth.js requires server-side external packages
   serverExternalPackages: ["@auth/drizzle-adapter"],
 

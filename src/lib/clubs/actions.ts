@@ -10,6 +10,7 @@ import {
   authUsers,
 } from "@/lib/db/schema";
 import { requireAuth, requireClub } from "@/lib/auth/session";
+import { sendClubInvitationEmail } from "@/lib/auth/email";
 import { revalidatePath } from "next/cache";
 import {
   createClub,
@@ -174,8 +175,13 @@ export async function inviteMemberToClubAction(formData: FormData) {
     expiresAt,
   });
 
-  // TODO: Send invitation email
-  console.log(`Invitation created: ${invitation.token}`);
+  // Send invitation email
+  await sendClubInvitationEmail(
+    email,
+    invitation.token,
+    club.name,
+    session.user.name
+  );
 
   return {
     success: true,
@@ -213,7 +219,7 @@ export async function updateMemberRoleAction(memberId: string, role: string) {
 
   await db
     .update(clubMemberships)
-    .set({ role: role as any, updatedAt: new Date() })
+    .set({ role: role as typeof clubMemberships.$inferInsert.role, updatedAt: new Date() })
     .where(
       and(
         eq(clubMemberships.clubId, club.id),

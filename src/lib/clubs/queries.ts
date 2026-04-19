@@ -1,4 +1,5 @@
 import { eq, and, or, like, sql, SQL, isNull } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
 import {
   clubs,
@@ -76,10 +77,9 @@ export async function getUserPrimaryClub(userId: string) {
 
 // ─── Club Filtering Functions ──────────────────────────────────
 
-export function withClubFilter<T extends { clubId: string }>(
-  query: any,
-  clubId: string
-) {
+export function withClubFilter<
+  T extends { where: (condition: SQL | undefined) => T } & { clubId: AnyPgColumn },
+>(query: T, clubId: string) {
   return query.where(eq(query.clubId, clubId));
 }
 
@@ -344,14 +344,14 @@ export async function addMemberToClub(
     .values({
       clubId,
       memberId,
-      role: role as any,
+      role: role as typeof clubMemberships.$inferInsert.role,
       isPrimary,
       status: "active",
     })
     .onConflictDoUpdate({
       target: [clubMemberships.clubId, clubMemberships.memberId],
       set: {
-        role: role as any,
+        role: role as typeof clubMemberships.$inferInsert.role,
         status: "active",
         updatedAt: new Date(),
       },
@@ -377,7 +377,7 @@ export async function createClubInvitation(data: {
     .values({
       clubId: data.clubId,
       email: data.email,
-      role: (data.role as any) ?? "mitglied",
+      role: (data.role as typeof clubMemberships.$inferInsert.role | undefined) ?? "mitglied",
       invitedBy: data.invitedBy,
       token,
       expiresAt: data.expiresAt,

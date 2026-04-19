@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { createGame } from "@/lib/actions/games";
 import { getTournaments } from "@/lib/actions/tournaments";
-import { getMembers } from "@/lib/actions/members";
+import { getMembersForForms } from "@/lib/actions/members";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +25,7 @@ export default async function NewGamePage() {
 
   const [allTournaments, allMembers] = await Promise.all([
     getTournaments(),
-    getMembers(),
+    getMembersForForms(),
   ]);
 
   return (
@@ -129,23 +129,15 @@ export default async function NewGamePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>PGN (optional)</CardTitle>
-            <CardDescription>Partie im PGN-Format einfuegen</CardDescription>
+            <CardTitle>Lichess-Verlinkung (optional)</CardTitle>
+            <CardDescription>Link zur Partie auf Lichess.org</CardDescription>
           </CardHeader>
           <CardContent>
-            <textarea
-              id="pgn"
-              name="pgn"
-              rows={8}
-              className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono placeholder:text-gray-400"
-              placeholder="[Event &quot;Vereinsmeisterschaft&quot;]
-[Site &quot;Vereinsheim&quot;]
-[Date &quot;2026.04.10&quot;]
-[White &quot;Mueller&quot;]
-[Black &quot;Schmidt&quot;]
-[Result &quot;1-0&quot;]
-
-1. e4 e5 2. Nf3 Nc6 3. Bb5..."
+            <Input
+              id="lichessUrl"
+              name="lichessUrl"
+              type="url"
+              placeholder="https://lichess.org/..."
             />
           </CardContent>
         </Card>

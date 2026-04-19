@@ -74,9 +74,9 @@ export async function logAuthAction(
 }
 
 export async function logMemberAction(
-  action: "CREATED" | "UPDATED" | "DELETED" | "INVITED" | "LINKED",
+  action: "CREATED" | "UPDATED" | "DELETED" | "INVITED" | "LINKED" | "DELETION_REQUESTED" | "ANONYMIZED",
   memberId: string,
-  changes?: Record<string, { old: unknown; new: unknown }>
+  changes?: Record<string, { old: unknown; new: unknown }> | Record<string, unknown>
 ) {
   await logAudit({
     action: `MEMBER_${action}`,

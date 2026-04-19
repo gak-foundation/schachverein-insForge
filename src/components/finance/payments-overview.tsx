@@ -33,7 +33,7 @@ interface PaymentsOverviewProps {
     amount: string;
     description: string;
     status: string;
-    dueDate: Date | null;
+    dueDate: Date | string | null;
     year: number;
   }[];
   members: {
@@ -74,7 +74,7 @@ export function PaymentsOverview({ stats, payments, members, canWrite }: Payment
     try {
       const result = await generateDuePayments(year);
       setGenerateMessage(`${result.created} Beitraege fuer ${year} generiert.`);
-    } catch (error) {
+    } catch {
       setGenerateMessage("Fehler beim Generieren der Beitraege.");
     } finally {
       setGenerating(false);

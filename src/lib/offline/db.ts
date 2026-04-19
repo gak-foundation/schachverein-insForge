@@ -21,11 +21,9 @@ function openDB(): Promise<IDBDatabase> {
 
 export interface PendingResult {
   id?: number;
-  tournamentId: string;
-  whiteId: string;
-  blackId: string;
+  gameId: string;
   result: string;
-  pgn?: string;
+  lichessUrl?: string;
   createdAt: string;
 }
 
@@ -34,9 +32,21 @@ export async function savePendingResult(result: Omit<PendingResult, "id">): Prom
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
-    const request = store.add(result);
-    request.onsuccess = () => resolve(request.result as number);
-    request.onerror = () => reject(request.error);
+    
+    const indexRequest = store.getAll();
+    indexRequest.onsuccess = () => {
+      const existing = (indexRequest.result as PendingResult[]).find(r => r.gameId === result.gameId);
+      if (existing && existing.id) {
+        const updateRequest = store.put({ ...result, id: existing.id });
+        updateRequest.onsuccess = () => resolve(existing.id!);
+        updateRequest.onerror = () => reject(updateRequest.error);
+      } else {
+        const addRequest = store.add(result);
+        addRequest.onsuccess = () => resolve(addRequest.result as number);
+        addRequest.onerror = () => reject(addRequest.error);
+      }
+    };
+    indexRequest.onerror = () => reject(indexRequest.error);
   });
 }
 
@@ -62,19 +72,25 @@ export async function clearPendingResult(id: number): Promise<void> {
   });
 }
 
+export async function clearPendingResultByGameId(gameId: string): Promise<void> {
+  const results = await getPendingResults();
+  const toDelete = results.find(r => r.gameId === gameId);
+  if (toDelete && toDelete.id) {
+    await clearPendingResult(toDelete.id);
+  }
+}
+
 export async function syncPendingResults(): Promise<void> {
   const results = await getPendingResults();
   for (const result of results) {
     try {
-      const res = await fetch("/api/games", {
+      const res = await fetch("/api/games/result", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tournamentId: result.tournamentId,
-          whiteId: result.whiteId,
-          blackId: result.blackId,
+          gameId: result.gameId,
           result: result.result,
-          pgn: result.pgn,
+          lichessUrl: result.lichessUrl,
         }),
       });
       if (res.ok && result.id) {

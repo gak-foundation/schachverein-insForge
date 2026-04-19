@@ -8,48 +8,15 @@ import {
   getContributionRates,
   getPaymentWithMemberDetails,
   getClubBankSettings,
+  getDunningStats,
 } from "@/lib/actions/finance";
-import { getMembers } from "@/lib/actions/members";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { getMembersForForms } from "@/lib/actions/members";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { PaymentsOverview } from "@/components/finance/payments-overview";
 import { ContributionRatesList } from "@/components/finance/contribution-rates-list";
 import { SepaExport } from "@/components/finance/sepa-export";
 import { ClubBankSettings } from "@/components/finance/club-bank-settings";
-
-const statusLabels: Record<string, string> = {
-  pending: "Ausstehend",
-  paid: "Bezahlt",
-  overdue: "Ueberfaellig",
-  cancelled: "Storniert",
-  refunded: "Erstattet",
-  collected: "Eingezogen",
-};
-
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  paid: "bg-green-100 text-green-800",
-  overdue: "bg-red-100 text-red-800",
-  cancelled: "bg-gray-100 text-gray-800",
-  refunded: "bg-blue-100 text-blue-800",
-  collected: "bg-purple-100 text-purple-800",
-};
+import { DunningOverview } from "@/components/finance/dunning-overview";
 
 export const metadata = {
   title: "Finanzen",
@@ -67,16 +34,15 @@ export default async function FinancePage() {
     );
   }
 
-  const [stats, allPayments, allMembers, contributionRates, paymentsWithDetails, bankSettings] = await Promise.all([
+  const [stats, allPayments, memberList, contributionRates, paymentsWithDetails, bankSettings, dunningStats] = await Promise.all([
     getPaymentStats(),
     getPayments(),
-    getMembers(),
+    getMembersForForms(),
     getContributionRates(),
     getPaymentWithMemberDetails(),
     getClubBankSettings(),
+    getDunningStats(),
   ]);
-
-  const memberMap = new Map(allMembers.map((m) => [m.id, `${m.firstName} ${m.lastName}`]));
 
   const canWrite = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_WRITE);
   const canSepa = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_SEPA);
@@ -93,6 +59,7 @@ export default async function FinancePage() {
           <TabsTrigger value="overview">Uebersicht</TabsTrigger>
           <TabsTrigger value="rates">Beitragssaetze</TabsTrigger>
           {(canWrite || canSepa) && <TabsTrigger value="sepa">SEPA-Export</TabsTrigger>}
+          {canWrite && <TabsTrigger value="dunning">Mahnwesen</TabsTrigger>}
           {canWrite && <TabsTrigger value="settings">Bank-Einstellungen</TabsTrigger>}
         </TabsList>
 
@@ -100,7 +67,7 @@ export default async function FinancePage() {
           <PaymentsOverview
             stats={stats}
             payments={allPayments}
-            members={allMembers}
+            members={memberList}
             canWrite={canWrite}
           />
         </TabsContent>
@@ -112,12 +79,21 @@ export default async function FinancePage() {
           />
         </TabsContent>
 
-        {canWrite && (
+        {(canWrite || canSepa) && (
           <TabsContent value="sepa" className="space-y-6">
             <SepaExport
               payments={paymentsWithDetails}
               bankSettings={bankSettings}
               canSepa={canSepa}
+            />
+          </TabsContent>
+        )}
+
+        {canWrite && (
+          <TabsContent value="dunning" className="space-y-6">
+            <DunningOverview
+              stats={dunningStats}
+              canWrite={canWrite}
             />
           </TabsContent>
         )}
@@ -133,3 +109,4 @@ export default async function FinancePage() {
     </div>
   );
 }
+

@@ -13,3 +13,5 @@ export * from "./documents";
 export * from "./finance";
 export * from "./audit";
 export * from "./auth";
+export * from "./cms";
+

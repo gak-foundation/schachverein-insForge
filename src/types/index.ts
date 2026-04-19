@@ -61,7 +61,7 @@ export interface Game {
   whiteId: string;
   blackId: string;
   result?: GameResult;
-  pgn?: string;
+  lichessUrl?: string;
   fen?: string;
   opening?: string;
   ecoCode?: string;

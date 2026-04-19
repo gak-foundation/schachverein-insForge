@@ -3,8 +3,10 @@ import { auth } from "@/lib/auth/better-auth";
 import { clubs } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { Permission, hasPermission as checkPermission } from "./permissions";
+import { redirect } from "next/navigation";
 
-type MemberRole = "admin" | "vorstand" | "sportwart" | "jugendwart" | "kassenwart" | "trainer" | "mitglied" | "eltern" | "user";
+type MemberRole = "admin" | "vorstand" | "sportwart" | "jugendwart" | "kassenwart" | "trainer" | "mitglied" | "eltern";
 
 export interface UserWithRole {
   id: string;
@@ -102,3 +104,16 @@ export async function requireAuth(): Promise<SessionWithClub> {
 
 export type Session = SessionWithRole;
 export type User = UserWithRole;
+
+export async function requirePermission(permission: Permission): Promise<SessionWithRole> {
+  const session = await getSession();
+  if (!session) {
+    redirect("/auth/login");
+  }
+
+  if (!checkPermission(session.user.role, session.user.permissions || [], permission)) {
+    redirect("/dashboard");
+  }
+
+  return session;
+}
