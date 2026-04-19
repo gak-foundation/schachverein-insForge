@@ -38,12 +38,12 @@ Diese Liste enthält die verbleibenden Aufgaben, unterteilt in kleine, isolierte
 ---
 
 ## 🔄 5. Integrationen & SaaS (Phase 5)
-- [ ] **DWZ-Synchronisierung**: `syncAllMembersDwz` an BullMQ-Cronjob binden.
-- [ ] **Lichess-Connect**: Automatischer Import von Partien via API.
+- [x] **DWZ-Synchronisierung**: BullMQ-Worker und Queue in `src/lib/jobs/dwz-sync.ts` implementiert.
+- [x] **Lichess-Connect**: Automatischer Import von Partien via BullMQ in `src/lib/jobs/lichess-sync.ts` implementiert.
 - [x] **Audit-Log UI**: Administrative Ansicht unter `/dashboard/admin/audit` erstellt.
 
 ---
 
 ## 🎨 UI/UX & Polishing
 - [x] **Print-Styles**: Optimiert für Mitgliederlisten und Turniere.
-- [ ] **Loading States**: Skelett-Screens für alle Dashboard-Unterseiten hinzufügen.
+- [x] **Loading States**: Skeleton-Komponente erstellt und in `src/app/dashboard/loading.tsx` integriert.

@@ -3,7 +3,13 @@ import Redis from "ioredis";
 let redisInstance: Redis | null = null;
 
 export function getRedis(): Redis | null {
+  // Edge runtime check
+  if (typeof process !== "undefined" && process.env && (process.env as any).NEXT_RUNTIME === "edge") {
+    return null; // ioredis not supported in Edge
+  }
+
   if (redisInstance) return redisInstance;
+...
 
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) {

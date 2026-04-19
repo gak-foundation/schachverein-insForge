@@ -4,6 +4,8 @@ import { applySecurityHeaders } from "@/lib/auth/security-headers";
 import { auth } from "@/lib/auth/better-auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/auth/rate-limit";
 
+export const runtime = "edge";
+
 async function getClientIP(request: NextRequest): Promise<string> {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
@@ -12,12 +14,11 @@ async function getClientIP(request: NextRequest): Promise<string> {
   return "unknown";
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const originalPath = url.pathname;
 
   // 0. Explicitly skip static files and other common excluded paths
-  // This ensures that even if the matcher is ignored, we don't rewrite these.
   if (
     originalPath.startsWith("/_next") ||
     originalPath.startsWith("/favicon.ico") ||
@@ -56,7 +57,6 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Use targetPath for Auth checks (effective path)
   const pathname = targetPath;
   const headers = new Headers(request.headers);
   let response: NextResponse;
@@ -69,7 +69,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   };
 
-  // 2. Auth & Security Logic (from old proxy.ts)
+  // 2. Auth & Security Logic
   if (pathname.startsWith("/api/auth")) {
     const ip = await getClientIP(request);
     
@@ -132,7 +132,6 @@ export async function proxy(request: NextRequest) {
     "/datenschutz",
   ];
 
-  // Also consider club public routes if needed, but for now we follow the existing list
   if (publicRoutes.some((route) => pathname.startsWith(route)) || pathname.startsWith("/clubs/")) {
     if (session && (pathname === "/auth/login" || pathname === "/auth/signup")) {
       response = NextResponse.redirect(new URL("/dashboard", request.url));
@@ -168,7 +167,7 @@ export async function proxy(request: NextRequest) {
   return applySecurityHeaders(getNextResponse());
 }
 
-export const proxyConfig = {
+export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons/|sitemap.xml|robots.txt).*)",
   ],

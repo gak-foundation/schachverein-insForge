@@ -1,12 +1,12 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { Pool } from "@neondatabase/serverless";
 import * as schema from "./schema";
 
 const connectionString = process.env.DATABASE_URL!;
 
-// Query client for regular queries
-const queryClient = postgres(connectionString);
-export const db = drizzle(queryClient, { schema });
+// Use pool for Edge compatibility
+const pool = new Pool({ connectionString });
+export const db = drizzle(pool, { schema });
 
 // Type exports
 export type Database = typeof db;

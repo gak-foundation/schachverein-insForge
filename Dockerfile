@@ -19,8 +19,10 @@ COPY . .
 # Next.js telemetry is disabled
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the Next.js app
+# Build the Next.js app and the worker
 RUN npm run build
+RUN npm run build:worker
+RUN npm run build:migrate
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -37,6 +39,11 @@ COPY --from=builder /app/public ./public
 # Set the correct permission for prerender cache
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
+
+# Copy the worker build and migration scripts
+COPY --from=builder --chown=nextjs:nodejs /app/dist-worker ./dist-worker
+COPY --from=builder --chown=nextjs:nodejs /app/dist-migrate ./dist-migrate
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing

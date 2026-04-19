@@ -1,6 +1,19 @@
 version: "3.9"
 
 services:
+  migrator:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: schachverein-migrator
+    command: ["node", "dist-migrate/migrate.js"]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://schachverein:${POSTGRES_PASSWORD}@postgres:5432/schachverein
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   app:
     build:
       context: ..
@@ -21,12 +34,19 @@ services:
       - S3_ACCESS_KEY=${S3_ACCESS_KEY:-minioadmin}
       - S3_SECRET_KEY=${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD}}
       - S3_BUCKET=${S3_BUCKET:-schachverein}
-      # Add your SMTP config here for production
     depends_on:
+      migrator:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   worker:
     build:
@@ -34,7 +54,7 @@ services:
       dockerfile: Dockerfile
     container_name: schachverein-worker
     restart: always
-    command: ["node", "server.js"] # Adjust this if you have a separate worker entrypoint, or use a custom script to start BullMQ
+    command: ["node", "dist-worker/worker.js"]
     environment:
       - NODE_ENV=production
       - IS_WORKER=true
