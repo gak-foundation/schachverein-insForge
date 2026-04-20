@@ -26,6 +26,7 @@ Willkommen in der Dokumentation der Schachvereins-Software. Dieses Projekt ist e
 ## 🚢 Deployment & Betrieb
 
 - [Deployment Übersicht](./deployment/overview.md)
+- [Launch-Checkliste](./deployment/launch-checklist.md)
 - [Hetzner Setup Guide](../HETZNER_DEPLOYMENT.md)
 - [Sicherheitskonzepte](../SECURITY.md)
 

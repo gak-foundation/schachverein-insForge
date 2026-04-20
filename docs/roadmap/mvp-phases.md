@@ -373,7 +373,13 @@ Release 5 ─ Integrationen        ███████████████
 | **Release 2** | Ersetzt Papierzettel + manuelle Ergebnispflege | ✅ Ja — **Empfohlener öffentlicher Launch** |
 | **Release 3** | Alleinstellungsmerkmal: Partiedatenbank | ✅ Ja |
 | **Release 4** | Ersetzt Kassenwart-Excel + E-Mail-Verteiler | ✅ Ja |
-| **Release 5** | Vollautomatisierung, Profi-Features | ✅ Ja |
+| Release 5 | Vollautomatisierung, Profi-Features | ✅ Ja |
+
+---
+
+## 🚀 Launch-Vorbereitung
+
+Bevor das System live geht, müssen die [technischen Voraussetzungen für den Launch](../deployment/launch-checklist.md) erfüllt sein. Diese Checkliste umfasst Infrastruktur, DSGVO, Sicherheit und Monitoring.
 
 ---
 
