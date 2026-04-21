@@ -15,4 +15,5 @@ export * from "./finance";
 export * from "./audit";
 export * from "./auth";
 export * from "./cms";
+export * from "./waitlist";
 

@@ -167,6 +167,7 @@ export async function getMemberById(id: string) {
   if (member) {
     if (member.sepaIban) member.sepaIban = decrypt(member.sepaIban);
     if (member.sepaBic) member.sepaBic = decrypt(member.sepaBic);
+    if (member.medicalNotes) member.medicalNotes = decrypt(member.medicalNotes);
   }
 
   return member;
@@ -234,6 +235,9 @@ export async function createMember(formData: FormData) {
       ? formData.get("resultPublicationConsent") === "on"
       : true,
     notes: (formData.get("notes") as string) || undefined,
+    medicalNotes: (formData.get("medicalNotes") as string) || undefined,
+    emergencyContactName: (formData.get("emergencyContactName") as string) || undefined,
+    emergencyContactPhone: (formData.get("emergencyContactPhone") as string) || undefined,
     sepaIban: (formData.get("sepaIban") as string) || undefined,
     sepaBic: (formData.get("sepaBic") as string) || undefined,
     sepaMandateReference: (formData.get("sepaMandateReference") as string) || undefined,
@@ -252,6 +256,7 @@ export async function createMember(formData: FormData) {
       parentId: validated.parentId || null,
       sepaIban: validated.sepaIban ? encrypt(validated.sepaIban) : null,
       sepaBic: validated.sepaBic ? encrypt(validated.sepaBic) : null,
+      medicalNotes: validated.medicalNotes ? encrypt(validated.medicalNotes) : null,
     })
     .returning();
 
@@ -369,6 +374,9 @@ export async function updateMember(formData: FormData) {
   const dwz = formData.get("dwz") ? Number(formData.get("dwz")) : null;
   const status = formData.get("status") as string;
   const role = formData.get("role") as string;
+  const medicalNotes = (formData.get("medicalNotes") as string) || null;
+  const emergencyContactName = (formData.get("emergencyContactName") as string) || null;
+  const emergencyContactPhone = (formData.get("emergencyContactPhone") as string) || null;
   const sepaIban = (formData.get("sepaIban") as string) || null;
   const sepaBic = (formData.get("sepaBic") as string) || null;
   const sepaMandateReference = (formData.get("sepaMandateReference") as string) || null;
@@ -396,6 +404,9 @@ export async function updateMember(formData: FormData) {
       phone,
       dwz,
       status: status as MemberRecordStatus,
+      medicalNotes: medicalNotes ? encrypt(medicalNotes) : null,
+      emergencyContactName,
+      emergencyContactPhone,
       sepaIban: sepaIban ? encrypt(sepaIban) : null,
       sepaBic: sepaBic ? encrypt(sepaBic) : null,
       sepaMandateReference,

@@ -8,9 +8,9 @@ Die Datenbank nutzt **PostgreSQL 17** und wird über **Drizzle ORM** verwaltet.
 Das Schema ist modular in \src/lib/db/schema.ts\ definiert und umfasst folgende Kernbereiche:
 
 ### 1. Authentifizierung & Organisation
-- \uthUsers\, \uthSessions\, \uthAccounts\: Better Auth Tabellen.
-- \clubs\: Mandanten (Vereine).
-- \clubMemberships\: Verknüpfung von Benutzern zu Vereinen mit Rollen.
+- `auth_user`: Profiltabelle (wird via Supabase Auth Trigger synchronisiert).
+- `clubs`: Mandanten (Vereine).
+- `clubMemberships`: Verknüpfung von Benutzern zu Vereinen mit Rollen.
 
 ### 2. Mitgliederverwaltung
 - \members\: Stammdaten der Vereinsmitglieder.

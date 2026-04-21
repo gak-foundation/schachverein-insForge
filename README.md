@@ -14,11 +14,11 @@ Eine ganzheitliche, digitale SaaS-Plattform für Schachvereine. Vereint Mitglied
 ## Tech Stack
 
 - **Framework**: Next.js 16.2 (App Router)
-- **Database**: PostgreSQL (via Drizzle ORM)
-- **Authentication**: Better Auth (Passkey, E-Mail/Passwort, OAuth)
+- **Database**: PostgreSQL (via Drizzle ORM + Supabase/Neon)
+- **Authentication**: Supabase Auth (JWT, E-Mail, OAuth)
 - **Styling**: Tailwind CSS 4 (OKLCH Themes)
-- **Background Jobs**: BullMQ + Redis (Persistent auf Hetzner)
-- **Containerization**: Docker & Docker Compose
+- **Storage**: Supabase Storage (S3-kompatibel)
+- **Background Jobs**: Asynchrone Funktionen (vereinfacht, kein Redis nötig)
 - **Security**: AES-256-GCM Encryption für Finanzdaten
 
 ## Lokale Entwicklung
@@ -31,12 +31,12 @@ Eine ganzheitliche, digitale SaaS-Plattform für Schachvereine. Vereint Mitglied
 2. **Umgebungsvariablen einrichten**
    ```bash
    cp .env.example .env
-   # Fülle .env mit lokalen Werten
+   # Fülle .env mit Supabase-Werten
    ```
 
-3. **Lokale Infrastruktur (Datenbank, Redis, MinIO) starten**
+3. **Datenbank starten (Docker)**
    ```bash
-   npm run docker:up
+   npm run docker:up # Startet nur Postgres
    ```
 
 4. **Datenbank-Schema anwenden & Seed**
@@ -52,19 +52,10 @@ Eine ganzheitliche, digitale SaaS-Plattform für Schachvereine. Vereint Mitglied
 
 Die App ist unter `http://localhost:3000` erreichbar.
 
-## Deployment (All-Hetzner Docker)
+## Deployment
 
-Das System ist primär für ein DSGVO-konformes Docker-Deployment (z.B. auf einem Hetzner Cloud Server) konzipiert. Dies verhindert Timeout-Probleme von Serverless-Anbietern (Vercel) und erlaubt persistente Worker für PGN-Verarbeitung, E-Mail-Versand und Auslosungen.
+Das System ist primär für ein DSGVO-konformes Deployment auf **Supabase Cloud** und **Vercel** oder **Hetzner (Docker)** konzipiert. Durch die Nutzung von Supabase werden separate Redis- und MinIO-Instanzen überflüssig.
 
-### Voraussetzungen
-
-- Server (z.B. Hetzner CPX21 oder CX32)
-- Docker & Docker Compose installiert
-- Domain mit DNS-Records (`A`-Record) zum Server
-
-### Setup
-
-Alle Details für das Deployment auf Hetzner findest du im entsprechenden [Hetzner Deployment Guide](HETZNER_DEPLOYMENT.md).
 
 ## Lizenz
 

@@ -11,25 +11,21 @@ Basierend auf eurer Architektur (All-Hetzner, Next.js 16, Postgres 17, Multi-Ten
 
 | Komponente | Empfehlung | Begründung |
 |------------|-----------|------------|
-| **App-Server** | 2× Hetzner CX42 (8 vCPU, 16 GB RAM) DE | Redundanz, Rolling Deploys möglich |
-| **DB-Server** | Dedicated PX-Line oder Managed Postgres | Keine Shared-CPU für Primary-DB |
-| **Redis** | Separate VM oder Container (min. 4 GB) | BullMQ + Cache trennen vom App-State |
-| **MinIO/S3** | Hetzner Object Storage (S3-kompatibel) | Günstiger als eigener MinIO-Cluster |
-| **Backup-Server** | Hetzner Storage Box (1 TB) | Off-Site, verschlüsselt |
-| **Load Balancer** | Hetzner Load Balancer | SSL-Terminierung optional |
-| **DDoS** | Cloudflare (Free-Tier reicht initial) | Pflicht bei öffentlichen Vereinssites (Turnierpeaks!) |
+| **App-Server** | Vercel / Hetzner CX22 (4 vCPU, 8 GB RAM) | Genug für Next.js Node |
+| **Backend / DB** | Supabase Cloud (Pro Plan) | Managed Postgres, Auth, Storage, Realtime |
+| **Backup** | Supabase PITR (Point-in-Time) | 7-30 Tage Backup-History |
+| **DDoS** | Cloudflare (Free-Tier reicht initial) | Pflicht bei öffentlichen Vereinssites |
 
-**Standort zwingend:** Nürnberg oder Falkenstein (DE) — DSGVO & Auftragsverarbeitung.
+**Standort zwingend:** EU (Frankfurt) — DSGVO & Auftragsverarbeitung.
 
 </details>
 
 <details>
-<summary><b>Container-Orchestrierung</b></summary>
+<summary><b>App-Setup</b></summary>
 
-- **Docker Compose** für den Start ausreichend (eure Entscheidung richtig — Kubernetes wäre Over-Engineering)
-- **Watchtower** oder **systemd-Units** für kontrollierte Restarts
-- **Caddy** als Reverse Proxy mit automatischem Let's Encrypt + On-Demand-TLS für Custom-Domains der Vereine
-- **Healthchecks** in jedem Container (`/api/health`-Endpoint mit DB + Redis + S3-Check)
+- **Deployment via Vercel** oder **Docker Compose** auf Hetzner
+- **Healthchecks** (`/api/health`-Endpoint mit DB-Check)
+- **Caddy** als Reverse Proxy für Custom-Domains
 
 </details>
 
@@ -89,20 +85,17 @@ Ohne funktionierendes Monitoring ist ein Launch fahrlässig — insbesondere bei
 
 | Tool | Zweck | Alternative |
 |------|-------|-------------|
-| **Sentry** (self-hosted oder Cloud-EU) | Error-Tracking Frontend + Backend | GlitchTip (OSS) |
-| **Grafana + Prometheus** | Metriken (CPU, DB-Queries, Queue-Länge) | Netdata |
-| **Loki** oder **Better Stack** | Log-Aggregation (DSGVO-konform EU!) | Graylog |
+| **Sentry** (Cloud-EU) | Error-Tracking Frontend + Backend | GlitchTip (OSS) |
+| **Supabase Dashboard** | Metriken (DB-Usage, API, Auth) | — |
 | **Uptime Kuma** | Uptime-Monitoring pro Vereinsdomain | StatusCake |
 | **Matomo** (self-hosted) | Produkt-Analytics statt GA4 | Plausible (EU) |
-| **BullMQ Board** | Queue-Monitoring | — |
 
 **Alerts zwingend konfigurieren für:**
-- DB-Connection-Pool voll
-- Redis-Memory > 80 %
-- Queue-Länge > 1000
+- Supabase DB-Storage > 80 %
 - 5xx-Rate > 1 %
-- SSL-Zertifikat läuft in < 14 Tagen ab (kritisch bei Custom-Domains!)
-- Backup-Job failed
+- SSL-Zertifikat läuft in < 14 Tagen ab
+- Backup failed (Supabase Check)
+- Sentry Error-Spike (Backend/Frontend)
 
 ---
 
@@ -147,7 +140,7 @@ Main Branch:
 | **Custom Domains** | Caddy + On-Demand-TLS, DNS-Verifikation-Flow |
 | **Transaktionale E-Mails** | **Postmark** oder **MailerSend** (EU) — **nicht** eigener SMTP! Reputation! |
 | **SPF / DKIM / DMARC** | Zwingend konfiguriert, DMARC mit `p=quarantine` |
-| **Bounce-Handling** | Webhook zu BullMQ → Mitgliederstatus markieren |
+| **Bounce-Handling** | Webhook zu API → Mitgliederstatus markieren |
 | **Newsletter-Versand** | Separate IP / separater Provider (Brevo), nicht über Transaktions-IP |
 
 **E-Mail-Deliverability** ist der Punkt, an dem viele SaaS scheitern. Plant **2 Wochen Warm-up** der Sending-IPs ein.

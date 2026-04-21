@@ -336,7 +336,7 @@ Diese Features wirken wie **Buzzword-Bingo** statt Nutzerbedürfnis.
 | # | Blindspot | Risikostufe | Sofortmaßnahme |
 |---|-----------|:-----------:|----------------|
 | 1 | **Keine Wettbewerbsanalyse vs. Swiss-Manager/DSB-MiVIS** | 🔴 Kritisch | User-Interviews mit 10+ Vorständen; klaren USP definieren |
-| 2 | **Vercel-Architektur inkompatibel mit Kern-Features** | 🔴 Kritisch | Architektur-Entscheidung: All-Hetzner oder Split-Deploy |
+| 2 | **Vercel-Architektur inkompatibel mit Kern-Features** | ✅ Gelöst | Entscheidung für Hetzner + Supabase Hybrid gefallen |
 | 3 | **Zielgruppe 55+ vs. Design für Digital Natives** | 🟠 Hoch | Barrierefreiheit + User Testing mit 60+ Vorständen |
 | 4 | **DSGVO/AVV/DSFA für Kinderdaten nicht konzipiert** | 🟠 Hoch | Datenschutzanwalt + DSFA vor Launch |
 | 5 | **Preismodell ignoriert Vereinsrealität** | 🟡 Mittel | Free-Tier einführen; Jahresrabatt; Gemeinnützigkeits-Tarif |

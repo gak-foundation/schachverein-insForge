@@ -14,7 +14,7 @@ Die Schachvereins-Software ist als Multi-Tenant (Multi-Club) Anwendung konzipier
 | **Styling** | Tailwind CSS 4 + shadcn/ui |
 | **Datenbank** | PostgreSQL 17 |
 | **ORM** | Drizzle ORM |
-| **Authentifizierung** | Better Auth 1.6 |
+| **Authentifizierung** | Supabase Auth |
 | **State Management** | Zustand 5.0 (Client-seitig) |
 
 ### Schach-spezifische Bibliotheken
@@ -23,9 +23,11 @@ Die Schachvereins-Software ist als Multi-Tenant (Multi-Club) Anwendung konzipier
 - **bbpPairings**: Schweizer System Pairing Engine (via Docker/CLI).
 
 ### Infrastruktur
-- **Redis**: Caching, Rate-Limiting und BullMQ-Backend.
-- **BullMQ**: Queue für E-Mail-Versand und Hintergrundprozesse.
-- **MinIO / S3**: Speicherung von Dokumenten und Protokollen.
+- **Supabase Cloud / Neon**: Managed PostgreSQL Datenbank.
+- **Supabase Auth**: Authentifizierung & Rollenverwaltung.
+- **Supabase Storage**: Speicherung von Dokumenten (logos, docs).
+- **Background Tasks**: Einfache asynchrone Funktionen (keine Queue nötig).
+
 
 ## Projektstruktur
 
@@ -35,4 +37,4 @@ Die Schachvereins-Software ist als Multi-Tenant (Multi-Club) Anwendung konzipier
 - src/lib/db: Datenbank-Schema und Drizzle-Konfiguration
 - src/lib/auth: Authentifizierungs-Konfiguration und RBAC-Logik
 - src/lib/validations: Zod-Schemas für Formular-Validierung
-- src/proxy.ts: Middleware für Routenschutz und Auth-Validierung
+- src/middleware.ts: Supabase Auth Middleware & Routenschutz

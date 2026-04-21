@@ -112,3 +112,10 @@ export const pageLayoutEnum = pgEnum("page_layout", [
   "landing",
 ]);
 
+export const applicationStatusEnum = pgEnum("application_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "waitlisted",
+]);
+

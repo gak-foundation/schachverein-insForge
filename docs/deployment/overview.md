@@ -1,21 +1,34 @@
 # Deployment Übersicht
 
-Die Schachvereins-Plattform ist als "All-Hetzner" Lösung konzipiert. Dies stellt sicher, dass alle DSGVO-Anforderungen erfüllt werden und dass technische Limits (wie Serverless Timeouts bei langen Importen oder Auslosungen) umgangen werden.
+Die Schachvereins-Plattform nutzt eine moderne, vereinfachte Architektur basierend auf Next.js und Supabase Cloud. Dies reduziert den Wartungsaufwand für die Infrastruktur erheblich und ermöglicht volle DSGVO-Konformität durch EU-Regionen.
 
-## Bevorzugte Methode: Docker Compose (Hetzner)
+## Infrastruktur-Komponenten
 
-Die gesamte Infrastruktur (Next.js, PostgreSQL, Redis, MinIO, Background Worker und bbpPairings) ist in Docker containerisiert. 
+Das System ist so konzipiert, dass es entweder vollständig in der Cloud (Vercel/Supabase) oder als hybride Lösung (App auf Hetzner, Daten in Supabase) betrieben werden kann.
 
-Für das Deployment in Produktion nutzt du das bereitgestellte `docker-compose.yml` File. 
+### Bestandteile des Deployments
 
-Eine Schritt-für-Schritt-Anleitung findest du unter:
+1. **App Node (Next.js):**
+   - Führt die Webanwendung aus.
+   - Kann auf Vercel, Hetzner (Docker) oder Coolify betrieben werden.
+   - Nutze `output: "standalone"` für Docker-Deployments.
+
+2. **Supabase (Backend-as-a-Service):**
+   - **Datenbank:** PostgreSQL 17 (via Neon oder Supabase).
+   - **Authentifizierung:** Supabase Auth (JWT-basiert).
+   - **Storage:** Supabase Storage (S3-kompatibel) für Bilder und Dokumente.
+   - **Realtime:** Supabase Realtime für Live-Turnierergebnisse.
+
+3. **Background Tasks:**
+   - Ersetzt BullMQ durch einfache asynchrone Funktionen oder Edge Functions.
+   - Langlaufende Prozesse (z.B. DWZ-Sync) laufen als API-Endpunkte oder Hintergrund-Jobs in der App.
+
+4. **Monitoring & Security:**
+   - **Sentry:** Error-Tracking.
+   - **Cloudflare:** DDoS-Schutz und Caching vor der Hauptdomain.
+   - **Caddy:** Reverse Proxy für On-Demand-TLS bei Custom-Domains der Vereine.
+
+## Deployment-Guide
+
+Eine detaillierte Anleitung für das Setup auf Hetzner (falls gewünscht) findest du unter:
 👉 **[Hetzner Deployment Guide](../../HETZNER_DEPLOYMENT.md)**
-
-## Bestandteile des Deployments
-
-1. **App Container:** Führt die Next.js Webanwendung aus (`output: "standalone"`).
-2. **Worker Container:** Führt die BullMQ Background Jobs aus (E-Mail, DWZ Sync, Metadaten-Parsing).
-3. **Datenbank:** PostgreSQL 17.
-4. **Cache/Queue:** Redis 7.
-5. **Storage:** MinIO für Bilder, Dokumente und Protokolle.
-6. **Reverse Proxy:** Caddy Server, der sich automatisch um SSL (Let's Encrypt) kümmert und HTTPS-Traffic auf Port 3000 weiterleitet.

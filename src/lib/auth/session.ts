@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { cache } from "react";
+import { ROLE_PERMISSIONS, Permission } from "./permissions";
 
 // Cached session getter for server components
 export const getSession = cache(async () => {
@@ -111,66 +112,3 @@ export async function requirePermission(permission: string) {
   
   throw new Error("FORBIDDEN");
 }
-
-// Role-based permissions mapping (for server-side checks)
-const ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin: ["*"],
-  vorstand: [
-    "members.read",
-    "members.write",
-    "tournaments.read",
-    "tournaments.write",
-    "teams.read",
-    "teams.write",
-    "events.read",
-    "events.write",
-    "finance.read",
-    "finance.write",
-    "pages.read",
-    "pages.write",
-    "audit.read",
-    "gdpr.read",
-    "gdpr.write",
-  ],
-  sportwart: [
-    "members.read",
-    "tournaments.read",
-    "tournaments.write",
-    "teams.read",
-    "teams.write",
-    "events.read",
-    "events.write",
-  ],
-  jugendwart: [
-    "members.read",
-    "members.write",
-    "tournaments.read",
-    "teams.read",
-    "events.read",
-    "events.write",
-  ],
-  kassenwart: [
-    "members.read",
-    "finance.read",
-    "finance.write",
-    "audit.read",
-  ],
-  trainer: [
-    "members.read",
-    "tournaments.read",
-    "teams.read",
-    "events.read",
-  ],
-  mitglied: [
-    "members.read",
-    "tournaments.read",
-    "teams.read",
-    "events.read",
-  ],
-  eltern: [
-    "members.read",
-    "tournaments.read",
-    "teams.read",
-    "events.read",
-  ],
-};

@@ -22,6 +22,9 @@ export const createMemberSchema = createInsertSchema(members, {
   mandateSignedAt: z.string().date().optional().nullable().or(z.literal("")),
   mandateUrl: z.string().url().max(1000).optional().nullable().or(z.literal("")),
   notes: z.string().optional().nullable(),
+  medicalNotes: z.string().optional().nullable(),
+  emergencyContactName: z.string().max(200).optional().nullable(),
+  emergencyContactPhone: z.string().max(100).optional().nullable(),
 }).omit({
   id: true,
   createdAt: true,

@@ -48,6 +48,10 @@ export const members = pgTable(
     contributionRateId: uuid("contribution_rate_id"),
 
     notes: text("notes"),
+    medicalNotes: text("medical_notes"), // Should be encrypted
+    emergencyContactName: varchar("emergency_contact_name", { length: 200 }),
+    emergencyContactPhone: varchar("emergency_contact_phone", { length: 100 }),
+    
     photoConsent: boolean("photo_consent").default(false),
     newsletterConsent: boolean("newsletter_consent").default(false),
     resultPublicationConsent: boolean("result_publication_consent").default(true),

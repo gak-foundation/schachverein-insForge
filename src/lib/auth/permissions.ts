@@ -68,6 +68,12 @@ export const PERMISSIONS = {
   // Protocol permissions
   PROTOCOLS_READ: "protocols.read",
   PROTOCOLS_WRITE: "protocols.write",
+
+  // Youth Protection permissions
+  YOUTH_READ: "youth.read",           // Access to minor-specific data
+  YOUTH_WRITE: "youth.write",         // Modify minor-specific data
+  YOUTH_EMERGENCY: "youth.emergency", // Access to emergency contacts
+  YOUTH_CONSENT: "youth.consent",     // Manage parental consents
 } as const;
 
 // Permission type
@@ -107,6 +113,10 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.DOCUMENTS_WRITE,
     PERMISSIONS.PROTOCOLS_READ,
     PERMISSIONS.PROTOCOLS_WRITE,
+    PERMISSIONS.YOUTH_READ,
+    PERMISSIONS.YOUTH_WRITE,
+    PERMISSIONS.YOUTH_EMERGENCY,
+    PERMISSIONS.YOUTH_CONSENT,
   ],
   
   sportwart: [
@@ -134,6 +144,10 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.EVENTS_WRITE,
     PERMISSIONS.DWZ_READ,
     PERMISSIONS.GAMES_READ,
+    PERMISSIONS.YOUTH_READ,
+    PERMISSIONS.YOUTH_WRITE,
+    PERMISSIONS.YOUTH_EMERGENCY,
+    PERMISSIONS.YOUTH_CONSENT,
   ],
   
   kassenwart: [

@@ -7,7 +7,7 @@ Dieses Setup bündelt die **Web-App (Next.js)** und **PostgreSQL** (optional fü
 ## 1. Server Voraussetzungen
 
 Wir empfehlen einen **Hetzner Cloud Server** der CPX-Reihe:
-- **Modell:** CPX21 oder CX32 (min. 4 GB RAM empfohlen, 8 GB ideal für MinIO/Docker).
+- **Modell:** CPX21 oder CX32 (min. 4 GB RAM empfohlen).
 - **Betriebssystem:** Ubuntu 22.04 oder 24.04 LTS.
 - **Tools:** Docker, Docker Compose und Git müssen vorinstalliert sein.
 
@@ -109,8 +109,8 @@ Um eine neue Version auszurollen:
 ```bash
 cd /opt/schachverein
 git pull
-docker compose -f docker/docker-compose.yml build app worker
-docker compose -f docker/docker-compose.yml up -d --no-deps app worker
+docker compose -f docker/docker-compose.yml build app
+docker compose -f docker/docker-compose.yml up -d --no-deps app
 docker exec -it schachverein-app npm run db:push
 ```
 

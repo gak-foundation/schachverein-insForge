@@ -26,7 +26,7 @@ import { LichessSyncButton } from "@/components/clubs/lichess-sync-button";
 import { LichessGamesList } from "@/components/members/lichess-games-list";
 import { fetchLichessGames } from "@/lib/lichess";
 import { cn, calculateAge } from "@/lib/utils";
-import { ChevronLeft, Edit, Trash2, Calendar, Mail, Phone, User, Award, ShieldCheck, History } from "lucide-react";
+import { ChevronLeft, Edit, Trash2, Calendar, Mail, Phone, User, Award, ShieldCheck, History, AlertCircle } from "lucide-react";
 import { Member } from "@/types";
 
 export const metadata = {
@@ -84,6 +84,20 @@ export default async function MemberDetailPage({
   };
 
   const age = calculateAge(member.dateOfBirth);
+
+  const canSeeYouthData = hasPermission(
+    session.user.role ?? "mitglied",
+    session.user.permissions ?? [],
+    PERMISSIONS.YOUTH_READ,
+    session.user.isSuperAdmin
+  ) || (member.parentId === session.user.memberId);
+
+  const canSeeEmergencyData = hasPermission(
+    session.user.role ?? "mitglied",
+    session.user.permissions ?? [],
+    PERMISSIONS.YOUTH_EMERGENCY,
+    session.user.isSuperAdmin
+  ) || (member.parentId === session.user.memberId);
 
   return (
     <div className="space-y-8 pb-10">
@@ -233,6 +247,56 @@ export default async function MemberDetailPage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Jugendschutz & Notfallkontakte */}
+        {(canSeeYouthData || canSeeEmergencyData) && (
+          <Card className="border-red-100 dark:border-red-900/30 shadow-sm bg-red-50/20 dark:bg-red-900/5">
+            <CardHeader className="border-b border-red-100 dark:border-red-900/30">
+              <CardTitle className="flex items-center gap-2 text-lg text-red-700 dark:text-red-400">
+                <AlertCircle className="h-5 w-5" />
+                Jugendschutz & Notfallkontakte
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-6">
+                {canSeeEmergencyData && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-xs font-bold uppercase text-red-600/70 dark:text-red-400/70 tracking-widest mb-1">Notfallkontakt Name</dt>
+                      <dd className="text-base font-semibold text-slate-900 dark:text-slate-100">{member.emergencyContactName || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-bold uppercase text-red-600/70 dark:text-red-400/70 tracking-widest mb-1">Notfallkontakt Telefon</dt>
+                      <dd className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                        {member.emergencyContactPhone ? (
+                          <a href={`tel:${member.emergencyContactPhone}`} className="hover:underline flex items-center gap-1.5">
+                            <Phone className="h-4 w-4" />
+                            {member.emergencyContactPhone}
+                          </a>
+                        ) : "—"}
+                      </dd>
+                    </div>
+                  </div>
+                )}
+                
+                {canSeeYouthData && member.medicalNotes && (
+                  <div className="p-4 rounded-lg bg-white dark:bg-slate-950 border border-red-200 dark:border-red-900/50">
+                    <dt className="text-xs font-bold uppercase text-red-600 dark:text-red-400 tracking-widest mb-2 flex items-center gap-1.5">
+                      <AlertCircle className="h-3.5 w-3.5" /> Medizinische Hinweise / Allergien
+                    </dt>
+                    <dd className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                      {member.medicalNotes}
+                    </dd>
+                  </div>
+                )}
+                
+                {!member.emergencyContactName && !member.emergencyContactPhone && !member.medicalNotes && (
+                  <p className="text-sm text-slate-500 italic text-center py-4">Keine Notfallinformationen hinterlegt.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Einwilligungen & Rechtliches */}
         <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800">

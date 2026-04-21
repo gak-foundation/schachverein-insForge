@@ -1,4 +1,4 @@
-﻿# Techstack & Architektur - Schachverein Software
+# Techstack & Architektur - Schachverein Software
 
 Diese Dokumentation beschreibt den aktuellen technologischen Stand und die Architektur der Schachvereins-Software. Das System ist als Multi-Tenant (Multi-Club) SaaS-Plattform konzipiert.
 
@@ -24,10 +24,8 @@ Die Software deckt die spezifischen Bedürfnisse von Schachvereinen ab, die übe
 - **Mannschaftsbetrieb**: Saisons, Ligen, Brettreihenfolgen und Ergebnismeldung.
 - **Partiedatenbank**: Lichess-Integration, Verlinkung von Partien, Analyse-Links.
 - **Infrastruktur & Background**:
-    - **Redis (ioredis)**: Caching, Rate-Limiting und BullMQ-Backend.
-    - **BullMQ**: Queue für E-Mail-Versand (Nodemailer/SMTP) und Hintergrundprozesse.
-    - **MinIO / S3**: Speicherung von Dokumenten (Satzungen, Protokolle).
-- **Docker Compose**: Lokale Entwicklungsumgebung für DB, Redis und Storage.
+    - **Supabase**: Backend-as-a-Service für Auth, Database, Storage (S3) und Realtime.
+    - **Asynchrone Funktionen**: Hintergrundverarbeitung ohne dediziertes Queue-System.
 
 ---
 
@@ -36,15 +34,13 @@ Die Software deckt die spezifischen Bedürfnisse von Schachvereinen ab, die übe
 Das System implementiert eine mehrschichtige Sicherheitsstrategie:
 
 1. **Authentifizierung**:
-   - Better Auth mit E-Mail/Passwort (bcrypt 12).
-   - 2FA/TOTP Unterstützung.
-   - Account-Lockout nach 5 Fehlversuchen (30 Min Sperre).
+   - **Supabase Auth**: JWT-basiert mit E-Mail/Passwort und OAuth-Optionen.
+   - RBAC-Logik in Next.js Server Actions und Datenbank-Policies (RLS).
 2. **Autorisierung (RBAC)**:
    - Rollen: `admin`, `vorstand`, `sportwart`, `jugendwart`, `kassenwart`, `trainer`, `mitglied`, `eltern`.
    - Berechtigungen: Feingranular (z.B. `finance.sepa`, `tournaments.results`).
    - Per-User Overrides möglich.
 3. **Schutzmaßnahmen**:
-   - **Rate Limiting**: IP- und User-basiert (Login: 5/15min, Register: 3/60min).
    - **Security Headers**: Strikte CSP, HSTS, X-Frame-Options (Deny).
    - **Verschlüsselung**: AES-256-GCM für sensible Daten (IBANs).
    - **Audit-Log**: Lückenlose Protokollierung aller kritischen Aktionen (`auditLog`-Tabelle).
@@ -55,7 +51,7 @@ Das System implementiert eine mehrschichtige Sicherheitsstrategie:
 
 Das Datenmodell ist hochgradig relational und in der `src/lib/db/schema/` Verzeichnisstruktur organisiert:
 
-- **Auth**: `authUsers`, `authSessions`, `authAccounts`, `authVerifications`, `authTwoFactors`.
+- **Auth**: Supabase Auth Schema (intern) + `users` Profiltabelle.
 - **Organisation**: `clubs`, `clubMemberships`, `clubInvitations`.
 - **Mitglieder**: `members`, `dwzHistory`, `availability`.
 - **Sportbetrieb**: `seasons`, `teams`, `boardOrders`, `matches`, `matchResults`.
@@ -73,9 +69,8 @@ Das Datenmodell ist hochgradig relational und in der `src/lib/db/schema/` Verzei
 - `npm run test:e2e` - End-to-End Tests (Playwright)
 
 ### Deployment & Infrastruktur
-- **Hosting**: "All-Hetzner" Docker-Deployment (DE) für volle DSGVO-Konformität und Kontrolle.
-- **Reverse Proxy**: Caddy für SSL (Let's Encrypt) und Routing.
-- **Containerization**: Docker & Docker Compose für alle Dienste.
+- **Hosting**: Supabase Cloud + Vercel / Hetzner Docker.
+- **Reverse Proxy**: Caddy für SSL (Let's Encrypt) und Routing bei Custom-Domains.
 - **CI/CD**: GitHub Actions für automatisiertes Bauen und Testen.
 
 ---

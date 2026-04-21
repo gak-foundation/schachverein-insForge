@@ -1,26 +1,23 @@
-# 🏗️ Technische Architektur: All-Hetzner (Docker Compose)
+# 🏗️ Technische Architektur: Hetzner + Supabase Hybrid
 
-Diese Architektur nutzt einen dedizierten Server (z. B. Hetzner Cloud) für alle Dienste. Dies löst die im ursprünglichen Konzept identifizierten Blindspots (Serverless-Timeouts auf Vercel, DGT-WebSockets, bbpPairings in Docker, DSGVO-Bedenken bei US-Clouds).
+Diese Architektur nutzt einen dedizierten Server (z. B. Hetzner Cloud) für die Next.js Anwendung, während Datenbank, Authentifizierung und Storage über **Supabase (EU-Region)** verwaltet werden.
 
-## Komponenten im "All-Hetzner" Setup
+## Komponenten im Hybrid-Setup
 
 | Komponente | Technologie | Aufgabe |
 |------------|-------------|---------|
 | **Frontend & API** | Next.js (Node.js) | Server-Side Rendering, API-Routen, UI |
-| **Worker** | BullMQ (Node.js) | Hintergrundaufgaben (E-Mails, Metadaten-Parsing, Auslosungen) |
-| **Datenbank** | PostgreSQL | Persistente Speicherung (Mitglieder, Turniere) |
-| **Cache & Queue** | Redis | Caching, Rate-Limiting, BullMQ-Warteschlange |
-| **Objektspeicher** | MinIO | DSGVO-konforme Speicherung von PDFs, Protokollen, Bildern (S3-API) |
+| **Backend-as-a-Service** | Supabase | Auth, PostgreSQL Datenbank, S3 Storage (EU-Frankfurt) |
 | **Turnier-Engine** | bbpPairings | FIDE-konforme Schweizer-System Auslosungen via TRF |
 | **Reverse Proxy** | Caddy | SSL (Let's Encrypt), Routing zu Next.js |
 
 ## Vorteile
 
 1. **Keine Serverless-Timeouts:** Bei großen Turnieren dauert die Berechnung oder der Import oft länger als 10–60 Sekunden. Auf einem eigenen Server gibt es diese Limits nicht.
-2. **Datenschutz (DSGVO):** Alles läuft in einem deutschen Rechenzentrum. Keine Datenübermittlung in die USA (wie bei Vercel, Supabase oder Neon üblich).
-3. **Persistente Verbindungen:** Zukünftige Features wie DGT-Live-Boards benötigen dauerhafte WebSocket-Verbindungen.
-4. **Kostenkontrolle:** Fixer monatlicher Betrag (z.B. ~9 € für CPX21), keine versteckten Egress- oder Compute-Kosten.
+2. **Vereinfachte Infrastruktur:** Durch den Wegfall von lokalem Redis, BullMQ und MinIO ist das System wesentlich wartungsärmer.
+3. **Skalierbarkeit:** Supabase übernimmt das Management der Datenbank-Performance und Backups.
+4. **DSGVO-Konformität:** Nutzung der Supabase EU-Region (Frankfurt) und Hosting der App in Deutschland.
 
 ## Deployment-Ablauf
 
-Die gesamte Infrastruktur wird per `docker-compose.yml` orchestriert. Details siehe [HETZNER_DEPLOYMENT.md](../../HETZNER_DEPLOYMENT.md).
+Die Anwendung wird per `docker-compose.yml` auf dem Hetzner-Server gestartet. Details siehe [HETZNER_DEPLOYMENT.md](../../HETZNER_DEPLOYMENT.md).

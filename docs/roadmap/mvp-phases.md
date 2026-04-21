@@ -34,10 +34,10 @@ Das MVP muss **mindestens eines** dieser Probleme deutlich besser lösen, sonst 
 
 | Feature | Details | Priorität |
 |---|---|---|
-| E-Mail/Passwort-Login | Über Auth.js | 🔴 Must |
+| E-Mail/Passwort-Login | Über Supabase Auth | 🔴 Must |
 | Passwort-Reset | Standard-Flow | 🔴 Must |
 | Einladungs-System | Vorstand lädt Mitglieder per E-Mail ein | 🔴 Must |
-| Lichess-OAuth | „Login with Lichess" | 🟢 Nice |
+| OAuth | Login with Lichess / Google | 🟡 Should |
 
 ### Öffentliche Vereinswebsite
 
@@ -53,15 +53,16 @@ Das MVP muss **mindestens eines** dieser Probleme deutlich besser lösen, sonst 
 
 ```
 ✅ Next.js + TypeScript Projekt aufgesetzt
-✅ PostgreSQL + Prisma Schema (Members, Users, Roles)
-✅ Auth.js mit E-Mail/Passwort
+✅ PostgreSQL + Drizzle Schema (Members, Users, Roles)
+✅ Supabase Auth (E-Mail/Passwort, JWT)
 ✅ Basis-Layout: Öffentlich vs. interner Bereich
 ✅ Responsives Design (Tailwind + shadcn/ui)
-✅ Docker-Setup + Deployment auf Hetzner
-✅ Automatische Backups (pg_dump → S3, Cron)
+✅ Docker-Setup + Deployment auf Supabase/Vercel
+✅ Automatische Backups (Supabase PITR)
 ✅ DSGVO: Datenschutzerklärung, Cookie-Hinweis
 ✅ @media print Stylesheet für Mitgliederliste
 ```
+
 
 ### Datenmodell Release 1
 
@@ -338,7 +339,7 @@ enum Role {
 
 | Feature | Details |
 |---|---|
-| **DeWIS-Sync** | Automatischer DWZ-Abgleich (BullMQ-Cronjob) |
+| **DeWIS-Sync** | Automatischer DWZ-Abgleich (Asynchrone Hintergrund-Tasks) |
 | **Lichess-Integration** | Online-Turnier-Ergebnisse importieren, Lichess-Profile verknüpfen |
 | **Schweizer System** | bbpPairings/JaVaFo als Microservice integriert |
 | **Ergebnismeldung** | Export im Format des Landesverbands |

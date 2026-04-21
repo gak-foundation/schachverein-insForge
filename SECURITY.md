@@ -2,11 +2,6 @@
 
 ## Generieren sicherer Schlüssel
 
-### Für AUTH_SECRET (NextAuth)
-```bash
-openssl rand -base64 32
-```
-
 ### Für ENCRYPTION_KEY (SEPA-Daten)
 ```bash
 openssl rand -hex 32
@@ -23,8 +18,6 @@ Erstelle eine `.env` Datei im `docker/` Verzeichnis:
 
 ```bash
 POSTGRES_PASSWORD=dein-sicheres-passwort
-REDIS_PASSWORD=dein-sicheres-passwort
-MINIO_ROOT_PASSWORD=dein-sicheres-passwort-min-8-zeichen
 ```
 
 Dann starten:
@@ -34,11 +27,12 @@ docker compose -f docker/docker-compose.yml --env-file docker/.env up -d
 
 ## 2FA Einrichtung
 
-Benutzer mit den Rollen `admin` und `kassenwart` müssen 2FA aktivieren.
+Die Zwei-Faktor-Authentifizierung (2FA) wird über Supabase Auth verwaltet. Administratoren und Kassenwarte sollten 2FA in ihren Profileinstellungen aktivieren.
 
 ## Wichtige Sicherheitshinweise
 
-1. **Niemals** die Standardpasswörter in Produktion verwenden
-2. `.env` Dateien niemals committen
-3. Regelmäßige Backups verschlüsseln
-4. Datenbank-Zugriff auf localhost beschränken
+1. **Niemals** die Standardpasswörter in Produktion verwenden.
+2. `.env` Dateien niemals committen.
+3. Regelmäßige Backups der PostgreSQL Datenbank erstellen (auch bei Supabase).
+4. AES-Verschlüsselung (`ENCRYPTION_KEY`) sicher verwahren – ohne diesen Key sind IBANs unwiderruflich verloren.
+5. API-Keys (Supabase Service Role) nur serverseitig verwenden.

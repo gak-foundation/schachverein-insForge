@@ -146,7 +146,7 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 
 ## 🎓 8. Training & Jugendarbeit
 
-- **Trainingsgruppen** mit Zuordnung von Trainern und Schülern
+- **Trainingsgruppen** mit Zuordnung von Trainern and Schülern
 - **Fortschrittsanalyse** pro Jugendlichem (DWZ-Entwicklung, Aufgaben-Statistik)
 - **Taktikaufgaben-Datenbank**
 - **Eltern-Portal** (Phase 3):
@@ -169,7 +169,7 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 - **Newsletter-System** (`newsletters`) mit Zielgruppen-Filter
 - **Interne Nachrichten** zwischen Mitgliedern
 - **Push-Benachrichtigungen** (Web Push)
-- **E-Mail-Versand** via BullMQ + Nodemailer/SMTP (Warteschlange)
+- **E-Mail-Versand**: Asynchrone Hintergrundverarbeitung (Nodemailer/Postmark)
 
 </details>
 
@@ -195,7 +195,7 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
   - Datenübertragbarkeit (Art. 20 DSGVO)
 - **Einwilligungsmanagement** mit Versionierung
 - **Dokumentenarchiv** (`documents`): Satzungen, Protokolle, Beitragsordnung
-- **Hosting bevorzugt Hetzner DE** für volle DSGVO-Konformität
+- **Hosting bevorzugt Supabase Cloud / Vercel (EU Region)**
 
 ---
 
@@ -203,16 +203,16 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 
 | Schicht | Maßnahme |
 |---------|----------|
-| **Authentifizierung** | Better Auth 1.6, bcrypt (Cost 12) |
-| **2FA** | TOTP verpflichtend für Admin-Rollen |
-| **Account-Lockout** | 5 Fehlversuche → 30 Min Sperre |
-| **Rate Limiting** | Login 5/15min, Register 3/60min (IP + User) |
+| **Authentifizierung** | Supabase Auth (JWT) |
+| **RBAC / RLS** | Row Level Security in DB + Middleware Check |
+| **Account-Lockout** | Supabase Built-in Schutz |
+| **Rate Limiting** | Supabase API Limits + Cloudflare |
 | **Verschlüsselung** | AES-256-GCM für IBANs und sensible Daten |
 | **Headers** | Strikte CSP, HSTS, `X-Frame-Options: DENY` |
 | **CSRF-Schutz** | Built-in |
 | **SQL-Injection** | Verhindert durch Drizzle ORM (parametrisiert) |
 | **Audit-Log** | Lückenlose Protokollierung (`auditLog`) |
-| **OAuth** | GitHub, Lichess (optional) |
+| **OAuth** | Google, Lichess (via Supabase) |
 
 ---
 
@@ -224,8 +224,8 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 - **DGT-Boards**: Hardware-Schnittstelle für Live-Übertragung
 - **SEPA**: pain.008 XML-Generator
 - **Mollie / Stripe**: Zahlungsabwicklung
-- **SMTP**: E-Mail-Versand
-- **S3 / MinIO**: Objektspeicher (Dokumente, Protokolle)
+- **SMTP**: E-Mail-Versand (Postmark/MailerSend)
+- **Supabase Storage**: Objektspeicher (Dokumente, Protokolle)
 - **iCal / Google Calendar**: Kalender-Sync
 - **REST API** (Phase 4): Für externe Entwickler und Verbände
 
@@ -250,13 +250,13 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 - **Next.js 16.2** mit App Router & Server Components
 - **TypeScript 5.8 Strict Mode**
 - **PostgreSQL 17 + Drizzle ORM 0.45**
-- **Redis (ioredis)** für Caching & Rate-Limiting
-- **BullMQ** für Hintergrund-Jobs (E-Mail, Metadaten-Parsing)
+- **Supabase Backend**: Auth, Database, Storage, Realtime
+- **Asynchrone Hintergrund-Tasks** für E-Mails und Metadaten
 - **Zod** für Input-Validierung
 - **Zustand 5.0** für Client-State
 - **shadcn/ui + Tailwind CSS 4**
-- **Docker Compose** für lokale Entwicklung & Produktion
-- **Deployment**: "All-Hetzner" (Docker Compose) für volle DSGVO-Konformität und Vermeidung von Serverless-Timeouts.
+- **Docker Compose** für lokale Entwicklung
+- **Deployment**: Supabase Cloud (EU) + Vercel / Hetzner Docker.
 
 </details>
 
@@ -276,11 +276,9 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 
 | Tarif | Zielgruppe | Preis |
 |-------|-----------|-------|
-| **Basis** | Kleine Dorfvereine (bis 30 Mitglieder) | **19,00 € / Monat** |
-| **Pro** | Stadtvereine (bis 100 Mitglieder) | **39,00 € / Monat** |
-| **Verbandslösung** | Landesverbände (alle Untervereine) | Individuelle Flatrate |
-
-**Optional**: On-Premise-Installation für technikaffine Vereine mit eigenem Server.
+| **Starter** | Kleine Dorfvereine (bis 30 Mitglieder) | **0,00 € (Dauerhaft)** |
+| **Verein** | Typische Vereine (bis 200 Mitglieder) | **9,90 € / Monat** |
+| **Pro** | Großvereine / Verbände | **24,90 € / Monat** |
 
 ---
 
@@ -298,11 +296,6 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 ## 🔮 17. Zukunftsvision & Innovation
 
 - **🤖 KI-Trainer**: Automatisierte Fehleranalyse der Vereinspartien → individuelle Taktikaufgaben
-- **🥽 Virtual Reality**: Virtuelle Vereinsräume für Online-Trainingsabende in 3D
-- **🏠 Smart Club-Home**: IoT-Integration für Vereinsheime
-  - Digitaler Türzugang per App für Mitglieder
-  - Automatisierte Heizungssteuerung an Spielabenden
-  - Anwesenheits-Logging
 - **🧠 Eröffnungs-Scouting**: KI-Analyse der Gegner in der Liga
 - **📱 Native Mobile App** (iOS/Android) zusätzlich zur PWA
 
@@ -311,4 +304,3 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 ### Zusammenfassung
 
 Das System vereint **administrative Effizienz** (Mitglieder, Finanzen, Recht) mit **sportlicher Professionalität** (Turniere, Liga, Analyse) auf einer **mandantenfähigen, DSGVO-konformen SaaS-Plattform**. Durch das modulare Design mit 8 Rollen, 23 Berechtigungen und spezialisierten Schachmodulen (bbpPairings, TRF, DGT, Stockfish) wird jede Vereinsgröße — vom Dorfverein bis zum Landesverband — abgedeckt.
-

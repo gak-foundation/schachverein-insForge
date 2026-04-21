@@ -43,7 +43,7 @@
 - `src/lib/auth/session.ts` - Server-side session utilities
 - `src/lib/actions/` - Server Actions nach Thema (z. B. `members.ts`, `finance.ts`)
 - `src/lib/validations/index.ts` - Zod validation schemas
-- `src/proxy.ts` - Next.js middleware (route protection)
+- `src/middleware.ts` - Next.js middleware (route protection, host-based routing)
 - `src/components/layout/sidebar.tsx` - Navigation with RBAC filtering
 
 ## Database Migrations
