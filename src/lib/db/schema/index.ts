@@ -6,6 +6,7 @@ export * from "./members-relations";
 export * from "./members-extended";
 export * from "./seasons";
 export * from "./teams";
+export * from "./teams-relations";
 export * from "./tournaments";
 export * from "./matches";
 export * from "./events";

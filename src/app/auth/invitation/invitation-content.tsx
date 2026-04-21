@@ -40,7 +40,6 @@ export function InvitationContent({
         setSuccess(true);
         setTimeout(() => {
           router.push("/dashboard");
-          router.refresh();
         }, 2000);
       }
     } catch (e) {

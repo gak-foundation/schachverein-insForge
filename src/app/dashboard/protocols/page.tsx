@@ -43,7 +43,7 @@ export default async function ProtocolsPage() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.ADMIN_AUDIT)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.ADMIN_AUDIT, session.user.isSuperAdmin)) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Keine Berechtigung fuer die Audit-Protokolle.</p>

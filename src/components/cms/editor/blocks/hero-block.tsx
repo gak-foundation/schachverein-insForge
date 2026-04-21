@@ -9,11 +9,10 @@ interface HeroBlockProps {
   mode: "editor" | "preview" | "live";
 }
 
-export function HeroBlock({ data, mode }: HeroBlockProps) {
+export function HeroBlock({ data }: HeroBlockProps) {
   const { 
     title = "Überschrift eingeben", 
     subtitle = "Unterüberschrift (optional)",
-    variant = "full",
     overlayOpacity = 50,
     height = "75vh"
   } = data;

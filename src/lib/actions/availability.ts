@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { availability, matches, members, clubMemberships, teams } from "@/lib/db/schema";
+import { availability, matches, members, teams } from "@/lib/db/schema";
 import { eq, and, sql, gte } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
@@ -83,7 +83,7 @@ export async function updateAvailability(matchId: string, status: "available" | 
 }
 
 export async function getMatchAvailability(matchId: string) {
-  const clubId = await requireClubId();
+  await requireClubId();
 
   return db
     .select({
@@ -97,3 +97,4 @@ export async function getMatchAvailability(matchId: string) {
     .innerJoin(members, eq(availability.memberId, members.id))
     .where(eq(availability.matchId, matchId));
 }
+

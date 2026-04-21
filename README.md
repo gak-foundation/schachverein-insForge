@@ -4,10 +4,10 @@ Eine ganzheitliche, digitale SaaS-Plattform für Schachvereine. Vereint Mitglied
 
 ## Features
 
-- 👤 **Rollenbasierte Mitgliederverwaltung** (RBAC)
-- 💶 **Finanzwesen** (SEPA-Lastschriften, Beitragsberechnung)
-- ♟️ **Turnierverwaltung** (Schweizer System, DWZ/Elo, TRF-Export)
-- 🛡️ **DSGVO-Konformität** (Einwilligungen, Lösch-Workflows)
+- ♟️ **Turnierverwaltung** (Schweizer System via bbpPairings, echte DeWIS-Synchronisation, TRF-Export)
+- 💶 **Finanzwesen** (Verschlüsselte SEPA-Daten, Beitragsberechnung)
+- 🛡️ **DSGVO & Sicherheit** (Surgical Encryption: IBAN/BIC AES-256-GCM verschlüsselt, Einwilligungshistorie)
+- ♿ **Barrierefreiheit (BFSG 2025)** (Optimiert für Zielgruppe 55+, OKLCH High-Contrast)
 - 📱 **Progressive Web App (PWA)** für den Einsatz am Spieltag (Offline-fähig)
 - 📈 **API-Integrationen** (Lichess, DeWIS, FIDE)
 
@@ -16,9 +16,10 @@ Eine ganzheitliche, digitale SaaS-Plattform für Schachvereine. Vereint Mitglied
 - **Framework**: Next.js 16.2 (App Router)
 - **Database**: PostgreSQL (via Drizzle ORM)
 - **Authentication**: Better Auth (Passkey, E-Mail/Passwort, OAuth)
-- **Styling**: Tailwind CSS 4 + shadcn/ui
-- **Background Jobs**: BullMQ + Redis
+- **Styling**: Tailwind CSS 4 (OKLCH Themes)
+- **Background Jobs**: BullMQ + Redis (Persistent auf Hetzner)
 - **Containerization**: Docker & Docker Compose
+- **Security**: AES-256-GCM Encryption für Finanzdaten
 
 ## Lokale Entwicklung
 

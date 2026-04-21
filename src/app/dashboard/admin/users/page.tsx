@@ -210,7 +210,7 @@ export default async function AdminUsersPage({
     redirect("/auth/login");
   }
 
-  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions || [], PERMISSIONS.ADMIN_USERS)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions || [], PERMISSIONS.ADMIN_USERS, session.user.isSuperAdmin)) {
     redirect("/dashboard");
   }
 

@@ -2,11 +2,11 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getTeamById, getTeamMembers, getMatches } from "@/lib/actions/teams";
+import { getTeamById, getTeamMembers } from "@/lib/actions/teams";
 import { getMemberById } from "@/lib/actions/members";
 import { db } from "@/lib/db";
-import { teams, members, matches, seasons } from "@/lib/db/schema";
-import { eq, desc, and, or } from "drizzle-orm";
+import { teams, matches } from "@/lib/db/schema";
+import { eq, desc, or } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,7 +34,6 @@ import {
   Crown,
   ChevronLeft,
   Trophy,
-  MapPin,
   Target
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -58,7 +57,7 @@ export default async function TeamDetailPage({
     notFound();
   }
 
-  const canEdit = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.TEAMS_WRITE);
+  const canEdit = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.TEAMS_WRITE, session.user.isSuperAdmin);
   const [teamMembers, captain, teamMatches] = await Promise.all([
     getTeamMembers(id),
     team.captainId ? getMemberById(team.captainId) : Promise.resolve(null),

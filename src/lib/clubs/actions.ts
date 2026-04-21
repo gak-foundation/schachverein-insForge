@@ -1,11 +1,10 @@
 "use server";
 
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   clubs,
   clubMemberships,
-  clubInvitations,
   members,
   authUsers,
 } from "@/lib/db/schema";
@@ -19,7 +18,6 @@ import {
   createClubInvitation,
   getInvitationByToken,
   markInvitationUsed,
-  getClubBySlug,
   updateUserActiveClub,
   getClubById,
 } from "./queries";
@@ -72,7 +70,6 @@ export async function createClubAction(formData: FormData) {
 }
 
 export async function updateClubAction(formData: FormData) {
-  const session = await requireAuth();
   const club = await requireClub();
 
   const name = formData.get("name") as string;
@@ -176,12 +173,13 @@ export async function inviteMemberToClubAction(formData: FormData) {
   });
 
   // Send invitation email
-  await sendClubInvitationEmail(
+  const { getInvitationUrl } = await import("@/lib/auth/invitations");
+  await sendClubInvitationEmail({
     email,
-    invitation.token,
-    club.name,
-    session.user.name
-  );
+    invitationUrl: getInvitationUrl(invitation.token),
+    clubName: club.name,
+    invitedByName: session.user.name,
+  });
 
   return {
     success: true,
@@ -214,7 +212,6 @@ export async function removeMemberFromClubAction(memberId: string) {
 }
 
 export async function updateMemberRoleAction(memberId: string, role: string) {
-  const session = await requireAuth();
   const club = await requireClub();
 
   await db
@@ -291,6 +288,8 @@ export async function getAllClubsAction() {
       subscriptionStatus: clubs.subscriptionStatus,
       subscriptionExpiresAt: clubs.subscriptionExpiresAt,
       createdAt: clubs.createdAt,
+      stripeCustomerId: clubs.stripeCustomerId,
+      stripeSubscriptionId: clubs.stripeSubscriptionId,
       memberCount: sql<number>`(
         SELECT COUNT(*) FROM ${clubMemberships}
         WHERE ${clubMemberships.clubId} = ${clubs.id}
@@ -301,6 +300,43 @@ export async function getAllClubsAction() {
     .orderBy(clubs.createdAt);
 
   return allClubs;
+}
+
+export async function getAllUsersAction() {
+  const session = await requireAuth();
+
+  if (!session.user.isSuperAdmin) {
+    throw new Error("Nicht autorisiert");
+  }
+
+  return db
+    .select({
+      id: authUsers.id,
+      name: authUsers.name,
+      email: authUsers.email,
+      role: authUsers.role,
+      isSuperAdmin: authUsers.isSuperAdmin,
+      createdAt: authUsers.createdAt,
+      lastLoginAt: authUsers.updatedAt,
+    })
+    .from(authUsers)
+    .orderBy(desc(authUsers.createdAt));
+}
+
+export async function toggleClubStatusAction(clubId: string, isActive: boolean) {
+  const session = await requireAuth();
+
+  if (!session.user.isSuperAdmin) {
+    throw new Error("Nicht autorisiert");
+  }
+
+  await db
+    .update(clubs)
+    .set({ isActive, updatedAt: new Date() })
+    .where(eq(clubs.id, clubId));
+
+  revalidatePath("/super-admin");
+  return { success: true };
 }
 
 export async function impersonateClubAction(clubId: string) {

@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-export function TournamentCardBlock({ data }: { data: any, blockId: string, mode: string }) {
+export function TournamentCardBlock({ }: { data: unknown, blockId: string, mode: string }) {
   return (
     <Card className="max-w-md mx-auto overflow-hidden">
       <div className="h-32 bg-primary flex items-center justify-center">

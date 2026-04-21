@@ -6,7 +6,6 @@ import { eq, desc, asc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "./utils";
 import { generateRoundRobinPairings } from "@/lib/pairings/round-robin";
-import { generateSwissPairings } from "@/lib/pairings/swiss";
 import { generateTRFFromTournament } from "@/lib/trf/generator";
 
 export async function getTournaments() {
@@ -578,6 +577,8 @@ export async function generateTRF(tournamentId: string) {
   return generateTRFFromTournament(tournamentId);
 }
 
+import { getPairingQueue } from "@/lib/jobs/pairing-worker";
+
 export async function generateSwissRound(tournamentId: string) {
   const clubId = await requireClubId();
 
@@ -616,46 +617,26 @@ export async function generateSwissRound(tournamentId: string) {
   // 1. Generate TRF from current tournament state
   const trf = await generateTRFFromTournament(tournamentId);
 
-  // 2. Generate pairings using bbpPairings (Swiss Engine)
-  const result = await generateSwissPairings(trf, {
-    system: "dutch", // Default FIDE system
-    round: nextRound,
+  // 2. Queue the pairing job
+  const queue = getPairingQueue();
+  if (!queue) {
+    throw new Error("Pairing-Service nicht verfügbar (Redis-Verbindung fehlt)");
+  }
+
+  const job = await queue.add(`pairing-${tournamentId}-${nextRound}`, {
+    tournamentId,
+    trfContent: trf,
+    options: {
+      system: "dutch",
+      round: nextRound,
+    },
   });
-
-  if (!result.success || !result.pairings) {
-    throw new Error(`Fehler bei der Auslosung: ${result.errors?.join(", ") || "Unbekannter Fehler"}`);
-  }
-
-  // 3. Create game records for the new round
-  // Need to map TRF IDs (1, 2, 3...) back to member IDs
-  const participants = await db
-    .select({
-      id: tournamentParticipants.id,
-      memberId: tournamentParticipants.memberId,
-    })
-    .from(tournamentParticipants)
-    .where(eq(tournamentParticipants.tournamentId, tournamentId));
-  
-  // TRF generator uses index+1 as ID
-  const trfIdToMemberId = new Map(participants.map((p, idx) => [String(idx + 1).padStart(4, '0'), p.memberId]));
-
-  for (const pairing of result.pairings) {
-    const whiteId = trfIdToMemberId.get(pairing.whiteId);
-    const blackId = trfIdToMemberId.get(pairing.blackId);
-
-    if (whiteId && blackId) {
-      await db.insert(games).values({
-        clubId,
-        tournamentId,
-        round: nextRound,
-        boardNumber: pairing.board,
-        whiteId,
-        blackId,
-      });
-    }
-  }
 
   revalidatePath(`/dashboard/tournaments/${tournamentId}`);
 
-  return { success: true, round: nextRound, pairings: result.pairings.length };
+  return {
+    success: true,
+    jobId: job.id,
+    message: "Die Auslosung wurde gestartet und wird im Hintergrund verarbeitet.",
+  };
 }

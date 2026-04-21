@@ -57,7 +57,7 @@ export async function importMembersCSV(formData: FormData) {
             oldStatus: existing.status,
             newStatus: validated.status as "active" | "inactive" | "resigned" | "honorary",
             reason: "Status durch CSV-Import aktualisiert",
-            changedBy: session?.user.id,
+            changedBy: session?.user.memberId ?? null,
           });
         }
 
@@ -92,7 +92,7 @@ export async function importMembersCSV(formData: FormData) {
           memberId,
           newStatus: validated.status as "active" | "inactive" | "resigned" | "honorary",
           reason: "Mitglied durch CSV-Import angelegt",
-          changedBy: session?.user.id,
+          changedBy: session?.user.memberId ?? null,
         });
       }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { Menu, X, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ interface NavbarProps {
   logoUrl?: string | null;
 }
 
-export function Navbar({ clubName, clubSlug, logoUrl }: NavbarProps) {
+export function Navbar({ clubName, logoUrl }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -30,7 +31,7 @@ export function Navbar({ clubName, clubSlug, logoUrl }: NavbarProps) {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             {logoUrl ? (
-              <img src={logoUrl} alt={clubName} className="h-10 w-10 object-contain rounded-lg" />
+              <Image src={logoUrl} alt={clubName} width={40} height={40} className="object-contain rounded-lg" />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-transform group-hover:scale-105">
                 <span className="text-2xl font-serif">♔</span>

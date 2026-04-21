@@ -25,7 +25,7 @@ export function BlockInspector() {
     );
   }
 
-  const handleUpdate = (data: any) => {
+  const handleUpdate = (data: Record<string, unknown>) => {
     updateBlock(activeBlock.id, data);
   };
 

@@ -7,13 +7,12 @@ import {
   ArrowRight,
   Shield,
   Zap,
-  BookOpen,
   PieChart,
   Mail,
   Smartphone,
-  LayoutDashboard,
   CheckCircle2
 } from "lucide-react";
+import { MiniManager } from "@/components/marketing/mini-manager";
 
 export default function SaaSPage() {
   return (
@@ -50,31 +49,10 @@ export default function SaaSPage() {
             </p>
           </div>
           
-          {/* Dashboard Preview Mockup */}
-          <div className="mt-20 relative max-w-5xl mx-auto">
+          {/* Interactive Mini Manager */}
+          <div id="demo" className="mt-20 relative max-w-5xl mx-auto scroll-mt-24">
             <div className="absolute -inset-1 bg-linear-to-r from-primary to-indigo-600 rounded-2xl blur opacity-20" />
-            <div className="relative bg-card border-4 border-slate-900 rounded-xl shadow-2xl overflow-hidden aspect-video flex">
-               {/* Sidebar Mockup */}
-               <div className="w-1/5 border-r bg-slate-50 hidden sm:block p-4 space-y-4">
-                 <div className="h-4 w-3/4 bg-slate-200 rounded animate-pulse" />
-                 <div className="space-y-2">
-                   {[1,2,3,4,5].map(i => <div key={i} className="h-3 w-full bg-slate-100 rounded" />)}
-                 </div>
-               </div>
-               {/* Main Content Mockup */}
-               <div className="flex-1 p-8">
-                 <div className="flex justify-between items-center mb-8">
-                   <div className="h-8 w-48 bg-slate-200 rounded" />
-                   <div className="h-10 w-32 bg-primary/20 rounded" />
-                 </div>
-                 <div className="grid grid-cols-3 gap-4 mb-8">
-                   {[1,2,3].map(i => <div key={i} className="h-24 bg-slate-50 border border-dashed rounded-lg" />)}
-                 </div>
-                 <div className="space-y-4">
-                   {[1,2,3,4].map(i => <div key={i} className="h-12 bg-white border rounded shadow-sm" />)}
-                 </div>
-               </div>
-            </div>
+            <MiniManager />
           </div>
         </div>
       </section>

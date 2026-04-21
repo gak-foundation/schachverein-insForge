@@ -6,7 +6,6 @@ import {
   jsonb,
   index,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 import { clubs } from "./clubs";
 
 export const auditLog = pgTable(

@@ -4,7 +4,6 @@ import {
   varchar,
   timestamp,
   integer,
-  boolean,
   date,
   decimal,
   index,

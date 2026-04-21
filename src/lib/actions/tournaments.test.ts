@@ -349,7 +349,8 @@ describe("Tournament Actions", () => {
       const result = await tournaments.generateSwissRound("tournament-1");
 
       expect(result.success).toBe(true);
-      expect(result.round).toBe(1);
+      expect(result).toHaveProperty("jobId");
+      expect(result.message).toContain("Die Auslosung wurde gestartet");
     });
 
     it("sollte Fehler werfen bei ungültigem Turniertyp", async () => {

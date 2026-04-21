@@ -116,11 +116,17 @@ export function TRFImportDialog({ tournamentId }: TRFImportDialogProps) {
 
         <div className="space-y-4">
           {!fileContent ? (
-            <div
+            <button
+              type="button"
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 transition-colors"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  fileInputRef.current?.click();
+                }
+              }}
+              className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 transition-colors focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
             >
               <Upload className="h-8 w-8 mx-auto text-gray-400 mb-4" />
               <p className="text-sm text-gray-600 mb-2">
@@ -135,8 +141,10 @@ export function TRFImportDialog({ tournamentId }: TRFImportDialogProps) {
                 accept=".trf"
                 onChange={handleFileSelect}
                 className="hidden"
+                aria-hidden="true"
+                tabIndex={-1}
               />
-            </div>
+            </button>
           ) : (
             <div className="border rounded-lg p-4 bg-gray-50">
               <div className="flex items-center justify-between">

@@ -50,7 +50,6 @@ export function generateRoundRobinPairings(
   // Fixed player at position 0, others rotate
   for (let round = 0; round < numRounds; round++) {
     const roundPairings: Pairing[] = [];
-    const byePlayer: RoundRobinParticipant | undefined = undefined;
 
     // Create pairings for this round
     for (let i = 0; i < totalPlayers / 2; i++) {

@@ -17,10 +17,11 @@ import { navigation, type NavGroup } from "./navigation";
 interface SidebarProps {
   role: string;
   permissions: string[];
+  isSuperAdmin?: boolean;
   clubSwitcher?: React.ReactNode;
 }
 
-export function Sidebar({ role, permissions, clubSwitcher }: SidebarProps) {
+export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -28,7 +29,7 @@ export function Sidebar({ role, permissions, clubSwitcher }: SidebarProps) {
     .map((group: NavGroup) => ({
       ...group,
       items: group.items.filter((item) =>
-        hasPermission(role, permissions, item.permission),
+        hasPermission(role, permissions, item.permission, isSuperAdmin),
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -114,9 +115,12 @@ export function Sidebar({ role, permissions, clubSwitcher }: SidebarProps) {
       </button>
 
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm lg:hidden"
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm lg:hidden border-none p-0 w-full h-full cursor-default"
           onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+          tabIndex={-1}
         />
       )}
 

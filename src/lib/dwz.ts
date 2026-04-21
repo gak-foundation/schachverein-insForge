@@ -5,31 +5,51 @@ export interface DeWisMember {
 }
 
 /**
- * Fetches DWZ data from DeWIS (unofficial access or scraping simulation)
- * Note: In a real production app, you might use a specific service or
- * more complex scraping logic. For now, we simulate the structure.
+ * Fetches DWZ data from the official DSB (Deutscher Schachbund) DeWIS API in CSV format.
  */
 export async function fetchDwzData(dwzId: string): Promise<DeWisMember | null> {
-  if (!dwzId) return null;
+  if (!dwzId || dwzId.length < 5) return null;
 
   try {
-    // There is no official JSON API, but we can use the CSV export or specific endpoints
-    // For this implementation, we simulate the fetch logic
-    // URL would be something like: https://www.schachbund.de/backend/dewis/spieler/ID
+    // DSB DeWIS CSV API URL
+    const url = `https://www.schachbund.de/php/dewis/spieler.php?pkz=${dwzId}&format=csv`;
     
-    // Simulation:
-    // const response = await fetch(`https://www.schachbund.de/php/dewis/spieler.php?pkz=${dwzId}`);
-    // ... logic to parse the result ...
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "CheckMateManager/1.0 (Club Management Software)",
+      },
+    });
 
-    console.log(`Fetching DWZ for ID: ${dwzId}`);
-    
-    // Dummy response for demonstration - in reality, you would use a real fetch
-    // To make it functional, one could use a library like 'cheerio' if running on a server
-    // but here we keep it simple for the architectural setup.
+    if (!response.ok) {
+      console.error(`DSB API error: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const text = await response.text();
+    if (!text || text.includes("<html>")) {
+      return null;
+    }
+
+    // The CSV uses "|" as separator
+    // Structure of first row (header): id|nachname|vorname|titel|dwz|dwzindex|fideid|fideelo|fidetitel|fidenation
+    const lines = text.split("\n");
+    if (lines.length < 2) return null;
+
+    const dataRow = lines[1].split("|");
+    if (dataRow.length < 5) return null;
+
+    const lastName = dataRow[1];
+    const firstName = dataRow[2];
+    const dwzValue = parseInt(dataRow[4], 10);
+
+    if (isNaN(dwzValue)) {
+      return null;
+    }
+
     return {
       dwzId,
-      dwz: Math.floor(1000 + Math.random() * 1000), // Mocked value
-      name: "Simulated Name",
+      dwz: dwzValue,
+      name: `${firstName} ${lastName}`.trim(),
     };
   } catch (error) {
     console.error("Error fetching DWZ data:", error);

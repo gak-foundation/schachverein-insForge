@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { clubs } from "@/lib/db/schema";
 import { notFound } from "next/navigation";
+import { ClubSettings, TrainingTime } from "@/types";
 
 interface ContactPageProps {
   params: Promise<{ slug: string }>;
@@ -20,8 +21,8 @@ export default async function ContactPage({ params }: ContactPageProps) {
     notFound();
   }
 
-  const settings = club.settings as any || {};
-  const trainingTimes = settings.trainingTimes || [
+  const settings = (club.settings as unknown as ClubSettings) || {};
+  const trainingTimes: TrainingTime[] = settings.trainingTimes || [
     { day: "Dienstag", time: "18:00 – 22:00 Uhr", label: "Freies Spiel & Training" },
     { day: "Freitag", time: "19:00 – 23:00 Uhr", label: "Blitzturnier (ab 20:00 Uhr)" },
     { day: "Sonntag", time: "14:00 – 18:00 Uhr", label: "Jugendtraining" },
@@ -107,7 +108,7 @@ export default async function ContactPage({ params }: ContactPageProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {trainingTimes.map((item: any, idx: number) => (
+                {trainingTimes.map((item: TrainingTime, idx: number) => (
                   <div key={idx} className={idx < trainingTimes.length - 1 ? "border-b pb-4" : ""}>
                     <p className="font-medium">{item.day}</p>
                     <p className="text-gray-600">{item.time}</p>

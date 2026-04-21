@@ -19,9 +19,8 @@ COPY . .
 # Next.js telemetry is disabled
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the Next.js app and the worker
+# Build the Next.js app
 RUN npm run build
-RUN npm run build:worker
 RUN npm run build:migrate
 
 # Production image, copy all the files and run next
@@ -31,14 +30,21 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Install runtime dependencies for bbpPairings
+RUN apk add --no-cache libstdc++ gcompat wget
+
+# Install bbpPairings binary (using a stable version)
+RUN wget https://github.com/BieremaBoyzProgramming/bbpPairings/releases/download/v4.2.0/bbpPairings-linux-x86_64 -O /usr/local/bin/bbpPairings && \
+    chmod +x /usr/local/bin/bbpPairings
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN mkdir -p .next tmp/pairings
+RUN chown -R nextjs:nodejs .next tmp/pairings
 
 # Copy the worker build and migration scripts
 COPY --from=builder --chown=nextjs:nodejs /app/dist-worker ./dist-worker

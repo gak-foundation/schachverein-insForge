@@ -5,7 +5,6 @@ import {
   timestamp,
   integer,
   boolean,
-  date,
   index,
 } from "drizzle-orm/pg-core";
 import { clubs } from "./clubs";

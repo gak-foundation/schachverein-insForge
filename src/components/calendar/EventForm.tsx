@@ -18,7 +18,17 @@ import { deleteEvent } from "@/lib/actions/events";
 import { useRouter } from "next/navigation";
 
 interface EventFormProps {
-  initialData?: any;
+  initialData?: {
+    id: string;
+    title: string;
+    eventType: string;
+    startDate: Date | string | null;
+    endDate: Date | string | null;
+    location: string | null;
+    description: string | null;
+    isAllDay: boolean;
+    recurrenceRule: string | null;
+  } | any;
   action: (formData: FormData) => Promise<void>;
   title: string;
   submitLabel: string;
@@ -32,7 +42,6 @@ export default function EventForm({
 }: EventFormProps) {
   const router = useRouter();
   const [isRecurring, setIsRecurring] = useState(!!initialData?.recurrenceRule);
-  const [recurringType, setRecurringType] = useState("WEEKLY");
 
   const handleDelete = async () => {
     if (confirm("Möchtest du diese Veranstaltung wirklich löschen?")) {

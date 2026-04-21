@@ -17,7 +17,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
     redirect("/auth/login");
   }
 
-  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
     redirect("/dashboard/pages");
   }
 
@@ -28,11 +28,11 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
   }
 
   // Map database blocks to store format
-  const initialBlocks = (page.blocks || []).map((b: any) => ({
-    id: b.id,
+  const initialBlocks = (page.blocks || []).map((b: Record<string, unknown>) => ({
+    id: b.id as string,
     type: b.blockType as any,
     data: b.content,
-    order: b.order,
+    order: b.order as number,
   }));
 
   return (

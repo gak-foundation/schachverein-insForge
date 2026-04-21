@@ -50,23 +50,23 @@ export function passwordResetTemplate(resetUrl: string): {
         <p style="color: #999; font-size: 12px;">Dieser Link ist 1 Stunde gültig. Wenn Sie kein neues Passwort angefordert haben, ignorieren Sie diese E-Mail.</p>
         </div>
         `,
-        text: `Passwort zurücksetzen\n\nKlicken Sie auf den folgenden Link, um Ihr Passwort zurückzusetzen:\n${resetUrl}\n\nDieser Link ist 1 Stunde gültig. Wenn Sie kein neues Passwort angefordert haben, ignorieren Sie diese E-Mail.`,
-        };
-        }
+    text: `Passwort zurücksetzen\n\nKlicken Sie auf den folgenden Link, um Ihr Passwort zurückzusetzen:\n${resetUrl}\n\nDieser Link ist 1 Stunde gültig. Wenn Sie kein neues Passwort angefordert haben, ignorieren Sie diese E-Mail.`,
+  };
+}
 
-        export function clubInvitationTemplate(
-        invitationUrl: string,
-        clubName: string,
-        invitedBy?: string
-        ): {
-        subject: string;
-        html: string;
-        text: string;
-        } {
-        const inviterText = invitedBy ? ` von ${invitedBy}` : "";
-        return {
-        subject: `Einladung zum Verein: ${clubName}`,
-        html: `
+export function clubInvitationTemplate(
+  invitationUrl: string,
+  clubName: string,
+  invitedBy?: string
+): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const inviterText = invitedBy ? ` von ${invitedBy}` : "";
+  return {
+    subject: `Einladung zum Verein: ${clubName}`,
+    html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1a1a1a;">Einladung zum Verein</h2>
         <p>Hallo,</p>
@@ -85,6 +85,77 @@ export function passwordResetTemplate(resetUrl: string): {
         <p style="color: #999; font-size: 12px;">Dieser Link ist 7 Tage gültig. Wenn Sie diese Einladung nicht erwartet haben, können Sie diese E-Mail einfach ignorieren.</p>
         </div>
         `,
-        text: `Einladung zum Verein\n\nHallo,\n\nSie wurden${inviterText} eingeladen, dem Schachverein ${clubName} beizutreten.\n\nKlicken Sie auf den folgenden Link, um die Einladung anzunehmen:\n${invitationUrl}\n\nDieser Link ist 7 Tage gültig.`,
-        };
-        }
+    text: `Einladung zum Verein\n\nHallo,\n\nSie wurden${inviterText} eingeladen, dem Schachverein ${clubName} beizutreten.\n\nKlicken Sie auf den folgenden Link, um die Einladung anzunehmen:\n${invitationUrl}\n\nDieser Link ist 7 Tage gültig.`,
+  };
+}
+
+export function invoiceEmailTemplate(data: {
+  memberName: string;
+  clubName: string;
+  amount: string;
+  description: string;
+  dueDate: string;
+  invoiceNumber: string;
+}): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  return {
+    subject: `Rechnung ${data.invoiceNumber} — ${data.clubName}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1a1a1a;">Neue Rechnung</h2>
+        <p>Hallo ${data.memberName},</p>
+        <p>für Ihre Mitgliedschaft im <strong>${data.clubName}</strong> wurde eine neue Rechnung erstellt.</p>
+        <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 4px 0;"><strong>Rechnungsnummer:</strong> ${data.invoiceNumber}</p>
+          <p style="margin: 4px 0;"><strong>Beschreibung:</strong> ${data.description}</p>
+          <p style="margin: 4px 0;"><strong>Betrag:</strong> ${data.amount} EUR</p>
+          <p style="margin: 4px 0;"><strong>Fällig am:</strong> ${data.dueDate}</p>
+        </div>
+        <p>Bitte begleichen Sie den Betrag bis zum angegebenen Fälligkeitsdatum.</p>
+        <p style="color: #666; font-size: 14px;">Sie finden Ihre Rechnung auch in Ihrem Mitgliederbereich auf unserer Plattform.</p>
+        <p style="color: #999; font-size: 12px;">Dies ist eine automatisch generierte E-Mail. Bei Fragen wenden Sie sich bitte an den Vorstand.</p>
+      </div>
+    `,
+    text: `Rechnung ${data.invoiceNumber}\n\nHallo ${data.memberName},\n\nfür Ihre Mitgliedschaft im ${data.clubName} wurde eine neue Rechnung erstellt.\n\nRechnungsnummer: ${data.invoiceNumber}\nBeschreibung: ${data.description}\nBetrag: ${data.amount} EUR\nFällig am: ${data.dueDate}\n\nBitte begleichen Sie den Betrag bis zum fälligen Datum.`,
+  };
+}
+
+export function dunningEmailTemplate(data: {
+  memberName: string;
+  clubName: string;
+  amount: string;
+  description: string;
+  dueDate: string;
+  dunningLevel: number;
+  invoiceNumber: string;
+}): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const levelText = data.dunningLevel === 1 ? "Zahlungserinnerung" : `${data.dunningLevel}. Mahnung`;
+  const subjectPrefix = data.dunningLevel === 1 ? "Erinnerung" : "WICHTIG: Mahnung";
+
+  return {
+    subject: `${subjectPrefix}: Rechnung ${data.invoiceNumber} — ${data.clubName}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: ${data.dunningLevel > 1 ? "#dc2626" : "#1a1a1a"};">${levelText}</h2>
+        <p>Hallo ${data.memberName},</p>
+        <p>wir konnten für die Rechnung <strong>${data.invoiceNumber}</strong> bisher keinen Zahlungseingang feststellen.</p>
+        <div style="background-color: #fef2f2; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #fee2e2;">
+          <p style="margin: 4px 0;"><strong>Beschreibung:</strong> ${data.description}</p>
+          <p style="margin: 4px 0;"><strong>Offener Betrag:</strong> ${data.amount} EUR</p>
+          <p style="margin: 4px 0;"><strong>Ursprünglich fällig am:</strong> ${data.dueDate}</p>
+        </div>
+        <p>Bitte überweisen Sie den fälligen Betrag umgehend auf unser Vereinskonto.</p>
+        <p>Falls Sie die Zahlung bereits geleistet haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.</p>
+        <p style="color: #999; font-size: 12px;">Dies ist eine automatisch generierte E-Mail. Mahnungstufe: ${data.dunningLevel}</p>
+      </div>
+    `,
+    text: `${levelText}\n\nHallo ${data.memberName},\n\nwir konnten für die Rechnung ${data.invoiceNumber} bisher keinen Zahlungseingang feststellen.\n\nBeschreibung: ${data.description}\nOffener Betrag: ${data.amount} EUR\nUrsprünglich fällig am: ${data.dueDate}\n\nBitte überweisen Sie den fälligen Betrag umgehend.\n\nFalls Sie bereits gezahlt haben, ignorieren Sie diese E-Mail.`,
+  };
+}

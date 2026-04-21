@@ -46,15 +46,17 @@ export default async function DashboardPage() {
   const role = user?.role as string ?? "mitglied";
   const permissions = (user?.permissions as string[]) ?? [];
 
+  const isSuperAdmin = user?.isSuperAdmin ?? false;
+
   const [stats, availabilityMatches, memberAvailability] = await Promise.all([
     getDashboardStats(),
     getUpcomingMatchesForAvailability(),
     user.memberId ? getMemberAvailability() : Promise.resolve([]),
   ]);
   const firstName = user?.name?.split(" ")[0] ?? "Mitglied";
-  const canWriteMembers = hasPermission(role, permissions, PERMISSIONS.MEMBERS_WRITE);
-  const canWriteTournaments = hasPermission(role, permissions, PERMISSIONS.TOURNAMENTS_WRITE);
-  const canWriteTeams = hasPermission(role, permissions, PERMISSIONS.TEAMS_WRITE);
+  const canWriteMembers = hasPermission(role, permissions, PERMISSIONS.MEMBERS_WRITE, isSuperAdmin);
+  const canWriteTournaments = hasPermission(role, permissions, PERMISSIONS.TOURNAMENTS_WRITE, isSuperAdmin);
+  const canWriteTeams = hasPermission(role, permissions, PERMISSIONS.TEAMS_WRITE, isSuperAdmin);
   const todayItems = [
     {
       label: "Offene Beiträge",

@@ -9,6 +9,7 @@ export const teamsRelations = relations(teams, ({ one, many }) => ({
   club: one(clubs, {
     fields: [teams.clubId],
     references: [clubs.id],
+    relationName: "club_teams",
   }),
   season: one(seasons, {
     fields: [teams.seasonId],

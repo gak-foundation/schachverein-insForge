@@ -9,7 +9,6 @@ import { Save, Eye, Send, ChevronLeft, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { savePageBlocks } from "@/lib/actions/cms";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +32,6 @@ export function EditorShell({ page, initialBlocks }: EditorShellProps) {
   } = useEditorStore();
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
     setPageId(page.id);
@@ -160,7 +158,7 @@ export function EditorShell({ page, initialBlocks }: EditorShellProps) {
   );
 }
 
-function BlockLibraryButton({ type, label, icon }: { type: any, label: string, icon: string }) {
+function BlockLibraryButton({ type, label }: { type: any, label: string, icon: string }) {
   const addBlock = useEditorStore((state) => state.addBlock);
   return (
     <Button 

@@ -12,24 +12,24 @@ interface LichessSyncButtonProps {
 
 export function LichessSyncButton({ memberId }: LichessSyncButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { addToast } = useToast();
+  const { toast } = useToast();
 
   const handleSync = async () => {
     setIsLoading(true);
     try {
       const result = await syncLichessRating(memberId);
       if (result.success) {
-        addToast({
+        toast({
           title: "Synchronisierung erfolgreich",
           description: `Das neue Rating von Lichess (${result.newElo}) wurde uebernommen.`,
           variant: "success",
         });
       }
     } catch (error) {
-      addToast({
+      toast({
         title: "Synchronisierung fehlgeschlagen",
         description: error instanceof Error ? error.message : "Ein unbekannter Fehler ist aufgetreten.",
-        variant: "error",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);

@@ -1,0 +1,9 @@
+Registrierung bestätigen
+
+Vielen Dank für deine Registrierung. Bitte bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren:
+
+Bestätigungslink: {{ .ConfirmationURL }}
+
+Falls du dich nicht registriert hast, kannst du diese E-Mail ignorieren.
+
+Dieser Link ist aus Sicherheitsgründen nur begrenzt gültig.

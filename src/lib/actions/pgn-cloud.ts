@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { games, members, tournaments } from "@/lib/db/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { games } from "@/lib/db/schema";
+import { eq, desc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "./utils";
 import { parsePgn } from "@/lib/pgn";

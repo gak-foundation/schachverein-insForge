@@ -5,7 +5,8 @@ import { events, seasons, matches, teams, tournaments } from "@/lib/db/schema";
 import { eq, desc, and, gte, lte, or, isNotNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "./utils";
-import { RRule, rrulestr } from "rrule";
+import { rrulestr } from "rrule";
+import { CalendarItem } from "@/types";
 
 export async function getEvents(limit?: number) {
   const clubId = await requireClubId();
@@ -84,18 +85,6 @@ export async function getEventById(id: string) {
     .from(events)
     .where(and(eq(events.id, id), eq(events.clubId, clubId)));
   return event;
-}
-
-export interface CalendarItem {
-  id: string;
-  originalId?: string;
-  title: string;
-  type: string;
-  start: Date;
-  end: Date;
-  location?: string | null;
-  isAllDay: boolean;
-  isRecurring: boolean;
 }
 
 export async function getCalendarEvents(start: Date, end: Date): Promise<CalendarItem[]> {

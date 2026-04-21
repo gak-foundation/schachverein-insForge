@@ -1,5 +1,61 @@
 // Core domain types for the Schachverein app
 
+// ─── Club ──────────────────────────────────────────────────────
+
+export interface ClubAddress {
+  street: string;
+  zipCode: string;
+  city: string;
+  country: string;
+}
+
+export interface TrainingTime {
+  day: string;
+  time: string;
+  label?: string;
+}
+
+export interface ClubSettings {
+  representatives?: string;
+  phone?: string;
+  registerCourt?: string;
+  registerNumber?: string;
+  taxId?: string;
+  responsiblePerson?: string;
+  lichessTeamId?: string;
+  externalWebsite?: string;
+  customDomain?: string;
+  primaryColor?: string;
+  accentColor?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  trainingTimes?: TrainingTime[];
+  [key: string]: unknown;
+}
+
+export interface Club {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl?: string | null;
+  website?: string | null;
+  address?: ClubAddress | null;
+  contactEmail?: string | null;
+  plan: string;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  subscriptionStatus?: string | null;
+  subscriptionExpiresAt?: string | null;
+  features: Record<string, boolean>;
+  settings: ClubSettings;
+  isActive: boolean;
+  creditorId?: string | null;
+  sepaIban?: string | null;
+  sepaBic?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Member ────────────────────────────────────────────────────
 
 export type MemberRole =
@@ -10,7 +66,8 @@ export type MemberRole =
   | "kassenwart"
   | "trainer"
   | "mitglied"
-  | "eltern";
+  | "eltern"
+  | "user";
 
 export type MembershipStatus = "active" | "inactive" | "resigned" | "honorary";
 
@@ -19,120 +76,46 @@ export interface Member {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
-  dateOfBirth?: string;
-  gender?: string;
-  dwz?: number;
-  elo?: number;
-  dwzId?: string;
-  lichessUsername?: string;
-  chesscomUsername?: string;
-  fideId?: string;
+  phone?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  dwz?: number | null;
+  elo?: number | null;
+  dwzId?: string | null;
+  lichessUsername?: string | null;
+  chesscomUsername?: string | null;
+  fideId?: string | null;
   status: MembershipStatus;
   role: MemberRole;
-  joinedAt?: string;
-  parentId?: string;
-  permissions: string[];
-  sepaMandateReference?: string;
-  photoConsent: boolean;
-  newsletterConsent: boolean;
-  resultPublicationConsent: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ─── Chess ──────────────────────────────────────────────────────
-
-export type GameResult = "1-0" | "0-1" | "1/2-1/2" | "+-" | "-+" | "+/+";
-
-export type TournamentType =
-  | "swiss"
-  | "round_robin"
-  | "rapid"
-  | "blitz"
-  | "team_match"
-  | "club_championship";
-
-export interface Game {
-  id: string;
-  tournamentId: string;
-  round: number;
-  boardNumber?: number;
-  whiteId: string;
-  blackId: string;
-  result?: GameResult;
-  lichessUrl?: string;
-  fen?: string;
-  opening?: string;
-  ecoCode?: string;
-  timeControl?: string;
-  playedAt?: string;
-}
-
-export interface Tournament {
-  id: string;
-  name: string;
-  type: TournamentType;
-  seasonId?: string;
-  startDate: string;
-  endDate?: string;
-  location?: string;
-  description?: string;
-  timeControl?: string;
-  numberOfRounds?: number;
-  isCompleted: boolean;
-}
-
-export interface TournamentParticipant {
-  id: string;
-  tournamentId: string;
-  memberId: string;
-  score: number;
-  buchholz?: number;
-  sonnebornBerger?: number;
-  rank?: number;
-  pairingNumber?: number;
-}
-
-// ─── Teams ──────────────────────────────────────────────────────
-
-export interface Team {
-  id: string;
-  name: string;
-  seasonId: string;
-  league?: string;
-  captainId?: string;
-}
-
-export interface BoardOrder {
-  id: string;
-  teamId: string;
-  seasonId: string;
-  memberId: string;
-  boardNumber: number;
-  isJoker: boolean;
+  joinedAt?: string | null;
+  parentId?: string | null;
+  parent?: { id: string; firstName: string; lastName: string } | null;
+  children?: Array<{ id: string; firstName: string; lastName: string }>;
+  permissions: string[] | null;
+  sepaMandateReference?: string | null;
+  sepaIban?: string | null;
+  sepaBic?: string | null;
+  mandateSignedAt?: string | null;
+  mandateUrl?: string | null;
+  photoConsent: boolean | null;
+  newsletterConsent: boolean | null;
+  resultPublicationConsent: boolean | null;
+  notes?: string | null;
+  contributionRateId?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 // ─── Finance ────────────────────────────────────────────────────
 
-export type PaymentStatus =
-  | "pending"
-  | "paid"
-  | "overdue"
-  | "cancelled"
-  | "refunded";
-
-export interface Payment {
+export interface ContributionRate {
   id: string;
-  memberId: string;
-  amount: number;
-  description: string;
-  status: PaymentStatus;
-  dueDate?: string;
-  paidAt?: string;
-  sepaMandateReference?: string;
-  year: number;
+  name: string;
+  amount: number | string;
+  frequency: "monthly" | "quarterly" | "yearly";
+  description?: string | null;
 }
+
 
 // ─── Calendar ────────────────────────────────────────────────────
 
@@ -142,10 +125,22 @@ export interface ClubEvent {
   id: string;
   title: string;
   description?: string;
-  eventType: EventType;
-  startDate: string;
-  endDate?: string;
-  location?: string;
+  eventType: string; // Changed from EventType to string to support more types (match, tournament)
+  startDate: string | Date;
+  endDate?: string | Date;
+  location?: string | null;
   isAllDay: boolean;
   createdBy?: string;
+}
+
+export interface CalendarItem {
+  id: string;
+  originalId?: string;
+  title: string;
+  type: string;
+  start: Date;
+  end: Date;
+  location?: string | null;
+  isAllDay: boolean;
+  isRecurring: boolean;
 }

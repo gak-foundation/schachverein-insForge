@@ -13,7 +13,6 @@ import {
   payments,
   documents,
   contributionRates,
-  newsletters,
   auditLog,
   authUsers,
 } from "@/lib/db/schema";

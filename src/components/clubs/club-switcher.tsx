@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Plus, Building2, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -85,9 +86,11 @@ export function ClubSwitcher({ minimal = false }: ClubSwitcherProps) {
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary overflow-hidden">
             {activeClub.logoUrl ? (
-              <img
+              <Image
                 src={activeClub.logoUrl}
                 alt={activeClub.name}
+                width={40}
+                height={40}
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -126,9 +129,11 @@ export function ClubSwitcher({ minimal = false }: ClubSwitcherProps) {
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary overflow-hidden">
                 {club.logoUrl ? (
-                  <img
+                  <Image
                     src={club.logoUrl}
                     alt={club.name}
+                    width={32}
+                    height={32}
                     className="h-full w-full object-cover"
                   />
                 ) : (

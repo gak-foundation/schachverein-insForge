@@ -19,6 +19,7 @@ import { getSession } from "@/lib/auth/session";
 import { PERMISSIONS, getPermissionsForRole, hasPermission } from "@/lib/auth/permissions";
 import { fetchLichessProfile, getBestLichessRating } from "@/lib/lichess";
 import { requireClubId } from "./utils";
+import { encrypt, decrypt } from "@/lib/crypto";
 
 type ClubMemberRole = typeof clubMemberships.$inferSelect.role;
 type MemberRecordStatus = typeof members.$inferSelect.status;
@@ -163,6 +164,11 @@ export async function getMemberById(id: string) {
     },
   });
 
+  if (member) {
+    if (member.sepaIban) member.sepaIban = decrypt(member.sepaIban);
+    if (member.sepaBic) member.sepaBic = decrypt(member.sepaBic);
+  }
+
   return member;
 }
 
@@ -228,6 +234,12 @@ export async function createMember(formData: FormData) {
       ? formData.get("resultPublicationConsent") === "on"
       : true,
     notes: (formData.get("notes") as string) || undefined,
+    sepaIban: (formData.get("sepaIban") as string) || undefined,
+    sepaBic: (formData.get("sepaBic") as string) || undefined,
+    sepaMandateReference: (formData.get("sepaMandateReference") as string) || undefined,
+    mandateSignedAt: (formData.get("mandateSignedAt") as string) || undefined,
+    mandateUrl: (formData.get("mandateUrl") as string) || undefined,
+    contributionRateId: (formData.get("contributionRateId") as string) || undefined,
   };
 
   const validated = createMemberSchema.parse(rawData);
@@ -238,6 +250,8 @@ export async function createMember(formData: FormData) {
       ...validated,
       dateOfBirth: validated.dateOfBirth || null,
       parentId: validated.parentId || null,
+      sepaIban: validated.sepaIban ? encrypt(validated.sepaIban) : null,
+      sepaBic: validated.sepaBic ? encrypt(validated.sepaBic) : null,
     })
     .returning();
 
@@ -252,7 +266,7 @@ export async function createMember(formData: FormData) {
     memberId: member.id,
     newStatus: validated.status as "active" | "inactive" | "resigned" | "honorary",
     reason: "Mitglied angelegt",
-    changedBy: session?.user.id,
+    changedBy: session?.user.memberId ?? null,
   });
 
   await logMemberAction("CREATED", member.id, {
@@ -263,10 +277,17 @@ export async function createMember(formData: FormData) {
   });
 
   const createAccount = formData.get("createAccount") === "on";
-  if (createAccount) {
-    const result = await createInvitation(member.id);
-    if (result.success) {
-      console.log(`Einladung erstellt fuer ${validated.email}: ${result.inviteUrl}`);
+  if (createAccount && session?.user.id) {
+    const result = await createInvitation({
+      clubId,
+      email: validated.email,
+      role: validated.role,
+      invitedBy: session.user.id,
+    });
+    if (result) {
+      const { getInvitationUrl } = await import("@/lib/auth/invitations");
+      const invitationUrl = getInvitationUrl(result.token);
+      console.log(`Einladung erstellt fuer ${validated.email}: ${invitationUrl}`);
     }
   }
 
@@ -306,7 +327,7 @@ export async function deleteMember(id: string) {
       oldStatus: member.status,
       newStatus: "inactive",
       reason: "Mitglied deaktiviert (gelöscht)",
-      changedBy: session?.user.id,
+      changedBy: session?.user.memberId ?? null,
     });
 
     await db.update(members).set({ status: "inactive" }).where(eq(members.id, id));
@@ -352,6 +373,7 @@ export async function updateMember(formData: FormData) {
   const sepaBic = (formData.get("sepaBic") as string) || null;
   const sepaMandateReference = (formData.get("sepaMandateReference") as string) || null;
   const mandateSignedAt = (formData.get("mandateSignedAt") as string) || null;
+  const mandateUrl = (formData.get("mandateUrl") as string) || null;
   const contributionRateId = (formData.get("contributionRateId") as string) || null;
 
   // Record status change if it changed
@@ -361,7 +383,7 @@ export async function updateMember(formData: FormData) {
       oldStatus: currentMember.status,
       newStatus: status as MemberRecordStatus,
       reason: "Status manuell aktualisiert",
-      changedBy: session?.user.id,
+      changedBy: session?.user.memberId ?? null,
     });
   }
 
@@ -374,10 +396,11 @@ export async function updateMember(formData: FormData) {
       phone,
       dwz,
       status: status as MemberRecordStatus,
-      sepaIban,
-      sepaBic,
+      sepaIban: sepaIban ? encrypt(sepaIban) : null,
+      sepaBic: sepaBic ? encrypt(sepaBic) : null,
       sepaMandateReference,
       mandateSignedAt,
+      mandateUrl,
       contributionRateId,
     })
     .where(eq(members.id, id));
@@ -534,7 +557,7 @@ export async function updateUserRole(formData: FormData) {
   const session = await getSession();
   if (
     !session ||
-    !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.ADMIN_USERS)
+    !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.ADMIN_USERS, session.user.isSuperAdmin)
   ) {
     throw new Error("Nicht autorisiert");
   }
@@ -572,17 +595,20 @@ export async function updateUserRole(formData: FormData) {
 export async function syncLichessRating(memberId: string) {
   const clubId = await requireClubId();
 
-  const [member] = await db
-    .select()
+  const [result] = await db
+    .select({
+      lichessUsername: members.lichessUsername,
+      dwz: members.dwz,
+    })
     .from(members)
     .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
     .where(and(eq(members.id, memberId), eq(clubMemberships.clubId, clubId)));
 
-  if (!member || !member.members.lichessUsername) {
+  if (!result || !result.lichessUsername) {
     throw new Error("Mitglied nicht gefunden oder kein Lichess-Benutzername hinterlegt");
   }
 
-  const profile = await fetchLichessProfile(member.members.lichessUsername);
+  const profile = await fetchLichessProfile(result.lichessUsername);
   if (!profile) {
     throw new Error("Lichess-Profil konnte nicht abgerufen werden");
   }
@@ -601,7 +627,7 @@ export async function syncLichessRating(memberId: string) {
   // Add history entry
   await db.insert(dwzHistory).values({
     memberId,
-    dwz: member.members.dwz ?? 0,
+    dwz: result.dwz ?? 0,
     elo: newElo,
     source: "lichess-sync",
     recordedAt: new Date().toISOString().split("T")[0],

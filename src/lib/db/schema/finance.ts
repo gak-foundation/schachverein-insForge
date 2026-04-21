@@ -14,6 +14,24 @@ import { paymentStatusEnum, contributionFrequencyEnum } from "./enums";
 import { clubs } from "./clubs";
 import { members } from "./members";
 
+export const sepaExports = pgTable(
+  "sepa_exports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    clubId: uuid("club_id")
+      .notNull()
+      .references(() => clubs.id, { onDelete: "cascade" }),
+    xmlContent: text("xml_content").notNull(),
+    filename: varchar("filename", { length: 255 }).notNull(),
+    totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+    paymentCount: integer("payment_count").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    clubIdx: index("sepa_exports_club_idx").on(table.clubId),
+  }),
+);
+
 export const payments = pgTable(
   "payments",
   {
@@ -30,6 +48,8 @@ export const payments = pgTable(
     dueDate: date("due_date"),
     paidAt: timestamp("paid_at"),
     sepaMandateReference: varchar("sepa_mandate_reference", { length: 35 }),
+    sepaExportId: uuid("sepa_export_id").references(() => sepaExports.id),
+    invoiceNumber: varchar("invoice_number", { length: 50 }),
     year: integer("year").notNull(),
     dunningLevel: integer("dunning_level").default(0).notNull(),
     lastDunningAt: timestamp("last_dunning_at"),
@@ -38,6 +58,7 @@ export const payments = pgTable(
   },
   (table) => ({
     clubIdx: index("payments_club_idx").on(table.clubId),
+    sepaExportIdx: index("payments_sepa_export_idx").on(table.sepaExportId),
   }),
 );
 
@@ -61,6 +82,14 @@ export const contributionRates = pgTable(
   }),
 );
 
+export const sepaExportsRelations = relations(sepaExports, ({ one, many }) => ({
+  club: one(clubs, {
+    fields: [sepaExports.clubId],
+    references: [clubs.id],
+  }),
+  payments: many(payments),
+}));
+
 export const paymentsRelations = relations(payments, ({ one }) => ({
   club: one(clubs, {
     fields: [payments.clubId],
@@ -69,6 +98,10 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   member: one(members, {
     fields: [payments.memberId],
     references: [members.id],
+  }),
+  sepaExport: one(sepaExports, {
+    fields: [payments.sepaExportId],
+    references: [sepaExports.id],
   }),
 }));
 

@@ -2,33 +2,36 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Chessboard } from "react-chessboard";
-import { Chess } from "chess.js";
+import { Chess, Square } from "chess.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Play, Pause, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { Play, Pause, ChevronLeft, RotateCcw } from "lucide-react";
 
 interface AnalysisBoardProps {
   initialPgn?: string;
 }
 
 export function AnalysisBoard({ initialPgn }: AnalysisBoardProps) {
-  const [game, setGame] = useState(new Chess());
-  const [fen, setFen] = useState("start");
+  // Initialize game state with initialPgn if provided
+  const [game, setGame] = useState(() => {
+    const g = new Chess();
+    if (initialPgn) {
+      try {
+        g.loadPgn(initialPgn);
+      } catch (e) {
+        console.error("Fehler beim Laden der PGN:", e);
+      }
+    }
+    return g;
+  });
+
+  const [fen, setFen] = useState(game.fen());
   const [evaluation, setEvaluation] = useState<string>("0.0");
   const [bestMove, setBestMove] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const workerRef = useRef<Worker | null>(null);
-
-  useEffect(() => {
-    if (initialPgn) {
-      const newGame = new Chess();
-      newGame.loadPgn(initialPgn);
-      setGame(newGame);
-      setFen(newGame.fen());
-    }
-  }, [initialPgn]);
 
   useEffect(() => {
     // Initialize Stockfish Worker
@@ -64,7 +67,7 @@ export function AnalysisBoard({ initialPgn }: AnalysisBoardProps) {
     }
   }, [game, isAnalyzing]);
 
-  function makeAMove(move: any) {
+  const makeAMove = useCallback((move: string | { from: string; to: string; promotion?: string }) => {
     try {
       const result = game.move(move);
       if (result) {
@@ -72,37 +75,42 @@ export function AnalysisBoard({ initialPgn }: AnalysisBoardProps) {
         setFen(game.fen());
         return true;
       }
-    } catch (e) {
+    } catch {
       return false;
     }
     return false;
-  }
+  }, [game]);
 
-  function onDrop(sourceSquare: string, targetSquare: string) {
+  const onDrop = useCallback((sourceSquare: Square, targetSquare: Square) => {
     const move = makeAMove({
       from: sourceSquare,
       to: targetSquare,
       promotion: "q",
     });
     return move;
-  }
+  }, [makeAMove]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
       <div className="space-y-4">
         <div className="aspect-square w-full max-w-[600px] mx-auto">
-          {/* @ts-ignore - position prop type mismatch in library */}
+          {/* @ts-expect-error - position prop type mismatch in library */}
           <Chessboard position={fen} onPieceDrop={onDrop} />
         </div>
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => {
-            const history = game.history();
-            if (history.length > 0) {
-              game.undo();
-              setGame(new Chess(game.fen()));
-              setFen(game.fen());
-            }
-          }}>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => {
+              const history = game.history();
+              if (history.length > 0) {
+                game.undo();
+                setGame(new Chess(game.fen()));
+                setFen(game.fen());
+              }
+            }}
+            aria-label="Zug zurücknehmen"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button 
@@ -112,11 +120,16 @@ export function AnalysisBoard({ initialPgn }: AnalysisBoardProps) {
             {isAnalyzing ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
             Analyse {isAnalyzing ? "stoppen" : "starten"}
           </Button>
-          <Button variant="outline" size="icon" onClick={() => {
-            const newGame = new Chess();
-            setGame(newGame);
-            setFen("start");
-          }}>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => {
+              const newGame = new Chess();
+              setGame(newGame);
+              setFen("start");
+            }}
+            aria-label="Position zurücksetzen"
+          >
             <RotateCcw className="h-4 w-4" />
           </Button>
         </div>

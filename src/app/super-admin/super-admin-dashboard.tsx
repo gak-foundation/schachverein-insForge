@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -10,6 +10,11 @@ import {
   ExternalLink,
   MoreHorizontal,
   Search,
+  Shield,
+  ShieldAlert,
+  Power,
+  PowerOff,
+  Mail,
 } from "lucide-react";
 import {
   Table,
@@ -37,7 +42,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { impersonateClubAction } from "@/lib/clubs/actions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { impersonateClubAction, toggleClubStatusAction } from "@/lib/clubs/actions";
+import { toast } from "@/hooks/use-toast";
 
 interface Club {
   id: string;
@@ -53,8 +60,19 @@ interface Club {
   memberCount: number;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isSuperAdmin: boolean;
+  createdAt: Date;
+  lastLoginAt: Date | null;
+}
+
 interface SuperAdminDashboardProps {
   clubs: Club[];
+  users: User[];
   stats: {
     totalUsers: number;
     totalClubs: number;
@@ -72,13 +90,18 @@ const planColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700",
-  past_due: "bg-yellow-100 text-yellow-700",
+  inactive: "bg-slate-100 text-slate-700",
+  past_due: "bg-red-100 text-red-700",
   canceled: "bg-red-100 text-red-700",
-  trialing: "bg-blue-100 text-blue-700",
+  trialing: "bg-yellow-100 text-yellow-700",
 };
 
-export function SuperAdminDashboard({ clubs, stats }: SuperAdminDashboardProps) {
+const getPlanColor = (plan: string) => planColors[plan] || "bg-slate-100 text-slate-700";
+const getStatusColor = (status: string | null) => status ? (statusColors[status] || "bg-slate-100 text-slate-700") : "bg-slate-100 text-slate-700";
+
+export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboardProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [searchQuery, setSearchQuery] = useState("");
   const [impersonating, setImpersonating] = useState<string | null>(null);
 
@@ -88,192 +111,325 @@ export function SuperAdminDashboard({ clubs, stats }: SuperAdminDashboardProps) 
       club.slug.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   async function handleImpersonate(clubId: string) {
     setImpersonating(clubId);
     try {
       await impersonateClubAction(clubId);
+      toast({ title: "Impersonation erfolgreich", description: "Sie sind nun als Admin eingeloggt." });
       router.push("/dashboard");
-      router.refresh();
-    } catch (error) {
-      console.error("Failed to impersonate club:", error);
+    } catch {
+      toast({ variant: "destructive", title: "Fehler", description: "Impersonation fehlgeschlagen." });
     } finally {
       setImpersonating(null);
     }
   }
 
+  async function handleToggleStatus(clubId: string, currentStatus: boolean) {
+    startTransition(async () => {
+      try {
+        await toggleClubStatusAction(clubId, !currentStatus);
+        toast({ title: "Status aktualisiert", description: `Verein wurde ${!currentStatus ? "aktiviert" : "deaktiviert"}.` });
+      } catch {
+        toast({ variant: "destructive", title: "Fehler", description: "Status-Update fehlgeschlagen." });
+      }
+    });
+  }
+
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Super Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Verwaltung aller Vereine auf der Plattform
-        </p>
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">System Administration</h1>
+          <p className="text-muted-foreground mt-1 text-lg">
+            Plattform-weite Verwaltung und Metriken
+          </p>
+        </div>
+        <div className="flex items-center gap-2 bg-card border rounded-lg p-1">
+             <Badge variant="outline" className="px-3 py-1 text-sm border-primary/20 bg-primary/5 text-primary">
+                v1.2.0-stable
+             </Badge>
+        </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Gesamtvereine</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <Building2 className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalClubs}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.activeSubscriptions} mit aktivem Abo
-            </p>
+            <div className="text-3xl font-bold">{stats.totalClubs}</div>
+            <div className="flex items-center text-xs text-muted-foreground mt-1">
+              <span className="text-green-500 font-medium flex items-center mr-1">
+                <TrendingUp className="h-3 w-3 mr-0.5" />
+                +12%
+              </span>
+              seit letztem Monat
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Benutzer</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Registrierte Accounts
+            <div className="text-3xl font-bold">{stats.totalUsers}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {Math.round((stats.totalUsers / stats.totalClubs) * 10) / 10} User pro Verein ø
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pro Vereine</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Umsatz (MRR)</CardTitle>
+            <CreditCard className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.proClubs}</div>
-            <p className="text-xs text-muted-foreground">
-              €{stats.proClubs * 29}/Monat Umsatz
+            <div className="text-3xl font-bold">€{stats.proClubs * 29 + stats.enterpriseClubs * 99}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+               {stats.activeSubscriptions} aktive Abonnements
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Enterprise</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Konversion</CardTitle>
+            <TrendingUp className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.enterpriseClubs}</div>
-            <p className="text-xs text-muted-foreground">
-              Enterprise-Kunden
+            <div className="text-3xl font-bold">
+                {Math.round((stats.activeSubscriptions / stats.totalClubs) * 100)}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+                Free-to-Paid Ratio
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Clubs Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Alle Vereine</CardTitle>
-              <CardDescription>
-                Verwalten und impersonieren Sie Vereine
-              </CardDescription>
-            </div>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Vereine suchen..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+      <Tabs defaultValue="clubs" className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <TabsList className="grid w-full sm:w-[400px] grid-cols-2">
+            <TabsTrigger value="clubs">Vereine ({clubs.length})</TabsTrigger>
+            <TabsTrigger value="users">Benutzer ({users.length})</TabsTrigger>
+          </TabsList>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Suchen..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Verein</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Mitglieder</TableHead>
-                <TableHead>Erstellt</TableHead>
-                <TableHead className="w-12"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredClubs.map((club) => (
-                <TableRow key={club.id}>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{club.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {club.slug}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={planColors[club.plan]}
-                    >
-                      {club.plan.charAt(0).toUpperCase() + club.plan.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {club.subscriptionStatus ? (
-                      <Badge
-                        variant="secondary"
-                        className={statusColors[club.subscriptionStatus] || ""}
-                      >
-                        {club.subscriptionStatus}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">Free</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{club.memberCount}</TableCell>
-                  <TableCell>
-                    {new Date(club.createdAt).toLocaleDateString("de-DE")}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleImpersonate(club.id)}
-                          disabled={impersonating === club.id}
+        </div>
+
+        <TabsContent value="clubs" className="animate-in fade-in duration-300">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Vereinsverwaltung</CardTitle>
+              <CardDescription>
+                Globale Liste aller registrierten Schachvereine
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-bold">Verein</TableHead>
+                    <TableHead className="font-bold">Plan</TableHead>
+                    <TableHead className="font-bold">Status</TableHead>
+                    <TableHead className="font-bold">Mitglieder</TableHead>
+                    <TableHead className="font-bold">Erstellt am</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredClubs.map((club) => (
+                    <TableRow key={club.id} className={!club.isActive ? "opacity-60 bg-muted/20" : ""}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-base">{club.name}</span>
+                          <code className="text-[10px] text-muted-foreground bg-muted px-1 w-fit rounded">
+                            {club.slug}
+                          </code>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={`${getPlanColor(club.plan)} border-none font-medium`}
                         >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          {impersonating === club.id
-                            ? "Laden..."
-                            : "Als Admin einloggen"}
-                        </DropdownMenuItem>
-                        {club.stripeCustomerId && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              window.open(
-                                `https://dashboard.stripe.com/customers/${club.stripeCustomerId}`,
-                                "_blank"
-                              )
-                            }
-                          >
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            In Stripe ansehen
-                          </DropdownMenuItem>
+                          {club.plan.toUpperCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                            {club.isActive ? (
+                                <Badge className="bg-green-500/10 text-green-600 border-green-200 hover:bg-green-500/20">
+                                    Aktiv
+                                </Badge>
+                            ) : (
+                                <Badge variant="destructive" className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20">
+                                    Inaktiv
+                                </Badge>
+                            )}
+                            {club.subscriptionStatus && (
+                                <Badge variant="outline" className={`text-[10px] uppercase ${getStatusColor(club.subscriptionStatus)}`}>
+                                    {club.subscriptionStatus}
+                                </Badge>
+                            )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5 font-medium">
+                            <Users className="h-3 w-3 text-muted-foreground" />
+                            {club.memberCount}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(club.createdAt).toLocaleDateString("de-DE", { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>Aktionen für {club.name}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleImpersonate(club.id)}
+                              disabled={impersonating === club.id}
+                              className="cursor-pointer"
+                            >
+                              <ExternalLink className="mr-2 h-4 w-4 text-blue-500" />
+                              Als Admin einloggen
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleToggleStatus(club.id, club.isActive)}
+                              disabled={isPending}
+                              className="cursor-pointer"
+                            >
+                              {club.isActive ? (
+                                  <>
+                                    <PowerOff className="mr-2 h-4 w-4 text-red-500" />
+                                    Verein deaktivieren
+                                  </>
+                              ) : (
+                                  <>
+                                    <Power className="mr-2 h-4 w-4 text-green-500" />
+                                    Verein aktivieren
+                                  </>
+                              )}
+                            </DropdownMenuItem>
+                            {club.stripeCustomerId && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => window.open(`https://dashboard.stripe.com/customers/${club.stripeCustomerId}`, "_blank")}
+                                  className="cursor-pointer"
+                                >
+                                  <CreditCard className="mr-2 h-4 w-4 text-slate-500" />
+                                  Stripe Kundenkonto
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="users" className="animate-in fade-in duration-300">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Benutzerverwaltung</CardTitle>
+              <CardDescription>
+                Systemweite Liste aller registrierten Accounts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-bold">Benutzer</TableHead>
+                    <TableHead className="font-bold">E-Mail</TableHead>
+                    <TableHead className="font-bold">Rolle</TableHead>
+                    <TableHead className="font-bold">Sicherheit</TableHead>
+                    <TableHead className="font-bold">Registriert am</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                                {user.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            {user.name}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <div className="flex items-center gap-1.5">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            {user.email}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize text-[11px]">
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {user.isSuperAdmin ? (
+                          <Badge className="bg-amber-500/10 text-amber-600 border-amber-200">
+                            <ShieldAlert className="h-3 w-3 mr-1" />
+                            Super Admin
+                          </Badge>
+                        ) : (
+                          <Badge variant="ghost" className="text-muted-foreground">
+                            <Shield className="h-3 w-3 mr-1" />
+                            Standard
+                          </Badge>
                         )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(user.createdAt).toLocaleDateString("de-DE")}
+                      </TableCell>
+                      <TableCell>
+                         <Button variant="ghost" size="icon" className="h-8 w-8">
+                             <MoreHorizontal className="h-4 w-4" />
+                         </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

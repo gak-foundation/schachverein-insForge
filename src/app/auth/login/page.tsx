@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { authClient } from "@/lib/auth/client";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +54,7 @@ function LoginPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const supabase = createClient();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -65,31 +66,25 @@ function LoginPageContent() {
     const password = formData.get("password") as string;
 
     try {
-      const result = await authClient.signIn.email({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
-        callbackURL,
       });
 
-      if (result.error) {
-        const errorMessage = result.error.message || result.error;
-        if (typeof errorMessage === "string") {
-          const lower = errorMessage.toLowerCase();
-          if (lower.includes("credential") || lower.includes("passwort") || lower.includes("ungültig")) {
-            setError(ERROR_MESSAGES.invalid_credentials);
-          } else if (lower.includes("verifiziert") || lower.includes("verify")) {
-            setError(ERROR_MESSAGES.email_not_verified);
-          } else if (lower.includes("gesperrt") || lower.includes("locked")) {
-            setError(ERROR_MESSAGES.account_locked);
-          } else if (lower.includes("rate") || lower.includes("zu viele")) {
-            setError(ERROR_MESSAGES.rate_limited);
-          } else {
-            setError(errorMessage);
-          }
+      if (error) {
+        const lower = error.message.toLowerCase();
+        if (lower.includes("credential") || lower.includes("passwort") || lower.includes("invalid")) {
+          setError(ERROR_MESSAGES.invalid_credentials);
+        } else if (lower.includes("email") && lower.includes("confirmed")) {
+          setError(ERROR_MESSAGES.email_not_verified);
         } else {
-          setError(ERROR_MESSAGES.default);
+          setError(error.message);
         }
+        return;
       }
+
+      // Redirect after successful login
+      window.location.href = callbackURL;
     } catch {
       setError(ERROR_MESSAGES.default);
     } finally {
@@ -98,9 +93,11 @@ function LoginPageContent() {
   }
 
   async function handleGithubSignIn() {
-    await authClient.signIn.social({
+    await supabase.auth.signInWithOAuth({
       provider: "github",
-      callbackURL,
+      options: {
+        redirectTo: `${window.location.origin}${callbackURL}`,
+      },
     });
   }
 
@@ -113,7 +110,7 @@ function LoginPageContent() {
         />
 
         <div className="mt-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" suppressHydrationWarning>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-slate-900 dark:text-slate-200">
                 E-Mail
@@ -125,7 +122,6 @@ function LoginPageContent() {
                 placeholder="name@verein.de"
                 required
                 autoComplete="email"
-                autoFocus
                 className="h-11"
               />
             </div>

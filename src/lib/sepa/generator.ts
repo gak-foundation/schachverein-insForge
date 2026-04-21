@@ -80,7 +80,7 @@ export function generateSepaXML(
         \u003c/FinInstnId\u003e
       \u003c/CdtrAgt\u003e
       \u003cChrgBr\u003eSLEV\u003c/ChrgBr\u003e
-${payments.map((p, idx) => generateTransactionXml(p, config, idx)).join("\n")}
+${payments.map((p) => generateTransactionXml(p, config)).join("\n")}
     \u003c/PmtInf\u003e
   \u003c/CstmrDrctDbtInitn\u003e
 \u003c/Document\u003e`;
@@ -90,8 +90,7 @@ ${payments.map((p, idx) => generateTransactionXml(p, config, idx)).join("\n")}
 
 function generateTransactionXml(
   payment: SepaPayment,
-  config: SepaConfig,
-  index: number
+  config: SepaConfig
 ): string {
   return `      \u003cDrctDbtTxInf\u003e
         \u003cPmtId\u003e

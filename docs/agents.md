@@ -4,11 +4,10 @@
 - **Framework**: Next.js 16 (App Router, Server Components, Server Actions)
 - **Language**: TypeScript (strict mode)
 - **ORM**: Drizzle ORM with PostgreSQL
-- **Auth**: Better Auth (formerly Auth.js v5 - migrated)
+- **Auth**: Supabase Auth (managed)
 - **UI**: shadcn/ui + Tailwind CSS 4
 - **State**: Zustand (client-side)
 - **Chess**: chess.js + react-chessboard
-- **Jobs**: BullMQ + Redis
 - **Validation**: Zod
 
 ## Commands
@@ -40,8 +39,7 @@
 ## Key Files
 - `src/lib/db/schema.ts` - All database tables and relations
 - `src/lib/auth/permissions.ts` - RBAC permission matrix (8 roles, 23 permissions)
-- `src/lib/auth/better-auth.ts` - Better Auth configuration
-- `src/lib/auth/client.ts` - Better Auth client-side hooks
+- `src/lib/auth/client.ts` - Supabase Auth client-side hooks
 - `src/lib/auth/session.ts` - Server-side session utilities
 - `src/lib/actions/` - Server Actions nach Thema (z. B. `members.ts`, `finance.ts`)
 - `src/lib/validations/index.ts` - Zod validation schemas
@@ -52,3 +50,13 @@
 After modifying `src/lib/db/schema.ts`:
 1. Run `npm run db:generate` to create migration
 2. Run `npm run db:push` to apply to development database
+
+## Supabase Auth
+Authentication is handled by Supabase Auth (managed service). Key files:
+- `src/lib/supabase/client.ts` - Client-side Supabase client
+- `src/lib/supabase/server.ts` - Server-side Supabase client
+- `src/lib/auth/session.ts` - Session helpers using Supabase
+- `src/lib/auth/client.ts` - React hooks for auth state
+
+## Environment Variables
+See `.env.example` for required environment variables.

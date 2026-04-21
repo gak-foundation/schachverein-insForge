@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { db } from "@/lib/db";
-import { clubs } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
-
-export async function POST(request: Request) {
+export async function POST() {
   try {
     // Stripe webhook handling - install stripe package and implement
     // For now, return success to prevent errors

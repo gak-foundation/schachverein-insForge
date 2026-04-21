@@ -1,14 +1,12 @@
 "use server";
 
-import { auth } from "@/lib/auth/better-auth";
-import { headers } from "next/headers";
+import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { authUsers } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getCurrentClubId(): Promise<string | null> {
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
+  const session = await getSession();
   if (!session?.user?.id) return null;
 
   const [user] = await db

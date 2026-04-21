@@ -42,15 +42,25 @@ export function SortableBlock({ block }: SortableBlockProps) {
     <div
       ref={setNodeRef}
       style={style}
+      role="button"
+      tabIndex={0}
       className={cn(
-        "group relative border-2 border-transparent transition-all rounded-md",
-        isActive ? "border-primary ring-2 ring-primary/20" : "hover:border-muted-foreground/20",
+        "group relative border-2 border-transparent transition-all rounded-md outline-none",
+        isActive ? "border-primary ring-2 ring-primary/20" : "hover:border-muted-foreground/20 focus-visible:border-primary/50",
         isDragging && "shadow-2xl"
       )}
       onClick={(e) => {
         e.stopPropagation();
         setActiveBlock(block.id);
       }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          setActiveBlock(block.id);
+        }
+      }}
+      aria-pressed={isActive}
     >
       {/* Block Toolbar (Floating) */}
       <div className={cn(
@@ -58,9 +68,12 @@ export function SortableBlock({ block }: SortableBlockProps) {
         isActive && "opacity-100"
       )}>
         <div 
-          className="p-1 bg-background border rounded shadow-sm cursor-grab active:cursor-grabbing"
+          className="p-1 bg-background border rounded shadow-sm cursor-grab active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary outline-none"
           {...attributes}
           {...listeners}
+          tabIndex={0}
+          role="button"
+          aria-label="Block verschieben"
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
@@ -70,6 +83,7 @@ export function SortableBlock({ block }: SortableBlockProps) {
             size="icon" 
             className="h-8 w-8 rounded-none border-b"
             onClick={(e) => { e.stopPropagation(); moveBlock(block.id, "up"); }}
+            aria-label="Block nach oben verschieben"
           >
             <ChevronUp className="h-4 w-4" />
           </Button>
@@ -78,6 +92,7 @@ export function SortableBlock({ block }: SortableBlockProps) {
             size="icon" 
             className="h-8 w-8 rounded-none"
             onClick={(e) => { e.stopPropagation(); moveBlock(block.id, "down"); }}
+            aria-label="Block nach unten verschieben"
           >
             <ChevronDown className="h-4 w-4" />
           </Button>
@@ -87,6 +102,7 @@ export function SortableBlock({ block }: SortableBlockProps) {
           size="icon" 
           className="h-8 w-8 shadow-sm"
           onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
+          aria-label="Block löschen"
         >
           <Trash2 className="h-4 w-4" />
         </Button>

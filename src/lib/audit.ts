@@ -48,7 +48,7 @@ function anonymizeIP(ip: string | null): string | null {
 
 export async function logAudit(params: AuditLogParams) {
   const session = await getSession();
-  const { ipAddress, userAgent } = await getClientInfo();
+  const { ipAddress } = await getClientInfo();
   
   await db.insert(auditLog).values({
     userId: session?.user?.id ?? null,

@@ -4,8 +4,44 @@ export interface LichessProfile {
     blitz?: { rating: number };
     rapid?: { rating: number };
     classical?: { rating: number };
+    bullet?: { rating: number };
+    correspondence?: { rating: number };
   };
   id: string;
+  url: string;
+}
+
+export interface LichessGame {
+  id: string;
+  rated: boolean;
+  variant: string;
+  speed: string;
+  perf: string;
+  createdAt: number;
+  lastMoveAt: number;
+  status: string;
+  players: {
+    white: {
+      user?: { name: string; id: string };
+      rating: number;
+    };
+    black: {
+      user?: { name: string; id: string };
+      rating: number;
+    };
+  };
+  winner?: "white" | "black";
+  moves?: string;
+  clock?: {
+    initial: number;
+    increment: number;
+    totalTime: number;
+  };
+  opening?: {
+    eco: string;
+    name: string;
+    ply: number;
+  };
 }
 
 export async function fetchLichessProfile(username: string): Promise<LichessProfile | null> {
@@ -39,7 +75,7 @@ export function getBestLichessRating(profile: LichessProfile): number | null {
   return Math.max(...ratings);
 }
 
-export async function fetchLichessGames(username: string, limit = 10): Promise<any[]> {
+export async function fetchLichessGames(username: string, limit = 10): Promise<LichessGame[]> {
   try {
     const response = await fetch(`https://lichess.org/api/games/user/${username}?max=${limit}&opening=true`, {
       headers: {
@@ -48,6 +84,7 @@ export async function fetchLichessGames(username: string, limit = 10): Promise<a
     });
 
     if (!response.ok) {
+      if (response.status === 404) return [];
       throw new Error(`Lichess API error: ${response.statusText}`);
     }
 
@@ -57,7 +94,7 @@ export async function fetchLichessGames(username: string, limit = 10): Promise<a
     return text
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line));
+      .map((line) => JSON.parse(line) as LichessGame);
   } catch (error) {
     console.error("Error fetching Lichess games:", error);
     return [];

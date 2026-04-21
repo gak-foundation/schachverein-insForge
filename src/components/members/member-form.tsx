@@ -29,7 +29,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { createMemberSchema, type CreateMemberInput } from "@/lib/validations/member";
 import { createMember, updateMember } from "@/lib/actions/members";
 import { Loader2, CreditCard, User, Award, ShieldCheck, FileText } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface MemberFormProps {
   member?: any;

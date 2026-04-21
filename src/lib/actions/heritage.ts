@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { members, games } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 

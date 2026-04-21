@@ -6,6 +6,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -17,6 +18,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { exportSepaXml } from "@/lib/actions/finance";
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
+import { Download, History, CheckCircle2, AlertCircle } from "lucide-react";
 
 export type SepaPaymentRow = {
   id: string;
@@ -41,10 +45,20 @@ type BankSettings = {
   sepaBic: string | null;
 } | undefined;
 
+type SepaExportHistory = {
+  id: string;
+  filename: string;
+  xmlContent: string;
+  totalAmount: string;
+  paymentCount: number;
+  createdAt: Date;
+};
+
 interface SepaExportProps {
   payments: SepaPaymentRow[];
   bankSettings: BankSettings;
   canSepa: boolean;
+  history: SepaExportHistory[];
 }
 
 function isSepaReady(p: SepaPaymentRow): boolean {
@@ -52,9 +66,9 @@ function isSepaReady(p: SepaPaymentRow): boolean {
   return Boolean(p.memberIban && mandate && p.mandateSignedAt);
 }
 
-export function SepaExport({ payments, bankSettings, canSepa }: SepaExportProps) {
+export function SepaExport({ payments, bankSettings, canSepa, history }: SepaExportProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
   const exportable = useMemo(
@@ -81,35 +95,39 @@ export function SepaExport({ payments, bankSettings, canSepa }: SepaExportProps)
     setSelected(new Set(exportable.map((p) => p.id)));
   }
 
+  function handleDownloadXml(xml: string, filename: string) {
+    const blob = new Blob([xml], { type: "application/xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function handleExport() {
     setMessage(null);
     const ids = [...selected];
     if (ids.length === 0) {
-      setMessage("Bitte mindestens eine Zahlung auswaehlen.");
+      setMessage({ type: "error", text: "Bitte mindestens eine Zahlung auswaehlen." });
       return;
     }
     if (!canSepa) {
-      setMessage("Keine Berechtigung fuer den SEPA-Export.");
+      setMessage({ type: "error", text: "Keine Berechtigung fuer den SEPA-Export." });
       return;
     }
     if (!clubReady) {
-      setMessage("Bitte zuerst Creditor-ID und Vereins-IBAN unter Bank-Einstellungen hinterlegen.");
+      setMessage({ type: "error", text: "Bitte zuerst Creditor-ID und Vereins-IBAN unter Bank-Einstellungen hinterlegen." });
       return;
     }
     startTransition(async () => {
       try {
         const { xml, filename } = await exportSepaXml(ids);
-        const blob = new Blob([xml], { type: "application/xml" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
+        handleDownloadXml(xml, filename);
         setSelected(new Set());
-        setMessage("Export erstellt. Datei wurde heruntergeladen.");
+        setMessage({ type: "success", text: "Export erstellt und archiviert. Datei wurde heruntergeladen." });
       } catch (e) {
-        setMessage(e instanceof Error ? e.message : "Export fehlgeschlagen.");
+        setMessage({ type: "error", text: e instanceof Error ? e.message : "Export fehlgeschlagen." });
       }
     });
   }
@@ -117,23 +135,37 @@ export function SepaExport({ payments, bankSettings, canSepa }: SepaExportProps)
   return (
     <div className="space-y-6">
       {!clubReady && (
-        <p className="text-sm text-amber-700">
-          Fuer den Export werden Creditor-ID und IBAN des Vereins benoetigt (Tab Bank-Einstellungen).
-        </p>
+        <div className="flex items-center gap-2 p-4 text-sm rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
+          <AlertCircle className="h-4 w-4" />
+          <p>
+            Fuer den Export werden Creditor-ID und IBAN des Vereins benoetigt (Tab Bank-Einstellungen).
+          </p>
+        </div>
+      )}
+
+      {message && (
+        <div className={`flex items-center gap-2 p-4 text-sm rounded-lg border ${
+          message.type === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"
+        }`}>
+          {message.type === "success" ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+          <p>{message.text}</p>
+        </div>
       )}
 
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4">
-          <CardTitle>SEPA-Lastschrift (pending, mandatsfaehig)</CardTitle>
+          <div>
+            <CardTitle>Neuer SEPA-Export</CardTitle>
+            <CardDescription>Zahlungen mit vollstaendigen Mandatsdaten (pending)</CardDescription>
+          </div>
           <Button type="button" onClick={handleExport} disabled={pending || !canSepa || exportable.length === 0}>
-            {pending ? "Exportiere…" : "XML exportieren"}
+            {pending ? "Exportiere…" : "XML generieren & exportieren"}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {message && <p className="text-sm text-gray-700">{message}</p>}
           {exportable.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              Keine ausstehenden Zahlungen mit vollstaendigen SEPA-Daten (IBAN, Mandat, Unterschrift).
+            <p className="text-sm text-gray-500 py-4 text-center border rounded-lg border-dashed">
+              Keine ausstehenden Zahlungen mit vollstaendigen SEPA-Daten vorhanden.
             </p>
           ) : (
             <Table>
@@ -187,17 +219,61 @@ export function SepaExport({ payments, bankSettings, canSepa }: SepaExportProps)
 
       <Card>
         <CardHeader>
-          <CardTitle>Weitere Zahlungen (nicht exportierbar)</CardTitle>
+          <div className="flex items-center gap-2">
+            <History className="h-5 w-5 text-gray-500" />
+            <CardTitle>Export-Historie</CardTitle>
+          </div>
+          <CardDescription>Vergangene SEPA-XML-Dateien herunterladen</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {history.length === 0 ? (
+            <p className="text-sm text-gray-500 py-4 text-center">Noch keine Exporte durchgefuehrt.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Dateiname</TableHead>
+                  <TableHead className="text-right">Anzahl</TableHead>
+                  <TableHead className="text-right">Gesamtbetrag</TableHead>
+                  <TableHead className="text-right">Aktion</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {history.map((h) => (
+                  <TableRow key={h.id}>
+                    <TableCell>{format(new Date(h.createdAt), "dd.MM.yyyy HH:mm", { locale: de })}</TableCell>
+                    <TableCell className="font-mono text-xs">{h.filename}</TableCell>
+                    <TableCell className="text-right">{h.paymentCount}</TableCell>
+                    <TableCell className="text-right font-medium">{Number(h.totalAmount).toFixed(2)} EUR</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => handleDownloadXml(h.xmlContent, h.filename)}>
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Fehlende SEPA-Angaben</CardTitle>
+          <CardDescription>Zahlungen, die aufgrund fehlender Daten nicht exportiert werden koennen</CardDescription>
         </CardHeader>
         <CardContent>
           {payments.filter((p) => p.status === "pending" && !isSepaReady(p)).length === 0 ? (
-            <p className="text-sm text-gray-500">Keine ausstehenden Zahlungen ohne vollstaendige SEPA-Angaben.</p>
+            <p className="text-sm text-gray-500 py-4 text-center">Keine unvollstaendigen Zahlungen vorhanden.</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Mitglied</TableHead>
-                  <TableHead>Status-Hinweis</TableHead>
+                  <TableHead>Was fehlt?</TableHead>
                   <TableHead className="text-right">Betrag</TableHead>
                 </TableRow>
               </TableHeader>
@@ -209,10 +285,10 @@ export function SepaExport({ payments, bankSettings, canSepa }: SepaExportProps)
                       <TableCell>
                         {p.memberFirstName} {p.memberLastName}
                       </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {!p.memberIban && "IBAN fehlt. "}
-                        {!(p.sepaMandateReference || p.memberMandateRef) && "Mandatsreferenz fehlt. "}
-                        {!p.mandateSignedAt && "Mandatsdatum fehlt."}
+                      <TableCell className="text-sm text-red-600">
+                        {!p.memberIban && "IBAN, "}
+                        {!(p.sepaMandateReference || p.memberMandateRef) && "Mandats-ID, "}
+                        {!p.mandateSignedAt && "Unterschriftsdatum"}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{Number(p.amount).toFixed(2)} EUR</TableCell>
                     </TableRow>

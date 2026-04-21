@@ -1,5 +1,5 @@
 const CACHE_NAME = "schachverein-v1";
-const STATIC_ASSETS = ["/", "/login", "/dashboard", "/manifest.json"];
+const STATIC_ASSETS = ["/", "/auth/login", "/dashboard", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

@@ -17,7 +17,8 @@ export default async function CalendarPage() {
   const canWrite = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
-    PERMISSIONS.EVENTS_WRITE
+    PERMISSIONS.EVENTS_WRITE,
+    session.user.isSuperAdmin
   );
 
   // Fetch events for the current year to have enough data for navigation

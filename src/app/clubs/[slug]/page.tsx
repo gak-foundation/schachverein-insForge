@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, Trophy, Users } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface ClubPageProps {
   params: Promise<{ slug: string }>;
@@ -27,7 +28,14 @@ export default async function ClubPage({ params }: ClubPageProps) {
       <section className="relative py-20 bg-linear-to-b from-primary/5 to-background border-b">
         <div className="container mx-auto px-4 text-center">
           {club.logoUrl && (
-            <img src={club.logoUrl} alt={club.name} className="mx-auto h-24 w-24 object-contain mb-8 rounded-2xl shadow-lg bg-white p-2" />
+            <div className="relative mx-auto h-24 w-24 mb-8">
+              <Image 
+                src={club.logoUrl} 
+                alt={club.name} 
+                fill 
+                className="object-contain rounded-2xl shadow-lg bg-white p-2" 
+              />
+            </div>
           )}
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight text-slate-900">
             Willkommen beim <br />

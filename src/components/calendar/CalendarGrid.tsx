@@ -5,8 +5,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Plus, 
-  MapPin, 
-  Clock,
   Repeat
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +23,7 @@ import {
   isToday,
 } from "date-fns";
 import { de } from "date-fns/locale";
+import { CalendarItem } from "@/types";
 
 const eventTypeColors: Record<string, string> = {
   training: "bg-green-100 text-green-800 border-green-200",
@@ -34,31 +33,15 @@ const eventTypeColors: Record<string, string> = {
   other: "bg-gray-100 text-gray-800 border-gray-200",
 };
 
-interface CalendarEvent {
-  id: string;
-  originalId?: string;
-  title: string;
-  type: string;
-  start: Date;
-  end: Date;
-  location?: string;
-  isAllDay: boolean;
-  isRecurring: boolean;
-}
-
 interface CalendarGridProps {
-  initialEvents: any[];
+  initialEvents: CalendarItem[];
   canWrite: boolean;
 }
 
 export default function CalendarGrid({ initialEvents, canWrite }: CalendarGridProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const events = initialEvents.map(e => ({
-    ...e,
-    start: new Date(e.start),
-    end: new Date(e.end)
-  })) as CalendarEvent[];
+  const events = initialEvents;
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
@@ -81,11 +64,21 @@ export default function CalendarGrid({ initialEvents, canWrite }: CalendarGridPr
             {format(currentMonth, "MMMM yyyy", { locale: de })}
           </h2>
           <div className="flex items-center border rounded-md">
-            <Button variant="ghost" size="icon" onClick={prevMonth}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={prevMonth}
+              aria-label="Vorheriger Monat"
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="w-px h-4 bg-gray-200" />
-            <Button variant="ghost" size="icon" onClick={nextMonth}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={nextMonth}
+              aria-label="Nächster Monat"
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

@@ -1,174 +1,73 @@
+import { updateSession } from "@/lib/supabase/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { applySecurityHeaders } from "@/lib/auth/security-headers";
-import { auth } from "@/lib/auth/better-auth";
-import { rateLimit, RATE_LIMITS } from "@/lib/auth/rate-limit";
 
-export const runtime = "experimental-edge";
-
-async function getClientIP(request: NextRequest): Promise<string> {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
-  const realIP = request.headers.get("x-real-ip");
-  if (realIP) return realIP;
-  return "unknown";
-}
+// Routes that don't require authentication
+const publicRoutes = [
+  "/",
+  "/auth/login",
+  "/auth/signup",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/auth/callback",
+  "/auth/error",
+  "/auth/verify-request",
+  "/auth/verify-email",
+  "/auth/invite",
+  "/vereinswebsite",
+  "/mannschaften",
+  "/turniere",
+  "/termine",
+  "/kontakt",
+  "/impressum",
+  "/datenschutz",
+  "/api/health",
+  "/api/webhooks",
+];
 
 export async function middleware(request: NextRequest) {
-  const url = request.nextUrl;
-  const originalPath = url.pathname;
+  const { pathname } = request.nextUrl;
 
-  // 0. Explicitly skip static files and other common excluded paths
+  // Static assets are always public - skip processing
   if (
-    originalPath.startsWith("/_next") ||
-    originalPath.startsWith("/favicon.ico") ||
-    originalPath.startsWith("/sw.js") ||
-    originalPath.startsWith("/manifest.json") ||
-    originalPath.startsWith("/icons/") ||
-    originalPath === "/sitemap.xml" ||
-    originalPath === "/robots.txt"
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/static") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname.startsWith("/sw.js") ||
+    pathname.startsWith("/manifest.json") ||
+    pathname.startsWith("/icons/") ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/robots.txt" ||
+    pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff|woff2)$/)
   ) {
     return NextResponse.next();
   }
 
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
-  const host = request.headers.get("host") || "";
-  
-  // Normalize hostname for easier comparison
-  const hostname = host.replace(".localhost:3000", `.${rootDomain}`);
+  // Check if it's a public route
+  const isPublicRoute = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
 
-  const searchParams = url.searchParams.toString();
-  
-  let targetPath = originalPath;
-  let isRewrite = false;
+  // Update session
+  const { supabaseResponse, user } = await updateSession(request);
 
-  // 1. Subdomain / Multi-tenancy Logic
-  if (hostname === `admin.${rootDomain}`) {
-    targetPath = `/dashboard${originalPath === "/" ? "" : originalPath}`;
-    isRewrite = true;
-  } else if (
-    hostname !== rootDomain &&
-    hostname !== `www.${rootDomain}`
-  ) {
-    const slug = hostname.split(".")[0];
-    if (slug && slug !== "www" && slug !== "admin" && hostname.includes(".")) {
-      targetPath = `/clubs/${slug}${originalPath}`;
-      isRewrite = true;
-    }
-  }
-
-  const pathname = targetPath;
-  const headers = new Headers(request.headers);
-  let response: NextResponse;
-
-  // Helper to get either next or rewrite response
-  const getNextResponse = () => {
-    if (isRewrite) {
-      return NextResponse.rewrite(new URL(`${targetPath}${searchParams.length > 0 ? `?${searchParams}` : ""}`, request.url));
-    }
-    return NextResponse.next();
-  };
-
-  // 2. Auth & Security Logic
-  if (pathname.startsWith("/api/auth")) {
-    const ip = await getClientIP(request);
-    
-    if (pathname.includes("/sign-in")) {
-      const result = await rateLimit(`ip:${ip}`, RATE_LIMITS.login_ip);
-      if (!result.allowed) {
-        response = NextResponse.json(
-          { error: "Zu viele Anmeldeversuche. Bitte versuchen Sie es später erneut." },
-          { status: 429 }
-        );
-        return applySecurityHeaders(response);
-      }
-    }
-    
-    if (pathname.includes("/sign-up")) {
-      const result = await rateLimit(`ip:${ip}`, RATE_LIMITS.register);
-      if (!result.allowed) {
-        response = NextResponse.json(
-          { error: "Zu viele Registrierungsversuche. Bitte versuchen Sie es später erneut." },
-          { status: 429 }
-        );
-        return applySecurityHeaders(response);
-      }
-    }
-    
-    if (pathname.includes("/forgot-password")) {
-      const result = await rateLimit(`ip:${ip}`, RATE_LIMITS.passwordReset_ip);
-      if (!result.allowed) {
-        response = NextResponse.json(
-          { error: "Zu viele Passwort-Reset-Versuche. Bitte versuchen Sie es später erneut." },
-          { status: 429 }
-        );
-        return applySecurityHeaders(response);
-      }
-    }
-    
-    return getNextResponse();
-  }
-
-  const session = await auth.api.getSession({
-    headers: headers,
-  });
-
-  const publicRoutes = [
-    "/",
-    "/auth/login",
-    "/auth/signup",
-    "/auth/error",
-    "/auth/verify-request",
-    "/auth/verify-email",
-    "/auth/forgot-password",
-    "/auth/reset-password",
-    "/auth/invite",
-    "/vereinswebsite",
-    "/mannschaften",
-    "/turniere",
-    "/termine",
-    "/kontakt",
-    "/impressum",
-    "/datenschutz",
-  ];
-
-  if (publicRoutes.some((route) => pathname.startsWith(route)) || pathname.startsWith("/clubs/")) {
-    if (session && (pathname === "/auth/login" || pathname === "/auth/signup")) {
-      response = NextResponse.redirect(new URL("/dashboard", request.url));
-      return applySecurityHeaders(response);
-    }
-    return applySecurityHeaders(getNextResponse());
-  }
-
-  if (!session) {
+  // If not authenticated and trying to access protected route, redirect to login
+  if (!user && !isPublicRoute) {
     const loginUrl = new URL("/auth/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    response = NextResponse.redirect(loginUrl);
-    return applySecurityHeaders(response);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  const userRole = session.user?.role as string || "mitglied";
-
-  if (pathname.startsWith("/dashboard/admin")) {
-    if (userRole !== "admin") {
-      response = NextResponse.redirect(new URL("/dashboard", request.url));
-      return applySecurityHeaders(response);
-    }
+  // If authenticated and trying to access login page, redirect to dashboard
+  if (user && (pathname === "/auth/login" || pathname === "/auth/signup")) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (pathname.startsWith("/dashboard/kassenwart")) {
-    const allowedRoles = ["admin", "kassenwart", "vorstand"];
-    if (!allowedRoles.includes(userRole)) {
-      response = NextResponse.redirect(new URL("/dashboard", request.url));
-      return applySecurityHeaders(response);
-    }
-  }
-
-  return applySecurityHeaders(getNextResponse());
+  return supabaseResponse;
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons/|sitemap.xml|robots.txt).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons/|sitemap.xml|robots.txt|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

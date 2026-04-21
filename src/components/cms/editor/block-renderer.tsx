@@ -36,7 +36,7 @@ export function BlockRenderer({ block, mode }: BlockRendererProps) {
     default:
       return (
         <div className="p-4 border border-dashed rounded text-muted-foreground text-center">
-          Block-Typ "{block.type}" noch nicht implementiert.
+          Block-Typ &quot;{block.type}&quot; noch nicht implementiert.
         </div>
       );
   }

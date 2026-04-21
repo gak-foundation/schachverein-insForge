@@ -3,7 +3,6 @@ import {
   uuid,
   varchar,
   timestamp,
-  date,
   integer,
   boolean,
   text,
@@ -46,68 +45,7 @@ export const authUsers = pgTable(
   }),
 );
 
-export const authSessions = pgTable("auth_session", {
-  id: varchar("id", { length: 128 }).primaryKey(),
-  userId: varchar("user_id", { length: 36 })
-    .notNull()
-    .references(() => authUsers.id, { onDelete: "cascade" }),
-  token: varchar("token", { length: 128 }).notNull().unique(),
-  expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
-  ipAddress: varchar("ip_address", { length: 45 }),
-  userAgent: text("user_agent"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: index("auth_session_user_id_idx").on(table.userId),
-  tokenIdx: index("auth_session_token_idx").on(table.token),
-}));
-
-export const authAccounts = pgTable("auth_account", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  userId: varchar("user_id", { length: 36 })
-    .notNull()
-    .references(() => authUsers.id, { onDelete: "cascade" }),
-  accountId: varchar("account_id", { length: 255 }).notNull(),
-  providerId: varchar("provider_id", { length: 255 }).notNull(),
-  accessToken: text("access_token"),
-  refreshToken: text("refresh_token"),
-  accessTokenExpiresAt: timestamp("access_token_expires_at", { mode: "date" }),
-  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { mode: "date" }),
-  scope: varchar("scope", { length: 255 }),
-  idToken: text("id_token"),
-  password: varchar("password", { length: 255 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: index("auth_account_user_id_idx").on(table.userId),
-  providerIdx: uniqueIndex("auth_account_provider_idx").on(table.providerId, table.accountId),
-}));
-
-export const authVerifications = pgTable("auth_verification", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  identifier: varchar("identifier", { length: 255 }).notNull(),
-  value: varchar("value", { length: 255 }).notNull(),
-  expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  identifierIdx: index("auth_verification_identifier_idx").on(table.identifier),
-}));
-
-export const authTwoFactors = pgTable("auth_two_factor", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  userId: varchar("user_id", { length: 36 })
-    .notNull()
-    .references(() => authUsers.id, { onDelete: "cascade" }),
-  secret: varchar("secret", { length: 255 }).notNull(),
-  backupCodes: jsonb("backup_codes").$type<string[]>().default([]),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: uniqueIndex("auth_two_factor_user_id_idx").on(table.userId),
-}));
-
-export const authUsersRelations = relations(authUsers, ({ one, many }) => ({
+export const authUsersRelations = relations(authUsers, ({ one }) => ({
   member: one(members, {
     fields: [authUsers.memberId],
     references: [members.id],
@@ -115,21 +53,5 @@ export const authUsersRelations = relations(authUsers, ({ one, many }) => ({
   activeClub: one(clubs, {
     fields: [authUsers.activeClubId],
     references: [clubs.id],
-  }),
-  accounts: many(authAccounts),
-  sessions: many(authSessions),
-}));
-
-export const authSessionsRelations = relations(authSessions, ({ one }) => ({
-  user: one(authUsers, {
-    fields: [authSessions.userId],
-    references: [authUsers.id],
-  }),
-}));
-
-export const authAccountsRelations = relations(authAccounts, ({ one }) => ({
-  user: one(authUsers, {
-    fields: [authAccounts.userId],
-    references: [authUsers.id],
   }),
 }));

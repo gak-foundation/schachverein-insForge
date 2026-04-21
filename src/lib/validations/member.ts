@@ -17,10 +17,18 @@ export const createMemberSchema = createInsertSchema(members, {
   lichessUsername: z.string().max(100).optional().nullable(),
   chesscomUsername: z.string().max(100).optional().nullable(),
   sepaMandateReference: z.string().max(35).optional().nullable(),
-  sepaIban: z.string().max(34).optional().nullable(),
-  sepaBic: z.string().max(11).optional().nullable(),
+  sepaIban: z.string().max(1024).optional().nullable(),
+  sepaBic: z.string().max(1024).optional().nullable(),
   mandateSignedAt: z.string().date().optional().nullable().or(z.literal("")),
+  mandateUrl: z.string().url().max(1000).optional().nullable().or(z.literal("")),
   notes: z.string().optional().nullable(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  deletionRequestedAt: true,
+  anonymizedAt: true,
+  heritageGameId: true,
 }).extend({
   role: z.enum([
     "admin",
@@ -31,6 +39,7 @@ export const createMemberSchema = createInsertSchema(members, {
     "trainer",
     "mitglied",
     "eltern",
+    "user",
   ]).default("mitglied"),
 });
 

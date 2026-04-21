@@ -1,8 +1,8 @@
 # Deployment Guide: All-Hetzner (Docker Compose)
 
-Das "All-Hetzner" Deployment mit Docker Compose ist die bevorzugte, leistungsstärkste und DSGVO-konformste Methode, um den *CheckMate Manager* produktiv zu betreiben. 
+Das "All-Hetzner" Deployment mit Docker Compose ist die bevorzugte, leistungsstärkste und DSGVO-konformste Methode, um den *CheckMate Manager* produktiv zu betreiben.
 
-Dieses Setup bündelt die **Web-App (Next.js)**, **Background-Worker (BullMQ)**, **PostgreSQL**, **Redis** und **MinIO** in einer abgeschlossenen Server-Umgebung in einem deutschen Rechenzentrum.
+Dieses Setup bündelt die **Web-App (Next.js)** und **PostgreSQL** (optional für Caching) in einer abgeschlossenen Server-Umgebung in einem deutschen Rechenzentrum. Authentifizierung und Storage werden über **Supabase Cloud** (EU-Region) abgewickelt.
 
 ## 1. Server Voraussetzungen
 
@@ -42,9 +42,12 @@ nano .env
 **Wichtige Werte:**
 - `NODE_ENV=production`
 - `NEXT_PUBLIC_APP_URL=https://schachverein.deine-domain.de`
-- `BETTER_AUTH_URL=https://schachverein.deine-domain.de`
-- Generiere sichere Schlüssel für `BETTER_AUTH_SECRET` und `ENCRYPTION_KEY` (jeweils z.B. 32 Zeichen lang).
-- `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `MINIO_ROOT_PASSWORD` müssen sicher gesetzt sein.
+- Supabase Konfiguration:
+  - `NEXT_PUBLIC_SUPABASE_URL=https://[project-ref].supabase.co`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY=[your-anon-key]`
+  - `SUPABASE_SERVICE_ROLE_KEY=[your-service-role-key]`
+- Generiere sicheren Schlüssel für `ENCRYPTION_KEY` (32 Zeichen lang, für sensible Daten).
+- `POSTGRES_PASSWORD` muss sicher gesetzt sein.
 
 ## 4. Reverse Proxy (Caddy)
 
@@ -113,5 +116,5 @@ docker exec -it schachverein-app npm run db:push
 
 ## Warum dieses Setup?
 1. **Keine Serverless Timeouts:** Bulk-Importe und komplexe Turnierauswertungen laufen problemlos über 60 Sekunden hinaus.
-2. **Datenschutz (DSGVO):** Keine Speicherung in US-Clouds. Alle Daten liegen im verschlüsselten Hetzner-Server.
-3. **Persistente Worker:** BullMQ läuft nativ als eigener Node-Prozess und verarbeitet Hintergrundaufgaben zuverlässig.
+2. **Datenschutz (DSGVO):** Supabase EU-Region (Frankfurt). Alle Daten liegen im verschlüsselten Hetzner-Server.
+3. **Vereinfachte Architektur:** Keine Redis/MinIO-Container nötig, da Auth und Storage über Supabase laufen.

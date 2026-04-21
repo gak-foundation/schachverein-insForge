@@ -8,8 +8,6 @@ if (!ENCRYPTION_KEY && process.env.NODE_ENV === "production") {
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
-const SALT_LENGTH = 32;
 
 function getKey(): Buffer {
   if (!ENCRYPTION_KEY) {
@@ -22,8 +20,8 @@ function getKey(): Buffer {
 export function encrypt(text: string): string {
   if (!text) return "";
 
+  const salt = randomBytes(16);
   const iv = randomBytes(IV_LENGTH);
-  const salt = randomBytes(SALT_LENGTH);
   const key = getKey();
 
   const cipher = createCipheriv(ALGORITHM, key, iv);
@@ -47,9 +45,8 @@ export function decrypt(encryptedData: string): string {
       return encryptedData;
     }
 
-    const [saltHex, ivHex, authTagHex, encryptedHex] = parts;
+    const [, ivHex, authTagHex, encryptedHex] = parts;
 
-    const salt = Buffer.from(saltHex, "hex");
     const iv = Buffer.from(ivHex, "hex");
     const authTag = Buffer.from(authTagHex, "hex");
     const key = getKey();

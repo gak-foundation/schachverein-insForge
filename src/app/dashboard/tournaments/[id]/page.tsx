@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getTournamentById, getTournamentParticipants, addTournamentParticipantForm, removeTournamentParticipantForm, updateTournamentResults } from "@/lib/actions/tournaments";
+import { getTournamentById, getTournamentParticipants, addTournamentParticipantForm, removeTournamentParticipantForm } from "@/lib/actions/tournaments";
 import { getGames } from "@/lib/actions/games";
 import { getMembersForForms, getMemberById } from "@/lib/actions/members";
 import { Button } from "@/components/ui/button";
@@ -28,10 +28,6 @@ import {
   Hash,
   TrendingUp,
   ChevronLeft,
-  ChevronRight,
-  Upload,
-  Download,
-  FileJson,
 } from "lucide-react";
 import { TRFImportDialog } from "@/components/tournaments/trf-import-dialog";
 import { TRFExportButton } from "@/components/tournaments/trf-export-button";
@@ -99,6 +95,7 @@ export default async function TournamentDetailPage({
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
     PERMISSIONS.TOURNAMENTS_WRITE,
+    session.user.isSuperAdmin
   );
 
   // Generate cross table data for round-robin tournaments
@@ -141,8 +138,6 @@ export default async function TournamentDetailPage({
   const sortedRounds = Object.keys(gamesByRound)
     .map(Number)
     .sort((a, b) => a - b);
-
-  const totalRounds = tournament.numberOfRounds || Math.max(...sortedRounds, 0);
 
   const sortedParticipants = [...participants].sort((a, b) => {
     return parseFloat(b.score || "0") - parseFloat(a.score || "0");

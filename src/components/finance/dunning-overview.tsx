@@ -33,7 +33,7 @@ export function DunningOverview({ stats, canWrite }: DunningOverviewProps) {
           description: `${result.processed} Zahlungen wurden verarbeitet.`,
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Fehler",
         description: "Der Mahnlauf konnte nicht gestartet werden.",

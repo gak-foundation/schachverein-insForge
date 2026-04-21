@@ -32,6 +32,7 @@ export default async function AuditLogPage() {
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
     PERMISSIONS.ADMIN_AUDIT,
+    session.user.isSuperAdmin
   );
 
   if (!canViewAudit) {

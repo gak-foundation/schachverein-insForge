@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { members, teams, seasons, tournaments, events, matches, clubs } from "@/lib/db/schema";
-import { eq, desc, sql, and, gte } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 
 // ─── Public Actions (No auth required) ─────────────────────────
 

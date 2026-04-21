@@ -82,7 +82,9 @@ describe("Finance Actions", () => {
     it("sollte eine Zahlung erstellen", async () => {
       mockDb.select.mockReturnValue(createSelectChain([{ id: "membership-1" }]));
       mockDb.insert.mockReturnValue({
-        values: vi.fn(() => Promise.resolve()),
+        values: vi.fn(() => ({
+          returning: vi.fn(() => Promise.resolve([{ id: "payment-1" }]))
+        })),
       });
 
       const formData = mockFormData({

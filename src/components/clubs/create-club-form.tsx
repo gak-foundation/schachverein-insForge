@@ -43,7 +43,6 @@ export function CreateClubForm({ onSuccess }: CreateClubFormProps) {
 
       onSuccess?.();
       router.push("/dashboard");
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verein konnte nicht erstellt werden");
     } finally {
@@ -52,7 +51,7 @@ export function CreateClubForm({ onSuccess }: CreateClubFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning>
       {error && (
         <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">{error}</div>
       )}

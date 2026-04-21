@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSessionWithClub } from "@/lib/auth/session";
-import { getAllClubsAction } from "@/lib/clubs/actions";
+import { getAllClubsAction, getAllUsersAction } from "@/lib/clubs/actions";
 import { db } from "@/lib/db";
-import { clubs, clubMemberships, authUsers } from "@/lib/db/schema";
-import { eq, sql, count } from "drizzle-orm";
+import { clubs, authUsers } from "@/lib/db/schema";
+import { eq, count } from "drizzle-orm";
 import { SuperAdminDashboard } from "./super-admin-dashboard";
 
 export default async function SuperAdminPage() {
@@ -13,27 +13,9 @@ export default async function SuperAdminPage() {
     redirect("/dashboard");
   }
 
-  // Get all clubs with member counts
-  const allClubs = await db
-    .select({
-      id: clubs.id,
-      name: clubs.name,
-      slug: clubs.slug,
-      plan: clubs.plan,
-      isActive: clubs.isActive,
-      subscriptionStatus: clubs.subscriptionStatus,
-      subscriptionExpiresAt: clubs.subscriptionExpiresAt,
-      createdAt: clubs.createdAt,
-      stripeCustomerId: clubs.stripeCustomerId,
-      stripeSubscriptionId: clubs.stripeSubscriptionId,
-      memberCount: sql<number>`(
-        SELECT COUNT(*) FROM ${clubMemberships}
-        WHERE ${clubMemberships.clubId} = ${clubs.id}
-        AND ${clubMemberships.status} = 'active'
-      )`,
-    })
-    .from(clubs)
-    .orderBy(clubs.createdAt);
+  // Get all clubs and users
+  const allClubs = await getAllClubsAction();
+  const allUsers = await getAllUsersAction();
 
   // Get system stats
   const totalUsers = await db.select({ count: count() }).from(authUsers);
@@ -51,5 +33,5 @@ export default async function SuperAdminPage() {
     enterpriseClubs: allClubs.filter((c) => c.plan === "enterprise").length,
   };
 
-  return <SuperAdminDashboard clubs={allClubs} stats={stats} />;
+  return <SuperAdminDashboard clubs={allClubs as any} users={allUsers as any} stats={stats} />;
 }

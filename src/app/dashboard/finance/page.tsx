@@ -9,8 +9,9 @@ import {
   getPaymentWithMemberDetails,
   getClubBankSettings,
   getDunningStats,
+  getSepaExports,
+  getMembersForFinance,
 } from "@/lib/actions/finance";
-import { getMembersForForms } from "@/lib/actions/members";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaymentsOverview } from "@/components/finance/payments-overview";
 import { ContributionRatesList } from "@/components/finance/contribution-rates-list";
@@ -26,7 +27,7 @@ export default async function FinancePage() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_READ)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_READ, session.user.isSuperAdmin)) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Keine Berechtigung fuer die Finanzverwaltung.</p>
@@ -34,18 +35,28 @@ export default async function FinancePage() {
     );
   }
 
-  const [stats, allPayments, memberList, contributionRates, paymentsWithDetails, bankSettings, dunningStats] = await Promise.all([
+  const [
+    stats,
+    allPayments,
+    memberList,
+    contributionRates,
+    paymentsWithDetails,
+    bankSettings,
+    dunningStats,
+    sepaHistory,
+  ] = await Promise.all([
     getPaymentStats(),
     getPayments(),
-    getMembersForForms(),
+    getMembersForFinance(),
     getContributionRates(),
     getPaymentWithMemberDetails(),
     getClubBankSettings(),
     getDunningStats(),
+    getSepaExports(),
   ]);
 
-  const canWrite = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_WRITE);
-  const canSepa = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_SEPA);
+  const canWrite = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_WRITE, session.user.isSuperAdmin);
+  const canSepa = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_SEPA, session.user.isSuperAdmin);
 
   return (
     <div className="space-y-6">
@@ -55,7 +66,7 @@ export default async function FinancePage() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList variant="line">
+        <TabsList variant="line" className="h-auto flex-wrap justify-start gap-x-8 gap-y-2 border-b w-full px-0 pb-px">
           <TabsTrigger value="overview">Uebersicht</TabsTrigger>
           <TabsTrigger value="rates">Beitragssaetze</TabsTrigger>
           {(canWrite || canSepa) && <TabsTrigger value="sepa">SEPA-Export</TabsTrigger>}
@@ -63,7 +74,7 @@ export default async function FinancePage() {
           {canWrite && <TabsTrigger value="settings">Bank-Einstellungen</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="mt-6 space-y-6">
           <PaymentsOverview
             stats={stats}
             payments={allPayments}
@@ -72,7 +83,7 @@ export default async function FinancePage() {
           />
         </TabsContent>
 
-        <TabsContent value="rates" className="space-y-6">
+        <TabsContent value="rates" className="mt-6 space-y-6">
           <ContributionRatesList
             rates={contributionRates}
             canWrite={canWrite}
@@ -80,17 +91,18 @@ export default async function FinancePage() {
         </TabsContent>
 
         {(canWrite || canSepa) && (
-          <TabsContent value="sepa" className="space-y-6">
+          <TabsContent value="sepa" className="mt-6 space-y-6">
             <SepaExport
               payments={paymentsWithDetails}
               bankSettings={bankSettings}
               canSepa={canSepa}
+              history={sepaHistory}
             />
           </TabsContent>
         )}
 
         {canWrite && (
-          <TabsContent value="dunning" className="space-y-6">
+          <TabsContent value="dunning" className="mt-6 space-y-6">
             <DunningOverview
               stats={dunningStats}
               canWrite={canWrite}
@@ -99,7 +111,7 @@ export default async function FinancePage() {
         )}
 
         {canWrite && (
-          <TabsContent value="settings" className="space-y-6">
+          <TabsContent value="settings" className="mt-6 space-y-6">
             <ClubBankSettings
               settings={bankSettings}
             />
@@ -109,4 +121,3 @@ export default async function FinancePage() {
     </div>
   );
 }
-

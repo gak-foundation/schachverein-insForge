@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Plus, Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { Globe, Plus, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -46,7 +46,7 @@ export default async function PagesListPage({
     redirect("/auth/login");
   }
 
-  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_READ)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_READ, session.user.isSuperAdmin)) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Keine Berechtigung fuer die Website-Verwaltung.</p>
@@ -59,7 +59,7 @@ export default async function PagesListPage({
   const sortBy = filters.sortBy || "updatedAt";
   const sortOrder = filters.sortOrder || "desc";
   
-  const { pages: allPages, totalCount, totalPages } = await getPages(
+  const { pages: allPages } = await getPages(
     filters.search,
     filters.status,
     sortBy,
@@ -67,7 +67,7 @@ export default async function PagesListPage({
     currentPage
   );
 
-  const canEdit = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE);
+  const canEdit = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin);
 
   return (
     <div className="space-y-6">

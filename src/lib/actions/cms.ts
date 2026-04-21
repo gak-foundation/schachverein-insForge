@@ -1,13 +1,15 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { pages, pageBlocks, mediaAssets } from "@/lib/db/schema";
+import { pages, pageBlocks } from "@/lib/db/schema";
 import { eq, desc, asc, and, or, sql, SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { requireClubId } from "./utils";
 import { pageSchema } from "@/lib/validations/cms";
+
+import { z } from "zod";
 
 export type PageSortField = "title" | "slug" | "status" | "createdAt" | "updatedAt";
 export type SortOrder = "asc" | "desc";
@@ -101,11 +103,11 @@ export async function getPageById(id: string) {
   return page;
 }
 
-export async function createPage(data: any) {
+export async function createPage(data: z.infer<typeof pageSchema>) {
   const clubId = await requireClubId();
   const session = await getSession();
   
-  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE)) {
+  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
     throw new Error("Keine Berechtigung");
   }
 
@@ -116,18 +118,19 @@ export async function createPage(data: any) {
     .values({
       ...validated,
       clubId,
-    } as any)
+      status: validated.status as any, // Cast for drizzle enum
+    })
     .returning();
 
   revalidatePath("/dashboard/pages");
   return newPage;
 }
 
-export async function updatePage(id: string, data: any) {
+export async function updatePage(id: string, data: Partial<z.infer<typeof pageSchema>>) {
   const clubId = await requireClubId();
   const session = await getSession();
   
-  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE)) {
+  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
     throw new Error("Keine Berechtigung");
   }
 
@@ -138,7 +141,7 @@ export async function updatePage(id: string, data: any) {
     .set({
       ...validated,
       updatedAt: new Date(),
-    } as any)
+    })
     .where(and(eq(pages.id, id), eq(pages.clubId, clubId)))
     .returning();
 
@@ -151,7 +154,7 @@ export async function deletePage(id: string) {
   const clubId = await requireClubId();
   const session = await getSession();
   
-  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE)) {
+  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
     throw new Error("Keine Berechtigung");
   }
 
@@ -166,7 +169,7 @@ export async function savePageBlocks(pageId: string, blocksData: any[]) {
   const clubId = await requireClubId();
   const session = await getSession();
   
-  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE)) {
+  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
     throw new Error("Keine Berechtigung");
   }
 
@@ -190,7 +193,7 @@ export async function savePageBlocks(pageId: string, blocksData: any[]) {
           blockType: b.type,
           order: index * 10,
           content: b.data,
-          createdBy: session.user.id,
+          createdBy: session.user.memberId ?? null,
         }))
       );
     }

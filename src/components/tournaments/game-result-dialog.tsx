@@ -110,7 +110,7 @@ export function GameResultDialog({
         });
         setHasPending(true);
         setError("Verbindungsfehler: Ergebnis wurde lokal zwischengespeichert.");
-      } catch (idbErr) {
+      } catch {
         setError("Fehler beim Speichern: " + (err instanceof Error ? err.message : "Unbekannter Fehler"));
       }
     } finally {

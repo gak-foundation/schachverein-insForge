@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { db } from "../src/lib/db";
-import { authUsers, members } from "../src/lib/db/schema";
+import { members } from "../src/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 // Seed script - creates admin member

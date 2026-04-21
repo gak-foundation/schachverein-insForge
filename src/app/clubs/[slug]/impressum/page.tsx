@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { clubs } from "@/lib/db/schema";
 import { notFound } from "next/navigation";
+import { ClubSettings } from "@/types";
 
 interface ImprintPageProps {
   params: Promise<{ slug: string }>;
@@ -17,7 +18,7 @@ export default async function ImprintPage({ params }: ImprintPageProps) {
     notFound();
   }
 
-  const settings = club.settings as any || {};
+  const settings = (club.settings as unknown as ClubSettings) || {};
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">

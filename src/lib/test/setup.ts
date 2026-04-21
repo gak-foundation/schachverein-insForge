@@ -19,12 +19,8 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/better-auth", () => ({
-  auth: {
-    api: {
-      getSession: vi.fn(() => Promise.resolve(null)),
-    },
-  },
+vi.mock("@/lib/auth/session", () => ({
+  getSession: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock("@/lib/audit", () => ({

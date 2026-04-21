@@ -7,10 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { ErrorMessage } from "@/components/auth/error-message";
+
+import { createClient } from "@/lib/supabase/client";
 
 const PASSWORD_REQUIREMENTS = [
   { test: (p: string) => p.length >= 8, label: "Mindestens 8 Zeichen" },
@@ -41,19 +44,15 @@ function ResetPasswordContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const supabase = createClient();
 
   const strength = calculateStrength(password);
 
   useEffect(() => {
-    const t = searchParams.get("token");
-    if (!t) {
-      setError("Ungültiger oder abgelaufener Reset-Link. Bitte fordern Sie einen neuen Link an.");
-    } else {
-      setToken(t);
-    }
+    // Supabase handled die Session automatisch via URL params
+    // Wir müssen hier nichts weiter tun
   }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -70,20 +69,17 @@ function ResetPasswordContent() {
       return;
     }
 
-    if (!token) return;
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.set("token", token);
-      formData.set("password", password);
-      formData.set("confirmPassword", confirmPassword);
-      const { resetPassword } = await import("@/lib/actions/auth");
-      const result = await resetPassword(formData);
-      if (result.success) {
-        setSuccess(true);
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+
+      if (error) {
+        setError(error.message || "Passwort-Zurücksetzen fehlgeschlagen");
       } else {
-        setError(result.error || "Passwort-Zurücksetzen fehlgeschlagen");
+        setSuccess(true);
       }
     } catch {
       setError("Ein Fehler ist aufgetreten");
@@ -107,14 +103,14 @@ function ResetPasswordContent() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5" suppressHydrationWarning>
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
                 className="space-y-2"
               >
-                <label className="text-sm font-medium text-slate-200">Neues Passwort</label>
+                <Label htmlFor="password" title="Neues Passwort" className="text-sm font-medium text-slate-200">Neues Passwort</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -133,6 +129,7 @@ function ResetPasswordContent() {
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showPassword ? "Passwort verbergen" : "Passwort anzeigen"}</span>
                   </button>
                 </div>
 
@@ -166,7 +163,7 @@ function ResetPasswordContent() {
                 transition={{ delay: 0.3 }}
                 className="space-y-2"
               >
-                <label className="text-sm font-medium text-slate-200">Passwort bestätigen</label>
+                <Label htmlFor="confirmPassword" title="Passwort bestätigen" className="text-sm font-medium text-slate-200">Passwort bestätigen</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -185,6 +182,7 @@ function ResetPasswordContent() {
                     tabIndex={-1}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showConfirmPassword ? "Passwort verbergen" : "Passwort anzeigen"}</span>
                   </button>
                 </div>
               </motion.div>
@@ -203,7 +201,7 @@ function ResetPasswordContent() {
                 <Button
                   type="submit"
                   className="h-12 w-full bg-gradient-to-r from-blue-600 to-violet-600 font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-500 hover:to-violet-500 hover:shadow-blue-500/40 disabled:opacity-70"
-                  disabled={loading || !token}
+                  disabled={loading}
                 >
                   {loading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -41,7 +41,7 @@ export function AvailabilityForm({ matches, initialAvailability }: AvailabilityF
         title: "Verfuegbarkeit aktualisiert",
         description: "Ihre Antwort wurde gespeichert.",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Fehler",
         description: "Die Verfuegbarkeit konnte nicht gespeichert werden.",

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { clubs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireClubId } from "./utils";
+import { encrypt, decrypt } from "@/lib/crypto";
 
 export async function getClubBankSettings() {
   const clubId = await requireClubId();
@@ -19,8 +20,8 @@ export async function getClubBankSettings() {
 
   return {
     creditorId: club?.creditorId || "",
-    sepaIban: club?.sepaIban || "",
-    sepaBic: club?.sepaBic || "",
+    sepaIban: club?.sepaIban ? decrypt(club.sepaIban) : "",
+    sepaBic: club?.sepaBic ? decrypt(club.sepaBic) : "",
   };
 }
 
@@ -35,8 +36,8 @@ export async function updateClubBankSettings(formData: FormData) {
     .update(clubs)
     .set({
       creditorId,
-      sepaIban,
-      sepaBic,
+      sepaIban: sepaIban ? encrypt(sepaIban) : null,
+      sepaBic: sepaBic ? encrypt(sepaBic) : null,
     })
     .where(eq(clubs.id, clubId));
 

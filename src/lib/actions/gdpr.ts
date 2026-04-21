@@ -5,11 +5,9 @@ import {
   members,
   clubMemberships,
   authUsers,
-  dwzHistory,
-  memberStatusHistory,
   payments,
 } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { logMemberAction } from "@/lib/audit";
@@ -114,7 +112,8 @@ export async function anonymizeMember(memberId: string) {
     hasPermission(
       session.user.role ?? "mitglied", 
       session.user.permissions ?? [], 
-      PERMISSIONS.MEMBERS_DELETE
+      PERMISSIONS.MEMBERS_DELETE,
+      session.user.isSuperAdmin
     );
 
   if (!hasAuth) {
@@ -129,9 +128,6 @@ export async function anonymizeMember(memberId: string) {
   if (!member) {
     throw new Error("Mitglied nicht gefunden");
   }
-
-  // Log who triggered the anonymization
-  const triggerUserId = session.user.id;
 
   // 1. Delete associated auth user (this cascades to sessions/accounts)
   await db.delete(authUsers).where(eq(authUsers.memberId, memberId));

@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { teams, seasons, clubMemberships, teamMemberships, boardOrders, matches, members, matchResults } from "@/lib/db/schema";
-import { eq, desc, asc, and, inArray, SQL } from "drizzle-orm";
+import { eq, desc, asc, and, SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "./utils";
 
@@ -429,7 +429,7 @@ export async function updateMatchResult(
     result: typeof matchResults.$inferInsert.result;
   }[]
 ) {
-  const clubId = await requireClubId();
+  await requireClubId();
   const match = await getMatchById(matchId);
 
   if (!match) {

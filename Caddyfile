@@ -1,3 +1,21 @@
-schachverein.deine-domain.de {
+{
+    email {$ACME_EMAIL:admin@example.com}
+}
+
+{$APP_DOMAIN:localhost} {
     reverse_proxy app:3000
+    
+    # Optional: MinIO Console Proxy
+    handle_path /minio-console/* {
+        reverse_proxy minio:9001
+    }
+    
+    # Optional: MinIO API Proxy
+    handle_path /storage/* {
+        reverse_proxy minio:9000
+    }
+
+    log {
+        output file /data/access.log
+    }
 }

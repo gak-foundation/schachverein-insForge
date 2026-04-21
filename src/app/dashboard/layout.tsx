@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ClubProvider } from "@/lib/club-context";
 import { ClubSwitcher } from "@/components/clubs/club-switcher";
 import { getUserClubs } from "@/lib/clubs/queries";
+import Image from "next/image";
 
 export default async function DashboardLayout({
   children,
@@ -45,6 +46,7 @@ export default async function DashboardLayout({
         <Sidebar
           role={role}
           permissions={permissions}
+          isSuperAdmin={user.isSuperAdmin}
           clubSwitcher={<ClubSwitcher />}
         />
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -58,9 +60,9 @@ export default async function DashboardLayout({
                 <span className="text-sm font-semibold">{user.name}</span>
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{role}</span>
               </div>
-              <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center border shadow-sm overflow-hidden">
+              <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center border shadow-sm overflow-hidden relative">
                  {user.image ? (
-                   <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
+                   <Image src={user.image} alt={user.name} fill className="object-cover" />
                  ) : (
                    <span className="text-sm font-bold text-accent-foreground">{user.name.substring(0, 2).toUpperCase()}</span>
                  )}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Building2, Users, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,7 +41,6 @@ export function OnboardingContent({ hasClubs, userClubs }: OnboardingContentProp
     try {
       await switchClubAction(clubId);
       router.push("/dashboard");
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verein konnte nicht ausgewählt werden");
     } finally {
@@ -81,9 +81,11 @@ export function OnboardingContent({ hasClubs, userClubs }: OnboardingContentProp
                   >
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary overflow-hidden shrink-0">
                       {club.logoUrl ? (
-                        <img
+                        <Image
                           src={club.logoUrl}
                           alt={club.name}
+                          width={48}
+                          height={48}
                           className="h-full w-full object-cover"
                         />
                       ) : (

@@ -34,7 +34,7 @@ export function GDPRPortal({ memberId }: GDPRPortalProps) {
         title: "Daten-Export erfolgreich",
         description: "Ihre personenbezogenen Daten wurden heruntergeladen.",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Fehler beim Export",
         description: "Ihre Daten konnten nicht exportiert werden.",
@@ -59,7 +59,7 @@ export function GDPRPortal({ memberId }: GDPRPortalProps) {
           description: "Ihr Account wurde deaktiviert. Die finale Loeschung erfolgt nach Ablauf der gesetzlichen Aufbewahrungsfristen.",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Fehler",
         description: "Die Loeschung konnte nicht angefordert werden.",

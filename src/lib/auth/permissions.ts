@@ -1,181 +1,245 @@
-// ─── RBAC Permission Matrix ────────────────────────────────────
-// Roles group permissions, but permissions can be assigned individually.
-// This allows fine-grained access control beyond role boundaries.
-
+// Permission constants
 export const PERMISSIONS = {
-  // Members
+  // Admin permissions
+  ADMIN_USERS: "admin.users",
+  ADMIN_ROLES: "admin.roles",
+  ADMIN_SETTINGS: "admin.settings",
+  ADMIN_CLUBS: "admin.clubs",
+  ADMIN_AUDIT: "admin.audit",
+  
+  // Member permissions
   MEMBERS_READ: "members.read",
-  MEMBERS_READ_YOUTH: "members.read:youth", // Youth members only
   MEMBERS_WRITE: "members.write",
   MEMBERS_DELETE: "members.delete",
-
-  // Finance
-  FINANCE_READ: "finance.read",
-  FINANCE_WRITE: "finance.write",
-  FINANCE_SEPA: "finance.sepa", // SEPA mandate management
-
-  // Teams
-  TEAMS_READ: "teams.read",
-  TEAMS_WRITE: "teams.write",
-  TEAMS_LINEUP: "teams.lineup", // Set board orders
-
-  // Tournaments
+  MEMBERS_IMPORT: "members.import",
+  MEMBERS_EXPORT: "members.export",
+  
+  // Tournament permissions
   TOURNAMENTS_READ: "tournaments.read",
   TOURNAMENTS_WRITE: "tournaments.write",
-  TOURNAMENTS_RESULTS: "tournaments.results", // Enter results
-
-  // Games / PGN
-  GAMES_READ: "games.read",
-  GAMES_WRITE: "games.write",
-  GAMES_IMPORT: "games.import", // PGN bulk import
-
-  // Calendar
+  TOURNAMENTS_DELETE: "tournaments.delete",
+  TOURNAMENTS_MANAGE: "tournaments.manage",
+  
+  // Team permissions
+  TEAMS_READ: "teams.read",
+  TEAMS_WRITE: "teams.write",
+  TEAMS_DELETE: "teams.delete",
+  TEAMS_MANAGE: "teams.manage",
+  
+  // Event permissions
   EVENTS_READ: "events.read",
   EVENTS_WRITE: "events.write",
-
-  // DWZ
-  DWZ_READ: "dwz.read",
-  DWZ_SYNC: "dwz.sync", // Trigger DWZ import/sync
-
-  // Admin
-  ADMIN_USERS: "admin.users",
-  ADMIN_AUDIT: "admin.audit",
-
-  // Parent access
-  PARENT_DASHBOARD: "parent.dashboard", // View child's data
-
-  // CMS / Website
+  EVENTS_DELETE: "events.delete",
+  
+  // Finance permissions
+  FINANCE_READ: "finance.read",
+  FINANCE_WRITE: "finance.write",
+  FINANCE_MANAGE: "finance.manage",
+  FINANCE_EXPORT: "finance.export",
+  FINANCE_SEPA: "finance.sepa",
+  
+  // Page/CMS permissions
   PAGES_READ: "pages.read",
   PAGES_WRITE: "pages.write",
+  PAGES_DELETE: "pages.delete",
   PAGES_PUBLISH: "pages.publish",
+  
+  // Audit permissions
+  AUDIT_READ: "audit.read",
+  
+  // GDPR permissions
+  GDPR_READ: "gdpr.read",
+  GDPR_WRITE: "gdpr.write",
+  GDPR_DELETE: "gdpr.delete",
+  
+  // DWZ permissions
+  DWZ_SYNC: "dwz.sync",
+  DWZ_READ: "dwz.read",
+  
+  // Game permissions
+  GAMES_READ: "games.read",
+  GAMES_WRITE: "games.write",
+  GAMES_ANALYZE: "games.analyze",
+  
+  // Document permissions
+  DOCUMENTS_READ: "documents.read",
+  DOCUMENTS_WRITE: "documents.write",
+  
+  // Protocol permissions
+  PROTOCOLS_READ: "protocols.read",
+  PROTOCOLS_WRITE: "protocols.write",
 } as const;
 
+// Permission type
+export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
-export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
-
-// ─── Role → Permission Mapping ───────────────────────────────
-
+// Role definitions with their base permissions
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
-  admin: Object.values(PERMISSIONS), // All permissions
-
+  admin: Object.values(PERMISSIONS), // Admin has all permissions
+  
   vorstand: [
     PERMISSIONS.MEMBERS_READ,
     PERMISSIONS.MEMBERS_WRITE,
-    PERMISSIONS.FINANCE_READ,
-    PERMISSIONS.TEAMS_READ,
+    PERMISSIONS.MEMBERS_IMPORT,
+    PERMISSIONS.MEMBERS_EXPORT,
     PERMISSIONS.TOURNAMENTS_READ,
-    PERMISSIONS.GAMES_READ,
+    PERMISSIONS.TOURNAMENTS_WRITE,
+    PERMISSIONS.TOURNAMENTS_MANAGE,
+    PERMISSIONS.TEAMS_READ,
+    PERMISSIONS.TEAMS_WRITE,
+    PERMISSIONS.TEAMS_MANAGE,
     PERMISSIONS.EVENTS_READ,
     PERMISSIONS.EVENTS_WRITE,
-    PERMISSIONS.DWZ_READ,
-    PERMISSIONS.ADMIN_AUDIT,
+    PERMISSIONS.FINANCE_READ,
+    PERMISSIONS.FINANCE_WRITE,
+    PERMISSIONS.FINANCE_EXPORT,
     PERMISSIONS.PAGES_READ,
     PERMISSIONS.PAGES_WRITE,
     PERMISSIONS.PAGES_PUBLISH,
+    PERMISSIONS.AUDIT_READ,
+    PERMISSIONS.GDPR_READ,
+    PERMISSIONS.GDPR_WRITE,
+    PERMISSIONS.DWZ_SYNC,
+    PERMISSIONS.DWZ_READ,
+    PERMISSIONS.GAMES_READ,
+    PERMISSIONS.GAMES_WRITE,
+    PERMISSIONS.DOCUMENTS_READ,
+    PERMISSIONS.DOCUMENTS_WRITE,
+    PERMISSIONS.PROTOCOLS_READ,
+    PERMISSIONS.PROTOCOLS_WRITE,
   ],
-
+  
   sportwart: [
     PERMISSIONS.MEMBERS_READ,
-    PERMISSIONS.TEAMS_READ,
-    PERMISSIONS.TEAMS_WRITE,
-    PERMISSIONS.TEAMS_LINEUP,
     PERMISSIONS.TOURNAMENTS_READ,
     PERMISSIONS.TOURNAMENTS_WRITE,
-    PERMISSIONS.TOURNAMENTS_RESULTS,
+    PERMISSIONS.TOURNAMENTS_MANAGE,
+    PERMISSIONS.TEAMS_READ,
+    PERMISSIONS.TEAMS_WRITE,
+    PERMISSIONS.TEAMS_MANAGE,
+    PERMISSIONS.EVENTS_READ,
+    PERMISSIONS.EVENTS_WRITE,
+    PERMISSIONS.DWZ_READ,
     PERMISSIONS.GAMES_READ,
     PERMISSIONS.GAMES_WRITE,
-    PERMISSIONS.GAMES_IMPORT,
-    PERMISSIONS.EVENTS_READ,
-    PERMISSIONS.EVENTS_WRITE,
-    PERMISSIONS.DWZ_READ,
-    PERMISSIONS.DWZ_SYNC,
-    PERMISSIONS.PAGES_READ,
-    PERMISSIONS.PAGES_WRITE,
+    PERMISSIONS.GAMES_ANALYZE,
   ],
-
-
+  
   jugendwart: [
-    PERMISSIONS.MEMBERS_READ_YOUTH,
-    PERMISSIONS.TEAMS_READ,
+    PERMISSIONS.MEMBERS_READ,
+    PERMISSIONS.MEMBERS_WRITE,
     PERMISSIONS.TOURNAMENTS_READ,
-    PERMISSIONS.GAMES_READ,
+    PERMISSIONS.TEAMS_READ,
     PERMISSIONS.EVENTS_READ,
     PERMISSIONS.EVENTS_WRITE,
     PERMISSIONS.DWZ_READ,
-    PERMISSIONS.PARENT_DASHBOARD,
+    PERMISSIONS.GAMES_READ,
   ],
-
+  
   kassenwart: [
     PERMISSIONS.MEMBERS_READ,
+    PERMISSIONS.MEMBERS_EXPORT,
     PERMISSIONS.FINANCE_READ,
     PERMISSIONS.FINANCE_WRITE,
-    PERMISSIONS.FINANCE_SEPA,
+    PERMISSIONS.FINANCE_MANAGE,
+    PERMISSIONS.FINANCE_EXPORT,
+    PERMISSIONS.AUDIT_READ,
   ],
-
+  
   trainer: [
     PERMISSIONS.MEMBERS_READ,
-    PERMISSIONS.TEAMS_READ,
     PERMISSIONS.TOURNAMENTS_READ,
-    PERMISSIONS.GAMES_READ,
-    PERMISSIONS.GAMES_WRITE,
+    PERMISSIONS.TEAMS_READ,
     PERMISSIONS.EVENTS_READ,
-    PERMISSIONS.DWZ_READ,
+    PERMISSIONS.GAMES_READ,
+    PERMISSIONS.GAMES_ANALYZE,
   ],
-
+  
   mitglied: [
-    PERMISSIONS.MEMBERS_READ, // Limited view of other members
-    PERMISSIONS.TEAMS_READ,
+    PERMISSIONS.MEMBERS_READ,
     PERMISSIONS.TOURNAMENTS_READ,
-    PERMISSIONS.GAMES_READ,
+    PERMISSIONS.TEAMS_READ,
     PERMISSIONS.EVENTS_READ,
-    PERMISSIONS.DWZ_READ,
+    PERMISSIONS.GAMES_READ,
+    PERMISSIONS.DOCUMENTS_READ,
   ],
-
+  
   eltern: [
-    PERMISSIONS.PARENT_DASHBOARD,
+    PERMISSIONS.MEMBERS_READ,
+    PERMISSIONS.TOURNAMENTS_READ,
+    PERMISSIONS.TEAMS_READ,
     PERMISSIONS.EVENTS_READ,
   ],
 };
 
-// ─── Helper Functions ─────────────────────────────────────────
-
-export function getPermissionsForRole(role: string): Permission[] {
-  return ROLE_PERMISSIONS[role] ?? [];
-}
-
+// Check if a user has a specific permission
 export function hasPermission(
   role: string,
-  additionalPermissions: string[],
+  userPermissions: string[],
   permission: Permission,
+  isSuperAdmin = false
 ): boolean {
-  const rolePerms = new Set(getPermissionsForRole(role));
-  const allPerms = new Set([...rolePerms, ...additionalPermissions]);
-  return allPerms.has(permission);
+  // Super admin has all permissions
+  if (isSuperAdmin) return true;
+  
+  // Check individual user permissions
+  if (userPermissions.includes(permission)) return true;
+  
+  // Check role-based permissions
+  const rolePerms = ROLE_PERMISSIONS[role] || [];
+  return rolePerms.includes(permission);
 }
 
+// Check if user has any of the specified permissions
 export function hasAnyPermission(
   role: string,
-  additionalPermissions: string[],
+  userPermissions: string[],
   permissions: Permission[],
+  isSuperAdmin = false
 ): boolean {
-  return permissions.some((p) =>
-    hasPermission(role, additionalPermissions, p),
-  );
+  if (isSuperAdmin) return true;
+  
+  return permissions.some(perm => hasPermission(role, userPermissions, perm, false));
 }
 
+// Check if user has all of the specified permissions
 export function hasAllPermissions(
   role: string,
-  additionalPermissions: string[],
+  userPermissions: string[],
   permissions: Permission[],
+  isSuperAdmin = false
 ): boolean {
-  return permissions.every((p) =>
-    hasPermission(role, additionalPermissions, p),
-  );
+  if (isSuperAdmin) return true;
+  
+  return permissions.every(perm => hasPermission(role, userPermissions, perm, false));
 }
 
-export function hasRole(currentRole: string, targetRoles: string | string[]): boolean {
-  if (Array.isArray(targetRoles)) {
-    return targetRoles.includes(currentRole);
+// Get all permissions for a role
+export function getPermissionsForRole(role: string): Permission[] {
+  return ROLE_PERMISSIONS[role] || [];
+}
+
+// Check if a role exists
+export function isValidRole(role: string): boolean {
+  return role in ROLE_PERMISSIONS;
+}
+
+// Get available roles
+export function getAvailableRoles(): string[] {
+  return Object.keys(ROLE_PERMISSIONS);
+}
+
+// Check if user has a specific role
+export function hasRole(
+  userRole: string,
+  requiredRole: string | string[],
+  isSuperAdmin = false
+): boolean {
+  if (isSuperAdmin) return true;
+  
+  if (Array.isArray(requiredRole)) {
+    return requiredRole.includes(userRole);
   }
-  return currentRole === targetRoles;
+  
+  return userRole === requiredRole;
 }

@@ -56,7 +56,7 @@ export function Breadcrumbs({ className }: { className?: string }) {
         <Home className="h-4 w-4" />
       </Link>
       
-      {breadcrumbs.map((crumb, index) => (
+      {breadcrumbs.map((crumb) => (
         <React.Fragment key={crumb.href}>
           <ChevronRight className="h-4 w-4 mx-0.5 opacity-50" />
           {crumb.isLast ? (

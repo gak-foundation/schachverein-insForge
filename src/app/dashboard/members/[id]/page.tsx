@@ -10,7 +10,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -24,8 +23,11 @@ import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
 import { deleteMember } from "@/lib/actions/members";
 import { LichessSyncButton } from "@/components/clubs/lichess-sync-button";
+import { LichessGamesList } from "@/components/members/lichess-games-list";
+import { fetchLichessGames } from "@/lib/lichess";
 import { cn, calculateAge } from "@/lib/utils";
 import { ChevronLeft, Edit, Trash2, Calendar, Mail, Phone, User, Award, ShieldCheck, History } from "lucide-react";
+import { Member } from "@/types";
 
 export const metadata = {
   title: "Mitglied Details | CheckMate Manager",
@@ -50,16 +52,22 @@ export default async function MemberDetailPage({
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
     PERMISSIONS.MEMBERS_WRITE,
+    session.user.isSuperAdmin
   );
 
   const canDelete = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
     PERMISSIONS.MEMBERS_DELETE,
+    session.user.isSuperAdmin
   );
 
   const dwzHistory = await getDWZHistory(id);
   const statusHistory = await getMemberStatusHistory(id);
+  
+  const lichessGames = member.lichessUsername 
+    ? await fetchLichessGames(member.lichessUsername, 5) 
+    : [];
 
   const statusLabels: Record<string, string> = {
     active: "Aktiv",
@@ -279,7 +287,7 @@ export default async function MemberDetailPage({
                 <dd className="mt-1">
                   {member.children && member.children.length > 0 ? (
                     <ul className="grid gap-2 sm:grid-cols-2">
-                      {member.children.map((child: any) => (
+                      {member.children.map((child: Pick<Member, "id" | "firstName" | "lastName">) => (
                         <li key={child.id}>
                           <Link href={`/dashboard/members/${child.id}`} className="flex items-center gap-2 p-2 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium hover:border-primary transition-colors">
                             <User className="h-3 w-3 text-slate-400" />
@@ -379,6 +387,12 @@ export default async function MemberDetailPage({
               </Table>
             </CardContent>
           </Card>
+        )}
+
+        {member.lichessUsername && (
+          <div className="lg:col-span-2">
+            <LichessGamesList games={lichessGames} username={member.lichessUsername} />
+          </div>
         )}
       </div>
 

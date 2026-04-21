@@ -41,9 +41,10 @@ export const members = pgTable(
     permissions: jsonb("permissions").$type<string[]>().default([]),
 
     sepaMandateReference: varchar("sepa_mandate_reference", { length: 35 }),
-    sepaIban: varchar("sepa_iban", { length: 34 }),
-    sepaBic: varchar("sepa_bic", { length: 11 }),
+    sepaIban: varchar("sepa_iban", { length: 1024 }),
+    sepaBic: varchar("sepa_bic", { length: 1024 }),
     mandateSignedAt: date("mandate_signed_at"),
+    mandateUrl: text("mandate_url"),
     contributionRateId: uuid("contribution_rate_id"),
 
     notes: text("notes"),

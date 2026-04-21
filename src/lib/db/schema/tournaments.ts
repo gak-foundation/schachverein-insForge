@@ -11,10 +11,9 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { seasonTypeEnum, tournamentTypeEnum, gameResultEnum, matchStatusEnum } from "./enums";
+import { tournamentTypeEnum, gameResultEnum } from "./enums";
 import { clubs } from "./clubs";
 import { members } from "./members";
-import { teams } from "./teams";
 import { seasons } from "./seasons";
 
 export const tournaments = pgTable(

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 // Stripe integration - install stripe package to enable
 // npm install stripe
 

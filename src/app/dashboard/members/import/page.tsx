@@ -34,7 +34,7 @@ export default function MemberImportPage() {
           fileInputRef.current.value = "";
         }
       }
-    } catch (error) {
+    } catch {
       setResult({
         success: false,
         imported: 0,

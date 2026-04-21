@@ -28,7 +28,7 @@ export function BarcodeScanner({ onScan, title = "Barcode Scanner" }: BarcodeSca
           onScan(decodedText);
           setIsScanning(false);
         },
-        (error) => {
+        () => {
           // console.warn(error);
         }
       );

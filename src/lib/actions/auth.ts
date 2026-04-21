@@ -1,16 +1,10 @@
 "use server";
 
-import { auth } from "@/lib/auth/better-auth";
-import { headers } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
 
 export async function resetPassword(formData: FormData) {
-  const token = formData.get("token") as string;
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
-
-  if (!token) {
-    return { success: false, error: "Token ist erforderlich" };
-  }
 
   if (!password) {
     return { success: false, error: "Passwort ist erforderlich" };
@@ -24,15 +18,18 @@ export async function resetPassword(formData: FormData) {
     return { success: false, error: "Passwort muss mindestens 8 Zeichen haben" };
   }
 
-  const headersList = await headers();
-
   try {
-    await auth.api.resetPassword({
-      body: { token, newPassword: password },
-      headers: headersList,
+    const supabase = await createClient();
+    const { error } = await supabase.auth.updateUser({
+      password: password,
     });
+
+    if (error) {
+      return { success: false, error: error.message || "Passwort-Zurücksetzen fehlgeschlagen" };
+    }
+
     return { success: true };
-  } catch (error) {
-    return { success: false, error: "Passwort-Zurücksetzen fehlgeschlagen" };
+  } catch {
+    return { success: false, error: "Ein Fehler ist aufgetreten" };
   }
 }

@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { meetingProtocols, events } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { logMemberAction } from "@/lib/audit";
@@ -69,7 +69,8 @@ export async function signProtocol(id: string) {
   const canSign = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
-    PERMISSIONS.ADMIN_AUDIT // Using this as proxy for now, ideally BOARD_SIGN
+    PERMISSIONS.ADMIN_AUDIT, // Using this as proxy for now, ideally BOARD_SIGN
+    session.user.isSuperAdmin
   );
 
   if (!canSign) throw new Error("Keine Berechtigung zum Signieren von Protokollen.");
