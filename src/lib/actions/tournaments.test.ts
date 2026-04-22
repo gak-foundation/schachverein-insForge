@@ -283,9 +283,9 @@ describe("Tournament Actions", () => {
     it("sollte Fehler werfen bei zu wenigen Teilnehmern", async () => {
       const roundRobinTournament = createMockTournament({ type: "round_robin" });
       
-      mockDb.select.mockReturnValue(createSelectChain([roundRobinTournament]));
+      mockDb.select.mockReturnValueOnce(createSelectChain([roundRobinTournament]))
+        .mockReturnValueOnce(createSelectChain([])); // Leere Teilnehmerliste
       mockDb.query.games.findMany.mockResolvedValue([]);
-      mockDb.innerJoin = vi.fn(() => createSelectChain([])); // Leere Teilnehmerliste
 
       await expect(tournaments.generateRoundRobinRounds("tournament-1")).rejects.toThrow("Mindestens 2 Teilnehmer erforderlich");
     });

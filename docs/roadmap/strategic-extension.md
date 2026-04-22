@@ -67,10 +67,10 @@ Das verändert euer technisches Setup grundlegend. Hier die saubere Architektur:
 | Bereich | Entscheidung | Begründung |
 |---------|-------------|------------|
 | **Rendering** | **ISR (Incremental Static Regeneration)** | Öffentliche Seiten müssen schnell sein (Core Web Vitals für SEO) |
-| **Multi-Domain** | **Custom Domains pro Verein** via Vercel/Cloudflare | `schachverein-musterstadt.de` statt Subdomain |
+| **Multi-Domain** | **Custom Domains pro Verein** via Vercel | `schachverein-musterstadt.de` statt Subdomain |
 | **CMS-Layer** | **Eigenes Block-basiertes CMS** (nicht Sanity/Strapi) | Tight Integration mit Turnier-/Mitgliederdaten |
 | **Bild-Handling** | **Next.js Image + S3/MinIO** | WebP/AVIF, Responsive |
-| **Caching** | **Cloudflare in front + ISR** | Wichtig, da Vereinswebsites peak bei Turnieranmeldung |
+| **Caching** | **CDN + ISR** | Wichtig, da Vereinswebsites peak bei Turnieranmeldung |
 
 ---
 
@@ -232,7 +232,7 @@ Mit dem **BFSG (seit 28.06.2025)** wird das kritisch:
 <summary><b>🟡 Performance & Skalierung</b></summary>
 
 - Am Turniertag: **1 Seite = 500 Besucher gleichzeitig** (Liveticker!) → muss funktionieren
-- **DDoS-Schutz** (Cloudflare in front = Pflicht)
+- **DDoS-Schutz** (CDN in front = empfohlen)
 - **CDN-Kosten** bei vielen Vereinen → in Preisen einkalkulieren
 - **Bild-Optimierung pflicht**: Vorstände laden 8-MP-Fotos hoch
 
@@ -307,7 +307,8 @@ Das Website-Modul rechtfertigt eine **komplette Neukalibrierung**:
 
 4. **Architekturentscheidung final treffen**:
    - **Vercel ist nun tatsächlich sinnvoll** für Website-Layer (ISR, Edge, CDN)
-   - **Hetzner/Scalingo** für Backend-Worker (bbpPairings, BullMQ, WebSockets)
+   - **Vercel** für Frontend + Supabase für Backend
+   - Split-Architektur für optimale Performance
    - Split-Architektur wird aus "Bug" zum "Feature"
 
 </details>
@@ -329,6 +330,6 @@ Mit dem Website-Modul **transformiert sich euer Produkt** von "Noch-eine-Verwalt
 
 Möchtest du, dass ich als nächstes eines davon ausarbeite?
 - 🎨 **Detaillierte Spezifikation des Website-Block-Editors**
-- 🏗️ **Technisches Architektur-Diagramm Split-Deploy (Vercel + Hetzner)**
+- 🏗️ **Technisches Architektur-Diagramm (Vercel + Supabase)**
 - 📊 **Detaillierte Wettbewerbsanalyse Vereinswebsite-Markt**
 - ⚖️ **DSGVO-Compliance-Paket für öffentliche Vereinsseiten**

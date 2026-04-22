@@ -1,20 +1,19 @@
 # 🚀 Technische Voraussetzungen für den Launch
 
-Basierend auf eurer Architektur (All-Hetzner, Next.js 16, Postgres 17, Multi-Tenant SaaS mit öffentlichen Vereinswebsites) hier die konsolidierte Launch-Checkliste — gegliedert nach Kritikalität.
+Basierend auf der Architektur (Vercel + Supabase, Next.js 16, Postgres 17, Multi-Tenant SaaS mit öffentlichen Vereinswebsites) hier die konsolidierte Launch-Checkliste — gegliedert nach Kritikalität.
 
 ---
 
 ## 🔴 1. Infrastruktur & Hosting (Must-have)
 
 <details open>
-<summary><b>Server-Setup Hetzner</b></summary>
+<summary><b>Vercel + Supabase Setup</b></summary>
 
 | Komponente | Empfehlung | Begründung |
 |------------|-----------|------------|
-| **App-Server** | Vercel / Hetzner CX22 (4 vCPU, 8 GB RAM) | Genug für Next.js Node |
-| **Backend / DB** | Supabase Cloud (Pro Plan) | Managed Postgres, Auth, Storage, Realtime |
+| **App-Server** | **Vercel Pro** | Edge-Network, ISR, automatisches Skalieren |
+| **Backend / DB** | **Supabase Cloud (Pro Plan)** | Managed Postgres, Auth, Storage, Realtime |
 | **Backup** | Supabase PITR (Point-in-Time) | 7-30 Tage Backup-History |
-| **DDoS** | Cloudflare (Free-Tier reicht initial) | Pflicht bei öffentlichen Vereinssites |
 
 **Standort zwingend:** EU (Frankfurt) — DSGVO & Auftragsverarbeitung.
 
@@ -23,9 +22,10 @@ Basierend auf eurer Architektur (All-Hetzner, Next.js 16, Postgres 17, Multi-Ten
 <details>
 <summary><b>App-Setup</b></summary>
 
-- **Deployment via Vercel** oder **Docker Compose** auf Hetzner
+- **Deployment via Vercel** (Git-Integration)
 - **Healthchecks** (`/api/health`-Endpoint mit DB-Check)
-- **Caddy** als Reverse Proxy für Custom-Domains
+- **Vercel Edge Functions** für zeitkritische Operationen
+- **Vercel Cron** für geplante Aufgaben
 
 </details>
 
@@ -40,8 +40,8 @@ Das ist bei einer SaaS mit personenbeziehbaren Daten (DWZ, Mitglieder, Jugendlic
 | **Impressum** für euer SaaS-Produkt | 🔴 | eigene Firma/UG nötig |
 | **Datenschutzerklärung** (eure SaaS-Seite) | 🔴 | anwaltlich geprüft |
 | **AVV (Auftragsverarbeitungsvertrag)** mit jedem Verein | 🔴 | Muster vorbereiten |
-| **AVV mit Hetzner** | 🔴 | online abschließbar |
-| **AVV mit Cloudflare** | 🔴 | EU-Data-Boundary prüfen |
+| **AVV mit Vercel** | 🔴 | Standard Contractual Clauses akzeptieren |
+| **AVV mit Supabase** | 🔴 | online abschließbar |
 | **Verzeichnis von Verarbeitungstätigkeiten (VVT)** nach Art. 30 | 🔴 | intern |
 | **TOMs (Technisch-organisatorische Maßnahmen)** dokumentieren | 🔴 | pro Verein vorzeigbar |
 | **Datenschutz-Folgenabschätzung (DSFA)** | 🔴 | wegen Jugendlicher-Daten! |
@@ -60,13 +60,12 @@ Das ist bei einer SaaS mit personenbeziehbaren Daten (DWZ, Mitglieder, Jugendlic
 <details open>
 <summary><b>Sicherheits-Checkliste</b></summary>
 
-- ✅ **Secrets-Management**: `.env` niemals in Git — nutzt **Doppler**, **Infisical** or **HashiCorp Vault**
-- ✅ **SSH-Hardening**: Key-only, Fail2Ban, Port-Änderung, Root-Login deaktiviert
-- ✅ **Firewall**: Hetzner Cloud Firewall + UFW als Defense-in-Depth
-- ✅ **Automatische Security-Updates**: `unattended-upgrades` auf allen VMs
-- ✅ **Datenbank**: Nur via Private Network erreichbar, niemals Public
+- ✅ **Secrets-Management**: `.env` niemals in Git — nutzt **Vercel Environment Variables** (encrypted)
+- ✅ **Vercel Firewall**: IP-Blocking und Rate-Limiting aktivieren
+- ✅ **Automatische Security-Updates**: Vercel managed Node.js Versionen
+- ✅ **Datenbank**: Supabase RLS Policies implementiert
 - ✅ **AES-256-GCM Schlüssel-Rotation** dokumentiert (IBAN-Encryption)
-- ✅ **Backup-Verschlüsselung** (pg_dump | gpg | upload)
+- ✅ **Backup-Verschlüsselung** (Supabase automatisch)
 - ✅ **Restore-Test** mindestens 1× durchgeführt und dokumentiert (kein Backup ohne Restore-Test!)
 - ✅ **Dependency Scanning**: Renovate/Dependabot + `npm audit` in CI
 - ✅ **SAST**: Semgrep oder GitHub CodeQL in CI
@@ -87,13 +86,15 @@ Ohne funktionierendes Monitoring ist ein Launch fahrlässig — insbesondere bei
 |------|-------|-------------|
 | **Sentry** (Cloud-EU) | Error-Tracking Frontend + Backend | GlitchTip (OSS) |
 | **Supabase Dashboard** | Metriken (DB-Usage, API, Auth) | — |
+| **Vercel Analytics** | Web Vitals, Performance | — |
+| **Vercel Logs** | Serverless Function Logs | — |
 | **Uptime Kuma** | Uptime-Monitoring pro Vereinsdomain | StatusCake |
 | **Matomo** (self-hosted) | Produkt-Analytics statt GA4 | Plausible (EU) |
 
 **Alerts zwingend konfigurieren für:**
 - Supabase DB-Storage > 80 %
 - 5xx-Rate > 1 %
-- SSL-Zertifikat läuft in < 14 Tagen ab
+- Vercel Error Rate > 0.1%
 - Backup failed (Supabase Check)
 - Sentry Error-Spike (Backend/Frontend)
 
@@ -102,7 +103,7 @@ Ohne funktionierendes Monitoring ist ein Launch fahrlässig — insbesondere bei
 ## 🔴 5. CI/CD & Deployment-Readiness
 
 <details open>
-<summary><b>GitHub Actions Pipeline</b></summary>
+<summary><b>GitHub Actions + Vercel Pipeline</b></summary>
 
 ```
 Pull Request:
@@ -118,13 +119,12 @@ Pull Request:
 
 Main Branch:
 ├─ Alles oben +
-├─ Docker-Image Build & Push (GHCR)
-├─ Staging-Deploy (automatisch)
-├─ Smoke-Tests gegen Staging
-└─ Production-Deploy (Manual Approval)
+├─ Vercel Production Deploy (automatisch)
+├─ Smoke-Tests gegen Production
+└─ Rollback bei Fehlern (Vercel Instant Rollback)
 ```
 
-**Rolling Deployment** zwingend — kein Downtime-Deploy akzeptabel, wenn mittendrin ein Turnier-Ergebnis eingegeben wird.
+**Zero-Downtime Deployments** via Vercel — automatisch, kein manuelles Eingreifen nötig.
 
 </details>
 
@@ -136,8 +136,8 @@ Main Branch:
 |-------|---------|
 | **Hauptdomain** | z. B. `checkmate-manager.de` (+ `.com`, `.eu` sichern) |
 | **App-Subdomain** | `app.checkmate-manager.de` |
-| **Vereins-Subdomains** | `*.checkmate-manager.de` (Wildcard-SSL) |
-| **Custom Domains** | Caddy + On-Demand-TLS, DNS-Verifikation-Flow |
+| **Vereins-Subdomains** | `*.checkmate-manager.de` (Wildcard-SSL via Vercel) |
+| **Custom Domains** | Vercel Custom Domains, DNS-Verifikation-Flow |
 | **Transaktionale E-Mails** | **Postmark** oder **MailerSend** (EU) — **nicht** eigener SMTP! Reputation! |
 | **SPF / DKIM / DMARC** | Zwingend konfiguriert, DMARC mit `p=quarantine` |
 | **Bounce-Handling** | Webhook zu API → Mitgliederstatus markieren |
@@ -152,7 +152,7 @@ Main Branch:
 <details>
 <summary><b>Runbooks, die vor Launch existieren müssen</b></summary>
 
-1. **Deployment-Rollback** (wie stelle ich in < 5 min den Vorzustand her?)
+1. **Deployment-Rollback** (Vercel Instant Rollback)
 2. **Datenbank-Restore** aus Backup (getestet!)
 3. **Incident-Response** (wer wird wann alarmiert?)
 4. **Data-Subject-Request** (DSGVO Art. 15/17) — Workflow von Anfrage bis Umsetzung
@@ -166,7 +166,7 @@ Main Branch:
 <details>
 <summary><b>SLA & Verfügbarkeit</b></summary>
 
-- **Zielverfügbarkeit** definieren: 99,5 % (≈ 3,6 h Downtime/Monat) ist für euer Preissegment realistisch
+- **Zielverfügbarkeit** definieren: 99,9 % (Vercel Pro SLA) ist für euer Preissegment realistisch
 - **Status-Page** (Instatus, statuspage.io oder eigene)
 - **Wartungsfenster-Kommunikation** (z. B. Dienstag 03–05 Uhr, nie Freitag!)
 - **Erreichbarkeit**: Mindestens Werktage 9–17 Uhr E-Mail-Support, Notfall-Hotline für Pro-Tarif
@@ -210,7 +210,7 @@ Soft-Launch  ─▶ Closed Beta ─▶ Public Launch
 **Soft-Launch (1 Pilotverein):**
 - Alle 🔴 Punkte oben erfüllt
 - Daily Backup + erfolgreicher Restore-Test
-- Sentry + Uptime-Monitoring live
+- Sentry + Vercel Analytics live
 - DSGVO-Dokumente + AVV unterschrieben
 
 **Closed Beta (5 Vereine):**
@@ -235,10 +235,10 @@ Soft-Launch  ─▶ Closed Beta ─▶ Public Launch
 1. 🔴 **UG/GmbH gegründet** (persönliche Haftung vermeiden)
 2. 🔴 **AVV-Muster + TOMs** dokumentiert
 3. 🔴 **Backup + Restore getestet** (nicht nur konfiguriert!)
-4. 🔴 **Monitoring & Alerting** (Sentry + Uptime + Logs)
+4. 🔴 **Monitoring & Alerting** (Sentry + Vercel Analytics + Logs)
 5. 🔴 **E-Mail-Deliverability** (Postmark/MailerSend, SPF/DKIM/DMARC)
 6. 🔴 **BFSG / WCAG 2.2 AA** auf öffentlichen Seiten (axe-core in CI)
-7. 🔴 **SSL-Automatisierung** inkl. Custom-Domains (Caddy on-demand)
-8. 🔴 **Rate-Limiting + DDoS-Schutz** (Cloudflare davor)
+7. 🔴 **SSL-Automatisierung** inkl. Custom-Domains (Vercel verwaltet)
+8. 🔴 **Rate-Limiting + DDoS-Schutz** (Vercel Firewall)
 9. 🔴 **Cyber-Versicherung + Haftpflicht**
 10. 🔴 **Pilotverein-Vertrag + Feedback-Loop** — nie blind launchen

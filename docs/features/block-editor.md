@@ -123,7 +123,7 @@ mediaAssets: {
 ├─────────────────────────────────────────────────┤
 │  6. Layout-Komposition + Inject Theme-CSS       │
 ├─────────────────────────────────────────────────┤
-│  7. Cloudflare Edge Cache (stale-while-revalidate) │
+│  7. ISR-Cache mit Revalidation                          │
 └─────────────────────────────────────────────────┘
 
 Triggers für Cache-Invalidierung:
@@ -315,7 +315,7 @@ Der Block-Katalog ist in **4 Kategorien** organisiert. Jeder Block hat eine **fe
 - **Tech:** WebSocket (Redis Pub/Sub) + SSE als Fallback
 - **Anzeige:** Brett, Spieler, Live-Stellung (FEN), Zeit, Ergebnis
 - **Quelle:** Manuelle Eingabe via Turnierleiter-App oder DGT-Board
-- **Performance-Kritisch:** 500+ gleichzeitige Besucher am Turniertag → Cloudflare-CDN + Edge Functions
+- **Performance-Kritisch:** 500+ gleichzeitige Besucher am Turniertag → CDN + Edge Functions
 
 </details>
 
@@ -903,7 +903,7 @@ Das ist der **tiefe Integrations-Moat**, den Mitbewerber nicht einfach nachbauen
 
 Möchtest du als nächsten Schritt eines der folgenden Themen vertieft haben?
 
-- 🏗️ **Technisches Architektur-Diagramm Split-Deploy (Vercel Frontend + Hetzner Backend)**
+- 🏗️ **Technisches Architektur-Diagramm (Vercel + Supabase)**
 - 🧩 **Konkrete Code-Spezifikation für den ersten Block** (z. B. Turnier-Karte) mit Datenbank, Renderer, Editor-Komponente
 - 🎨 **Theme-Preset-Katalog** mit 10 konkreten Schachverein-Designs (Mockups/Beschreibung)
 - 📋 **User-Stories + Akzeptanzkriterien** für die ersten 8 MVP-Blöcke

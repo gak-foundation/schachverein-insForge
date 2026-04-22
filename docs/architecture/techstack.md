@@ -69,9 +69,10 @@ Das Datenmodell ist hochgradig relational und in der `src/lib/db/schema/` Verzei
 - `npm run test:e2e` - End-to-End Tests (Playwright)
 
 ### Deployment & Infrastruktur
-- **Hosting**: Supabase Cloud + Vercel / Hetzner Docker.
-- **Reverse Proxy**: Caddy für SSL (Let's Encrypt) und Routing bei Custom-Domains.
-- **CI/CD**: GitHub Actions für automatisiertes Bauen und Testen.
+- **Hosting**: Supabase Cloud + Vercel.
+- **CDN & Edge**: Vercel Edge Network mit globalen PoPs.
+- **CI/CD**: GitHub Actions + Vercel Git Integration.
+- **Monitoring**: Vercel Analytics + Sentry.
 
 ---
 

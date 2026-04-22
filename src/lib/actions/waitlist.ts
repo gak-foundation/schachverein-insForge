@@ -5,7 +5,15 @@ import { waitlistApplications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
-import { slugify } from "./utils";
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 const waitlistSchema = {
   clubName: {
@@ -43,6 +51,8 @@ export async function submitWaitlistApplication(formData: FormData) {
     const website = formData.get("website") as string | null;
     const memberCount = formData.get("memberCount") as string | null;
     const notes = formData.get("notes") as string | null;
+    const type = (formData.get("type") as "waitlist" | "pilot") || "waitlist";
+    const painPoints = formData.get("painPoints") as string | null;
 
     if (!clubName || clubName.length < waitlistSchema.clubName.minLength) {
       return { error: "Vereinsname muss mindestens 2 Zeichen haben" };
@@ -94,10 +104,10 @@ export async function submitWaitlistApplication(formData: FormData) {
     const nextPosition = (maxPosition[0]?.maxPos ?? 0) + 1;
 
     const address = {
-      street: formData.get("street") as string || "",
-      zipCode: formData.get("zipCode") as string || "",
-      city: formData.get("city") as string || "",
-      country: formData.get("country") as string || "Deutschland",
+      street: (formData.get("street") as string) || "",
+      zipCode: (formData.get("zipCode") as string) || "",
+      city: (formData.get("city") as string) || "",
+      country: (formData.get("country") as string) || "Deutschland",
     };
 
     const result = await db
@@ -107,28 +117,33 @@ export async function submitWaitlistApplication(formData: FormData) {
         slug,
         contactEmail,
         contactName: contactName || null,
+        type,
         website: website || null,
-        address: Object.values(address).some(v => v) ? address : null,
+        address: Object.values(address).some((v) => v) ? address : null,
         memberCount: memberCount || null,
         notes: notes || null,
+        message: painPoints || null, // Storing pain points in the message field
         status: "pending",
         position: nextPosition,
       })
       .returning({ id: waitlistApplications.id });
 
     revalidatePath("/");
+    revalidatePath("/dashboard/admin/waitlist");
 
     return {
       success: true,
       slug,
-      message: "Ihre Bewerbung wurde erfolgreich eingereicht. Sie werden per E-Mail benachrichtigt, sobald wir Ihren Antrag geprüft haben."
+      message:
+        type === "pilot"
+          ? "Ihre Bewerbung für das Pilot-Programm wurde erfolgreich eingereicht! Wir melden uns in Kürze für ein persönliches Kennenlernen."
+          : "Ihre Bewerbung wurde erfolgreich eingereicht. Sie werden per E-Mail benachrichtigt, sobald wir Ihren Antrag geprüft haben.",
     };
-
   } catch (error) {
     console.error("Error submitting waitlist application:", error);
 
     if (error instanceof ZodError) {
-      return { error: "Validierungsfehler: " + error.errors.map(e => e.message).join(", ") };
+      return { error: "Validierungsfehler: " + error.issues.map(e => e.message).join(", ") };
     }
 
     return { error: "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut." };

@@ -92,11 +92,12 @@ export default async function ContactPage({ params }: ContactPageProps) {
                   Sie möchten Teil unseres Vereins werden? 
                   Schreiben Sie uns einfach eine E-Mail oder rufen Sie an.
                 </p>
-                <Button className="w-full" asChild>
-                  <a href={`mailto:${club.contactEmail || 'info@schach.studio'}?subject=Mitgliedsantrag`}>
-                    Zum Mitgliedsantrag
-                  </a>
-                </Button>
+                <a
+                  href={`mailto:${club.contactEmail || 'info@schach.studio'}?subject=Mitgliedsantrag`}
+                  className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium h-8 px-2.5 w-full hover:bg-primary/80 transition-colors"
+                >
+                  Zum Mitgliedsantrag
+                </a>
               </CardContent>
             </Card>
           </div>

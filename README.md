@@ -34,9 +34,9 @@ Eine ganzheitliche, digitale SaaS-Plattform für Schachvereine. Vereint Mitglied
    # Fülle .env mit Supabase-Werten
    ```
 
-3. **Datenbank starten (Docker)**
+3. **Redis starten (Docker)** - nur wenn Background Jobs getestet werden
    ```bash
-   npm run docker:up # Startet nur Postgres
+   npm run docker:up # Startet nur Redis für BullMQ
    ```
 
 4. **Datenbank-Schema anwenden & Seed**

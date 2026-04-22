@@ -1,34 +1,77 @@
 # Deployment Übersicht
 
-Die Schachvereins-Plattform nutzt eine moderne, vereinfachte Architektur basierend auf Next.js und Supabase Cloud. Dies reduziert den Wartungsaufwand für die Infrastruktur erheblich und ermöglicht volle DSGVO-Konformität durch EU-Regionen.
+Die Schachvereins-Plattform nutzt eine moderne, serverlose Architektur basierend auf **Next.js auf Vercel** und **Supabase Cloud**. Dies reduziert den Wartungsaufwand für die Infrastruktur erheblich und ermöglicht automatisches Skalieren bei hoher Last.
 
 ## Infrastruktur-Komponenten
 
-Das System ist so konzipiert, dass es entweder vollständig in der Cloud (Vercel/Supabase) oder als hybride Lösung (App auf Hetzner, Daten in Supabase) betrieben werden kann.
+Das System ist für ein vollständiges Cloud-Deployment konzipiert.
 
 ### Bestandteile des Deployments
 
 1. **App Node (Next.js):**
-   - Führt die Webanwendung aus.
-   - Kann auf Vercel, Hetzner (Docker) oder Coolify betrieben werden.
-   - Nutze `output: "standalone"` für Docker-Deployments.
+   - Führt die Webanwendung auf **Vercel** aus.
+   - Automatisches Edge-Caching und globales CDN.
+   - ISR (Incremental Static Regeneration) für optimale Performance.
 
 2. **Supabase (Backend-as-a-Service):**
-   - **Datenbank:** PostgreSQL 17 (via Neon oder Supabase).
+   - **Datenbank:** PostgreSQL 17 (Supabase Cloud EU-Region Frankfurt).
    - **Authentifizierung:** Supabase Auth (JWT-basiert).
    - **Storage:** Supabase Storage (S3-kompatibel) für Bilder und Dokumente.
    - **Realtime:** Supabase Realtime für Live-Turnierergebnisse.
 
 3. **Background Tasks:**
-   - Ersetzt BullMQ durch einfache asynchrone Funktionen oder Edge Functions.
-   - Langlaufende Prozesse (z.B. DWZ-Sync) laufen als API-Endpunkte oder Hintergrund-Jobs in der App.
+   - Serverless Functions für E-Mail-Versand und Datenverarbeitung.
+   - Edge Functions für zeitkritische Operationen.
+   - Langlaufende Prozesse (z.B. DWZ-Sync) als Vercel Cron Jobs.
 
 4. **Monitoring & Security:**
    - **Sentry:** Error-Tracking.
-   - **Cloudflare:** DDoS-Schutz und Caching vor der Hauptdomain.
-   - **Caddy:** Reverse Proxy für On-Demand-TLS bei Custom-Domains der Vereine.
+   - **Vercel Analytics:** Performance-Monitoring.
 
-## Deployment-Guide
+## Vercel Deployment-Guide
 
-Eine detaillierte Anleitung für das Setup auf Hetzner (falls gewünscht) findest du unter:
-👉 **[Hetzner Deployment Guide](../../HETZNER_DEPLOYMENT.md)**
+### Voraussetzungen
+
+- Ein Vercel-Konto (vercel.com)
+- Ein Supabase-Projekt in der EU-Region (Frankfurt)
+- Eine Domain (optional, für Custom Domains)
+
+### Schritt 1: Projekt auf Vercel anlegen
+
+1. Verbinde dein GitHub/GitLab/Bitbucket Repository mit Vercel
+2. Wähle das Repository aus
+3. Vercel erkennt automatisch Next.js - keine Konfiguration nötig
+
+### Schritt 2: Umgebungsvariablen setzen
+
+Setze alle Variablen aus `.env.example` in den Vercel Project Settings:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `DATABASE_URL` (mit Connection Pooler)
+- `DIRECT_URL` (für Migrations)
+- `RESEND_API_KEY`
+- `ENCRYPTION_KEY`
+- Weitere je nach Features
+
+### Schritt 3: Deploy
+
+Jeder Push auf den `main` Branch triggert automatisch ein Deployment.
+
+### Schritt 4: Custom Domain (optional)
+
+1. In Vercel Project Settings → Domains
+2. Füge deine Domain hin
+3. Folge den DNS-Anweisungen
+
+## Technische Besonderheiten
+
+- **Edge Runtime:** Next.js Middleware läuft auf Vercel Edge Network
+- **Serverless Functions:** API-Routen und Server Actions laufen als Serverless Functions
+- **Image Optimization:** Next.js Image Komponente nutzt Vercel's globales CDN
+- **Preview Deployments:** Jeder PR erhält automatisch eine Preview-URL
+
+---
+
+**Hinweis:** Für Vercel-Spezifika siehe [Vercel Dokumentation](https://vercel.com/docs)

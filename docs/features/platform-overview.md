@@ -206,7 +206,7 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 | **Authentifizierung** | Supabase Auth (JWT) |
 | **RBAC / RLS** | Row Level Security in DB + Middleware Check |
 | **Account-Lockout** | Supabase Built-in Schutz |
-| **Rate Limiting** | Supabase API Limits + Cloudflare |
+| **Rate Limiting** | Supabase API Limits |
 | **Verschlüsselung** | AES-256-GCM für IBANs und sensible Daten |
 | **Headers** | Strikte CSP, HSTS, `X-Frame-Options: DENY` |
 | **CSRF-Schutz** | Built-in |
@@ -256,7 +256,7 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 - **Zustand 5.0** für Client-State
 - **shadcn/ui + Tailwind CSS 4**
 - **Docker Compose** für lokale Entwicklung
-- **Deployment**: Supabase Cloud (EU) + Vercel / Hetzner Docker.
+- **Deployment**: Supabase Cloud (EU) + Vercel.
 
 </details>
 

@@ -63,11 +63,12 @@ export function EditorShell({ page, initialBlocks }: EditorShellProps) {
       {/* Top Bar */}
       <div className="h-14 border-b bg-background flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/pages">
-              <ChevronLeft className="h-4 w-4" />
-            </Link>
-          </Button>
+          <Link
+            href="/dashboard/pages"
+            className="inline-flex items-center justify-center rounded-lg hover:bg-muted transition-colors h-8 w-8"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Link>
           <div className="flex flex-col">
             <span className="text-sm font-medium leading-none">{page.title}</span>
             <span className="text-xs text-muted-foreground">/{page.slug}</span>

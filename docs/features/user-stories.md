@@ -211,19 +211,19 @@ DAMIT     ich rechtlich abgesichert bin
 │             │   2. URL       │   URL    │
 │             │                └──────────┘
 │             │
-│             │   3. PUT Binary  ┌──────────┐
-│             │ ────────────────▶│  MinIO   │
-│             │                  │ (Hetzner)│
-│             │                  └────┬─────┘
+│             │   3. PUT Binary  ┌──────────────┐
+│             │ ────────────────▶│  Supabase    │
+│             │                  │  Storage     │
+│             │                  └────┬─────────┘
 │             │                       │
 │             │   4. Confirm S3Key    ▼
-│             │ ────────────────▶┌──────────┐
-│             │                  │  Hetzner │
-│             │                  │  Worker  │
-│             │                  │ - Resize │
-│             │                  │ - EXIF   │
-│             │                  │ - AVIF   │
-│             │                  └──────────┘
+│             │ ────────────────▶┌──────────────┐
+│             │                  │  Supabase    │
+│             │                  │  Edge Func   │
+│             │                  │ - Resize     │
+│             │                  │ - EXIF       │
+│             │                  │ - AVIF       │
+│             │                  └──────────────┘
 ```
 
 ### Story 2.2: Alt-Text als Publish-Blocker 🔴
@@ -734,7 +734,7 @@ DAMIT     ich weiß, wie mein Mann abschneidet
 - 🟠 Spalten: Platz, Name, DWZ, Punkte, Buchholz, letzte Runde
 - 🔴 WebSocket-Verbindung zu `ws.checkmate-manager.de`
 - 🔴 Auto-Refresh bei neuen Ergebnissen (ohne Page-Reload)
-- 🔴 Performance: 500 concurrent Viewer (Cloudflare + Redis PubSub)
+- 🔴 Performance: 500 concurrent Viewer (CDN + Redis PubSub)
 - 🟠 Hervorhebung: Eigenes Ergebnis fett (wenn eingeloggter Teilnehmer)
 - 🟠 Mobile-optimiert: Horizontales Scroll oder Spalten-Stacking
 - 🟠 "Ausblenden"-Option wenn nur Turnier-Info gewollt

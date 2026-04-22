@@ -79,12 +79,13 @@ export default async function PagesListPage({
           </p>
         </div>
         {canEdit && (
-          <Button asChild>
-            <Link href="/dashboard/pages/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Neue Seite
-            </Link>
-          </Button>
+          <Link
+            href="/dashboard/pages/new"
+            className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium h-8 px-2.5 hover:bg-primary/80 transition-colors"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Neue Seite
+          </Link>
         )}
       </div>
 
@@ -136,12 +137,13 @@ export default async function PagesListPage({
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {canEdit && (
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link href={`/dashboard/pages/${page.id}/edit`}>
-                              <Pencil className="h-4 w-4" />
-                              <span className="sr-only">Bearbeiten</span>
-                            </Link>
-                          </Button>
+                          <Link
+                            href={`/dashboard/pages/${page.id}/edit`}
+                            className="inline-flex items-center justify-center rounded-lg hover:bg-muted transition-colors h-8 w-8"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Bearbeiten</span>
+                          </Link>
                         )}
                         {/* Weitere Aktionen wie Löschen könnten hier folgen */}
                       </div>

@@ -1,44 +1,23 @@
 version: "3.9"
 
-# VEREINFACHT: Nur PostgreSQL für lokale Entwicklung
-# Produktion nutzt Supabase Cloud
+# Redis für BullMQ (Background Jobs)
+# PostgreSQL wird ausschließlich über Supabase Cloud genutzt
 
 services:
-  postgres:
-    image: postgres:17-alpine
-    container_name: schachverein-db-local
+  redis:
+    image: redis:7-alpine
+    container_name: schachverein-redis
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: schachverein
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_dev_password}
-      POSTGRES_DB: schachverein
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    command: redis-server --requirepass ${REDIS_PASSWORD:-schachverein}
     ports:
-      - "5432:5432"
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U schachverein"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Optional: pgAdmin für lokale DB-Entwicklung
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: schachverein-pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@schachverein.local
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    ports:
-      - "5050:80"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
 volumes:
-  postgres_data:
-  pgadmin_data:
+  redis_data:

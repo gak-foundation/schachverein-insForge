@@ -172,7 +172,7 @@ Ergänzt die vorhandenen Release-Stufen in `docs/roadmap/mvp-phases.md` um einen
 HEUTE
   □ Marketing-Route-Group (marketing) fertigstellen
   □ Pricing auf 9/20 € harmonisieren
-  □ Kontaktformular produktiv (DB + Resend + Turnstile)
+  □ Kontaktformular produktiv (DB + Resend)
 
 DIESE WOCHE
   □ Landingpage-Copy finalisieren (BFSG-Wording prüfen)

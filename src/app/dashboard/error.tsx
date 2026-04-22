@@ -32,12 +32,13 @@ export default function DashboardError({
             <RefreshCcw className="h-4 w-4" />
             Erneut versuchen
           </Button>
-          <Button variant="outline" asChild className="gap-2">
-            <Link href="/dashboard">
-              <Home className="h-4 w-4" />
-              Zum Dashboard
-            </Link>
-          </Button>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center justify-center rounded-lg border border-border bg-background text-sm font-medium h-8 px-2.5 gap-2 hover:bg-muted transition-colors"
+          >
+            <Home className="h-4 w-4" />
+            Zum Dashboard
+          </Link>
         </div>
       </div>
     </div>

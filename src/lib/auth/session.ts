@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { cache } from "react";
 import { ROLE_PERMISSIONS, Permission } from "./permissions";
+import { getAuthUserWithClub } from "@/lib/db/queries/auth";
+import { db } from "@/lib/db";
+import { clubs } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 // Cached session getter for server components
 export const getSession = cache(async () => {
@@ -12,12 +16,8 @@ export const getSession = cache(async () => {
       return null;
     }
     
-    // Fetch additional user data from database
-    const { data: userData } = await supabase
-      .from("auth_user")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+    // Fetch additional user data from database using Drizzle
+    const userData = await getAuthUserWithClub(user.id);
     
     return {
       user: {
@@ -26,17 +26,21 @@ export const getSession = cache(async () => {
         name: userData?.name || user.user_metadata?.name || user.email?.split("@")[0],
         role: userData?.role || "mitglied",
         permissions: userData?.permissions || [],
-        memberId: userData?.member_id,
-        activeClubId: userData?.active_club_id,
-        isSuperAdmin: userData?.is_super_admin || false,
-        emailVerified: userData?.email_verified || false,
+        memberId: userData?.memberId,
+        activeClubId: userData?.activeClubId,
+        isSuperAdmin: userData?.isSuperAdmin || false,
+        emailVerified: userData?.emailVerified || false,
         image: userData?.image || user.user_metadata?.avatar_url,
       },
       session: {
         user,
       },
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.digest === 'DYNAMIC_SERVER_USAGE' || error?.message?.includes('dynamic-server-error')) {
+      // Re-throw for Next.js to handle dynamic transition
+      throw error;
+    }
     console.error("Error getting session:", error);
     return null;
   }
@@ -47,17 +51,16 @@ export const getSessionWithClub = cache(async () => {
   const session = await getSession();
   if (!session) return null;
 
-  // Load club data if user has activeClubId
+  // Load club data if user has activeClubId using Drizzle
   let club = null;
   if (session.user.activeClubId) {
     try {
-      const supabase = await createClient();
-      const { data: clubData } = await supabase
-        .from("clubs")
-        .select("*")
-        .eq("id", session.user.activeClubId)
-        .single();
-      club = clubData;
+      const [clubData] = await db
+        .select()
+        .from(clubs)
+        .where(eq(clubs.id, session.user.activeClubId))
+        .limit(1);
+      club = clubData || null;
     } catch {
       // Club not found, continue without
     }
@@ -94,7 +97,7 @@ export async function requireClubAuth() {
 export const requireClub = requireClubAuth;
 
 // Require specific permission
-export async function requirePermission(permission: string) {
+export async function requirePermission(permission: Permission) {
   const session = await getSession();
   if (!session) {
     throw new Error("UNAUTHORIZED");

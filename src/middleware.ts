@@ -21,12 +21,33 @@ const publicRoutes = [
   "/kontakt",
   "/impressum",
   "/datenschutz",
+  "/preise",
   "/api/health",
   "/api/webhooks",
 ];
 
+function getHostname(request: NextRequest): string {
+  const host = request.headers.get("host");
+  return host?.split(":")[0] ?? "localhost";
+}
+
+function isAppHost(hostname: string): boolean {
+  const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "app.schach.studio";
+  return hostname === appDomain || hostname === "app.localhost";
+}
+
+function isMarketingHost(hostname: string): boolean {
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "schach.studio";
+  return hostname === rootDomain;
+}
+
+function isLocalhost(hostname: string): boolean {
+  return hostname === "localhost";
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = getHostname(request);
 
   // Static assets are always public - skip processing
   if (
@@ -41,6 +62,25 @@ export async function middleware(request: NextRequest) {
     pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff|woff2)$/)
   ) {
     return NextResponse.next();
+  }
+
+  // Host-based routing (skip for localhost to allow local development)
+  if (!isLocalhost(hostname)) {
+    if (isAppHost(hostname)) {
+      // On app.schach.studio: allow dashboard/*, redirect everything else to auth
+      if (!pathname.startsWith("/dashboard") && !pathname.startsWith("/auth")) {
+        if (pathname === "/") {
+          return NextResponse.redirect(new URL("/auth/login", request.url));
+        }
+        return NextResponse.redirect(new URL("/auth/login", request.url));
+      }
+    } else if (isMarketingHost(hostname)) {
+      // On schach.studio: marketing routes are public, /dashboard redirects to app
+      if (pathname.startsWith("/dashboard")) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.schach.studio";
+        return NextResponse.redirect(new URL(pathname, appUrl));
+      }
+    }
   }
 
   // Check if it's a public route

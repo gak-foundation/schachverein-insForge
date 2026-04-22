@@ -6,6 +6,7 @@ describe("lichess utils", () => {
     const profile: LichessProfile = {
       username: "testuser",
       id: "testuser",
+      url: "https://lichess.org/@/testuser",
       perfs: {
         blitz: { rating: 1500 },
         rapid: { rating: 1600 },
@@ -20,6 +21,7 @@ describe("lichess utils", () => {
     const profile: LichessProfile = {
       username: "testuser",
       id: "testuser",
+      url: "https://lichess.org/@/testuser",
       perfs: {
         blitz: { rating: 1500 },
       },
@@ -32,6 +34,7 @@ describe("lichess utils", () => {
     const profile: LichessProfile = {
       username: "testuser",
       id: "testuser",
+      url: "https://lichess.org/@/testuser",
       perfs: {},
     };
 

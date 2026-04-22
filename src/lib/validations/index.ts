@@ -6,4 +6,5 @@ export * from "./event";
 export * from "./season";
 export * from "./user";
 export * from "./cms";
+export * from "./contact";
 

@@ -14,7 +14,7 @@ export const membersRelations = relations(members, ({ many, one }) => ({
     relationName: "parent",
   }),
   children: many(members, { relationName: "parent" }),
-  clubMemberships: many(clubMemberships),
+  clubMemberships: many(clubMemberships, { relationName: "clubMemberships" }),
   teamMemberships: many(teamMemberships),
   tournamentParticipations: many(tournamentParticipants),
   gamesAsWhite: many(games, {
@@ -43,10 +43,12 @@ export const clubMembershipsRelations = relations(clubMemberships, ({ one }) => 
   member: one(members, {
     fields: [clubMemberships.memberId],
     references: [members.id],
+    relationName: "clubMemberships",
   }),
   inviter: one(members, {
     fields: [clubMemberships.invitedBy],
     references: [members.id],
+    relationName: "invitedMemberships",
   }),
 }));
 

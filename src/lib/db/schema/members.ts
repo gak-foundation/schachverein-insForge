@@ -29,6 +29,9 @@ export const members = pgTable(
     elo: integer("elo"),
     dwzId: varchar("dwz_id", { length: 50 }),
     lichessUsername: varchar("lichess_username", { length: 100 }),
+    lichessId: varchar("lichess_id", { length: 100 }),
+    isLichessVerified: boolean("is_lichess_verified").default(false),
+    lichessAccessToken: text("lichess_access_token"), // Should be encrypted
     chesscomUsername: varchar("chesscom_username", { length: 100 }),
     fideId: varchar("fide_id", { length: 20 }),
 

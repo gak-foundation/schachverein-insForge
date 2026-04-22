@@ -1,13 +1,13 @@
 "use server";
 
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   clubs,
   clubMemberships,
   members,
-  authUsers,
 } from "@/lib/db/schema";
+import { getAllAuthUsers, updateAuthUser } from "@/lib/db/queries/auth";
 import { requireAuth, requireClub } from "@/lib/auth/session";
 import { sendClubInvitationEmail } from "@/lib/auth/email";
 import { revalidatePath } from "next/cache";
@@ -57,10 +57,27 @@ export async function createClubAction(formData: FormData) {
     address,
   });
 
-  // Add creator as admin
-  if (session.user.memberId) {
-    await addMemberToClub(club.id, session.user.memberId, "admin", true);
+  // Ensure user has a member record, create one if not
+  let memberId = session.user.memberId;
+  if (!memberId) {
+    const [newMember] = await db
+      .insert(members)
+      .values({
+        firstName: session.user.name?.split(" ")[0] || "Vorname",
+        lastName: session.user.name?.split(" ").slice(1).join(" ") || "Nachname",
+        email: session.user.email || contactEmail || "",
+        status: "active",
+        role: "admin",
+      })
+      .returning({ id: members.id });
+    memberId = newMember.id;
+
+    // Link member to auth user
+    await updateAuthUser(session.user.id, { memberId: newMember.id });
   }
+
+  // Add creator as admin
+  await addMemberToClub(club.id, memberId, "admin", true);
 
   // Set as active club
   await updateUserActiveClub(session.user.id, club.id);
@@ -309,18 +326,7 @@ export async function getAllUsersAction() {
     throw new Error("Nicht autorisiert");
   }
 
-  return db
-    .select({
-      id: authUsers.id,
-      name: authUsers.name,
-      email: authUsers.email,
-      role: authUsers.role,
-      isSuperAdmin: authUsers.isSuperAdmin,
-      createdAt: authUsers.createdAt,
-      lastLoginAt: authUsers.updatedAt,
-    })
-    .from(authUsers)
-    .orderBy(desc(authUsers.createdAt));
+  return getAllAuthUsers();
 }
 
 export async function toggleClubStatusAction(clubId: string, isActive: boolean) {

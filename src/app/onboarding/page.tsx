@@ -17,18 +17,20 @@ export default async function OnboardingPage() {
     redirect("/dashboard");
   }
 
-  // Get all user's club memberships
-  const memberships = await db
-    .select({
-      clubId: clubMemberships.clubId,
-    })
-    .from(clubMemberships)
-    .where(
-      and(
-        eq(clubMemberships.memberId, session.user.memberId!),
-        eq(clubMemberships.status, "active")
-      )
-    );
+  // Get all user's club memberships (if they have a memberId)
+  const memberships = session.user.memberId
+    ? await db
+        .select({
+          clubId: clubMemberships.clubId,
+        })
+        .from(clubMemberships)
+        .where(
+          and(
+            eq(clubMemberships.memberId, session.user.memberId),
+            eq(clubMemberships.status, "active")
+          )
+        )
+    : [];
 
   const clubIds = memberships.map((m) => m.clubId);
 

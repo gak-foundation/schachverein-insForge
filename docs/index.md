@@ -4,9 +4,8 @@ Willkommen in der Dokumentation der Schachvereins-Software. Dieses Projekt ist e
 
 ## 🏗️ Architektur & Technik
 
-- [System-Architektur Overview](./architecture.md)
-- [All-Hetzner Deployment (Docker)](./architecture/hetzner-deploy.md)
-- [Detaillierter Tech-Stack](./architecture/techstack.md)
+- [Architektur & Tech-Stack Overview](./architecture/techstack.md)
+- [Vercel + Supabase Deployment](./architecture/vercel-deploy.md)
 - [Authentifizierung & RBAC](./architecture/auth-rbac.md)
 - [Datenbank-Schema](./architecture/database.md)
 - [Technische Blindspots](./architecture/blindspots.md)
@@ -16,7 +15,6 @@ Willkommen in der Dokumentation der Schachvereins-Software. Dieses Projekt ist e
 - [Plattform-Übersicht](./features/platform-overview.md)
 - [Website-Block-Editor](./features/block-editor.md)
 - [User-Stories & Akzeptanzkriterien](./features/user-stories.md)
-- [Häufige Fragen (FAQ)](./faq.md)
 
 ## 🚀 Roadmap & Strategie
 
@@ -27,10 +25,9 @@ Willkommen in der Dokumentation der Schachvereins-Software. Dieses Projekt ist e
 
 - [Deployment Übersicht](./deployment/overview.md)
 - [Launch-Checkliste](./deployment/launch-checklist.md)
-- [Hetzner Setup Guide](../HETZNER_DEPLOYMENT.md)
+- [Vercel Deployment Guide](https://vercel.com/docs)
 - [Sicherheitskonzepte](../SECURITY.md)
 
 ## 🛠️ Entwicklung
 
 - [Contributing & Entwicklung](./contributing.md)
-- [KI-Agenten Konfiguration](./agents.md)

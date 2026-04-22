@@ -1,18 +1,13 @@
 "use server";
 
 import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { authUsers } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getAuthUserWithClub } from "@/lib/db/queries/auth";
 
 export async function getCurrentClubId(): Promise<string | null> {
   const session = await getSession();
   if (!session?.user?.id) return null;
 
-  const [user] = await db
-    .select({ activeClubId: authUsers.activeClubId })
-    .from(authUsers)
-    .where(eq(authUsers.id, session.user.id));
+  const user = await getAuthUserWithClub(session.user.id);
 
   return user?.activeClubId ?? null;
 }

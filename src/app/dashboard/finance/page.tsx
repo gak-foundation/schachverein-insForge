@@ -18,6 +18,7 @@ import { ContributionRatesList } from "@/components/finance/contribution-rates-l
 import { SepaExport } from "@/components/finance/sepa-export";
 import { ClubBankSettings } from "@/components/finance/club-bank-settings";
 import { DunningOverview } from "@/components/finance/dunning-overview";
+import { ClubExportButton } from "@/components/clubs/club-export-button";
 
 export const metadata = {
   title: "Finanzen",
@@ -115,6 +116,7 @@ export default async function FinancePage() {
             <ClubBankSettings
               settings={bankSettings}
             />
+            <ClubExportButton />
           </TabsContent>
         )}
       </Tabs>

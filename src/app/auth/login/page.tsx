@@ -93,10 +93,11 @@ function LoginPageContent() {
   }
 
   async function handleGithubSignIn() {
+    const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(callbackURL)}`;
     await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: `${window.location.origin}${callbackURL}`,
+        redirectTo,
       },
     });
   }

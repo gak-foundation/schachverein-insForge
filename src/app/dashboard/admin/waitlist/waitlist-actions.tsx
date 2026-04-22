@@ -30,7 +30,7 @@ interface WaitlistActionsProps {
 export function WaitlistActions({ id, currentStatus }: WaitlistActionsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [showConfirmDialog, setShowConfirmDialog] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState<"pending" | "approved" | "rejected" | "waitlisted" | null>(null);
 
   function handleStatusChange(newStatus: "pending" | "approved" | "rejected" | "waitlisted") {
     setShowConfirmDialog(newStatus);

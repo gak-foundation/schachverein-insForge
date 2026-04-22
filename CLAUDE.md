@@ -67,7 +67,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Financial Data:** ALWAYS encrypt IBAN and BIC using `@/lib/crypto` before saving to DB. ALWAYS decrypt when reading for display/export.
 - **DWZ/Rating:** Prefer real DeWIS sync over manual entry. Ensure `dwzHistory` is updated.
 - **A11y:** All UI changes must maintain WCAG 2.2 AA / BFSG 2025 standards (min. 4.5:1 contrast, 40px+ touch targets).
-- **Architecture:** Maintain "All-Hetzner" Docker compatibility. Avoid Vercel-specific features for core background logic.
+- **Architecture:** Maintain Vercel + Supabase Cloud compatibility. Avoid platform-specific features for core background logic.
 
 ---
 

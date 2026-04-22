@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { eq, desc } from "drizzle-orm";
 import { Suspense } from "react";
 import { WaitlistActions } from "./waitlist-actions";
-import { Clock, CheckCircle2, XCircle, Users } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Users, Rocket } from "lucide-react";
 
 const STATUS_CONFIG = {
   pending: {
@@ -78,10 +78,18 @@ function WaitlistTable({ applications }: { applications: Awaited<ReturnType<type
             const StatusIcon = statusConfig.icon;
 
             return (
-              <tr key={app.id} className="hover:bg-gray-50/50 transition-colors">
+              <tr key={app.id} className={`hover:bg-gray-50/50 transition-colors ${app.type === 'pilot' ? 'bg-primary/5' : ''}`}>
                 <td className="px-6 py-4">
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-900">{app.clubName}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-900">{app.clubName}</span>
+                      {app.type === "pilot" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary ring-1 ring-inset ring-primary/30 uppercase">
+                          <Rocket className="h-2.5 w-2.5" />
+                          Pilot
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs text-gray-500">{app.slug}</span>
                   </div>
                 </td>
@@ -94,16 +102,20 @@ function WaitlistTable({ applications }: { applications: Awaited<ReturnType<type
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex flex-col text-xs text-gray-500">
+                  <div className="flex flex-col text-xs text-gray-500 max-w-xs">
                     {app.website && (
-                      <a href={app.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      <a href={app.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
                         {app.website}
                       </a>
                     )}
                     {app.memberCount && <span>Mitglieder: {app.memberCount}</span>}
-                    {app.address && (
-                      <span>{app.address.city || "kein Ort"}</span>
+                    {app.type === "pilot" && app.message && (
+                      <div className="mt-1 p-1 bg-white rounded border border-primary/20 text-[10px] italic">
+                        <span className="font-bold text-primary block">Pain Points:</span>
+                        <p className="line-clamp-2">{app.message}</p>
+                      </div>
                     )}
+                    {app.notes && !app.message && <span className="truncate italic">&quot;{app.notes}&quot;</span>}
                   </div>
                 </td>
                 <td className="px-6 py-4">

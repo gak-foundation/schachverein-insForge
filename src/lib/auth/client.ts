@@ -24,19 +24,17 @@ export const authClient = {
     useEffect(() => {
       const supabase = createClient();
       
-      const fetchProfile = async (userId: string) => {
-        const { data: profile } = await supabase
-          .from("auth_user")
-          .select("*")
-          .eq("id", userId)
-          .single();
+      const fetchProfile = async () => {
+        const response = await fetch("/api/user/profile");
+        if (!response.ok) return null;
+        const { profile } = await response.json();
         return profile;
       };
 
       // Get initial session
       supabase.auth.getSession().then(async ({ data: { session: authSession } }) => {
         if (authSession?.user) {
-          const profile = await fetchProfile(authSession.user.id);
+          const profile = await fetchProfile();
           setSession({
             user: {
               id: authSession.user.id,
@@ -45,9 +43,9 @@ export const authClient = {
               image: profile?.image || authSession.user.user_metadata?.avatar_url,
               role: profile?.role || "mitglied",
               permissions: profile?.permissions || [],
-              memberId: profile?.member_id,
-              activeClubId: profile?.active_club_id,
-              isSuperAdmin: profile?.is_super_admin || false,
+              memberId: profile?.memberId,
+              activeClubId: profile?.activeClubId,
+              isSuperAdmin: profile?.isSuperAdmin || false,
             },
           });
         }
@@ -57,7 +55,7 @@ export const authClient = {
       // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, authSession) => {
         if (authSession?.user) {
-          const profile = await fetchProfile(authSession.user.id);
+          const profile = await fetchProfile();
           setSession({
             user: {
               id: authSession.user.id,
@@ -66,9 +64,9 @@ export const authClient = {
               image: profile?.image || authSession.user.user_metadata?.avatar_url,
               role: profile?.role || "mitglied",
               permissions: profile?.permissions || [],
-              memberId: profile?.member_id,
-              activeClubId: profile?.active_club_id,
-              isSuperAdmin: profile?.is_super_admin || false,
+              memberId: profile?.memberId,
+              activeClubId: profile?.activeClubId,
+              isSuperAdmin: profile?.isSuperAdmin || false,
             },
           });
         } else {

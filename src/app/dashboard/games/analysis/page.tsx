@@ -18,11 +18,14 @@ export default async function AnalysisPage() {
           <h1 className="text-2xl font-bold tracking-tight">Interaktive Analyse</h1>
           <p className="text-sm text-gray-500">Nutzen Sie das Analysebrett mit integrierter Stockfish-Engine.</p>
         </div>
-        <Button variant="outline" asChild>
-          <a href="https://lichess.org/analysis" target="_blank" rel="noopener noreferrer">
-            Zu Lichess.org &rarr;
-          </a>
-        </Button>
+        <a
+          href="https://lichess.org/analysis"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center rounded-lg border border-border bg-background text-sm font-medium h-8 px-2.5 hover:bg-muted transition-colors"
+        >
+          Zu Lichess.org →
+        </a>
       </div>
 
       <AnalysisBoard />
