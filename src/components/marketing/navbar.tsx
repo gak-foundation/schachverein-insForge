@@ -10,6 +10,7 @@ import { authClient } from "@/lib/auth/client";
 const navItems = [
   { label: "Features", href: "/#features" },
   { label: "Preise", href: "/#pricing" },
+  { label: "Pilot-Programm", href: "/bewerbung?type=pilot", highlighted: true },
   { label: "FAQ", href: "/faq" },
   { label: "Kontakt", href: "/kontakt" },
 ];
@@ -36,9 +37,20 @@ export function MarketingNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                className={cn(
+                  "text-sm font-medium transition-colors relative",
+                  item.highlighted 
+                    ? "text-primary font-bold hover:text-primary/80" 
+                    : "text-muted-foreground hover:text-primary"
+                )}
               >
                 {item.label}
+                {item.highlighted && (
+                  <span className="absolute -top-1 -right-4 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
@@ -86,17 +98,28 @@ export function MarketingNavbar() {
         {/* Mobile Navigation */}
         <div className={cn(
           "md:hidden overflow-hidden transition-all duration-300 ease-in-out",
-          mobileMenuOpen ? "max-h-[400px] opacity-100 py-4 border-t" : "max-h-0 opacity-0"
+          mobileMenuOpen ? "max-h-[500px] opacity-100 py-4 border-t" : "max-h-0 opacity-0"
         )}>
           <nav className="flex flex-col gap-2">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="px-4 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                className={cn(
+                  "px-4 py-2 text-base font-medium rounded-md transition-colors flex items-center justify-between",
+                  item.highlighted
+                    ? "text-primary bg-primary/5 font-bold"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.label}
+                {item.highlighted && (
+                  <span className="flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                )}
               </Link>
             ))}
             <div className="px-4 pt-4 border-t mt-2 flex flex-col gap-2">

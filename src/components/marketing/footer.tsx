@@ -19,9 +19,9 @@ export function MarketingFooter() {
           <div>
             <h3 className="text-sm font-semibold mb-4">Produkt</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/#features" className="hover:text-primary transition-colors">Features</Link></li>
-              <li><Link href="/#pricing" className="hover:text-primary transition-colors">Preise</Link></li>
-              <li><Link href="/#demo" className="hover:text-primary transition-colors">Demo</Link></li>
+              <li><Link href="/" className="hover:text-primary transition-colors">Features</Link></li>
+              <li><Link href="/preise" className="hover:text-primary transition-colors">Preise</Link></li>
+              <li><Link href="/demo" className="hover:text-primary transition-colors">Demo</Link></li>
             </ul>
           </div>
           <div>
@@ -29,7 +29,7 @@ export function MarketingFooter() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/impressum" className="hover:text-primary transition-colors">Impressum</Link></li>
               <li><Link href="/datenschutz" className="hover:text-primary transition-colors">Datenschutz</Link></li>
-              <li><Link href="/agb" className="hover:text-primary transition-colors">AGB</Link></li>
+              <li><Link href="/barrierefreiheit" className="hover:text-primary transition-colors">Barrierefreiheit</Link></li>
             </ul>
           </div>
           <div>
