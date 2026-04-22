@@ -2,15 +2,14 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypt
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
-if (!ENCRYPTION_KEY && process.env.NODE_ENV === "production") {
-  throw new Error("ENCRYPTION_KEY is required in production");
-}
-
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
 
 function getKey(): Buffer {
   if (!ENCRYPTION_KEY) {
+    if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE) {
+      throw new Error("ENCRYPTION_KEY is required in production");
+    }
     // Development fallback - NOT for production
     return scryptSync("dev-key-do-not-use-in-production", "salt", 32);
   }
