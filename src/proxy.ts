@@ -45,7 +45,7 @@ function isLocalhost(hostname: string): boolean {
   return hostname === "localhost";
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = getHostname(request);
 
@@ -106,7 +106,7 @@ export async function middleware(request: NextRequest) {
   return supabaseResponse;
 }
 
-export const config = {
+export const proxyConfig = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons/|sitemap.xml|robots.txt|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],

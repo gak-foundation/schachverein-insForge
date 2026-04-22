@@ -1,4 +1,10 @@
 import { z } from "zod";
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+// Load environment variables from .env files
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -21,7 +27,24 @@ const envSchema = z.object({
 });
 
 // Parsen der Umgebungsvariablen. Wirft einen Fehler (mit Exit Code 1), wenn etwas fehlt.
-const _env = envSchema.safeParse(process.env);
+const processEnv = {
+  NODE_ENV: process.env.NODE_ENV,
+  DATABASE_URL: process.env.DATABASE_URL,
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: process.env.SMTP_PORT,
+  SMTP_USER: process.env.SMTP_USER,
+  SMTP_PASS: process.env.SMTP_PASS,
+  SMTP_FROM: process.env.SMTP_FROM,
+  ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
+  BBP_PAIRINGS_CONTAINER: process.env.BBP_PAIRINGS_CONTAINER,
+  BBP_TEMP_DIR: process.env.BBP_TEMP_DIR,
+};
+
+const _env = envSchema.safeParse(processEnv);
 
 if (!_env.success) {
   console.error("❌ Ungültige Umgebungsvariablen:", _env.error.format());
