@@ -11,14 +11,13 @@ import { AuthLayout } from "@/components/auth/auth-layout";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { ErrorMessage } from "@/components/auth/error-message";
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth/client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,9 +25,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
+      const { error } = await authClient.forgetPassword({ email });
       if (error) throw error;
       setSent(true);
     } catch {

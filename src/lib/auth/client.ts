@@ -3,6 +3,15 @@
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 
+// Get the app base URL for auth redirects
+// In browser, defaults to current origin; falls back to env var
+function getAppUrl(): string {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+}
+
 // Client-side auth client
 export const authClient = {
   useSession: () => {
@@ -98,6 +107,7 @@ export const authClient = {
         email,
         password,
         options: {
+          emailRedirectTo: `${getAppUrl()}/auth/callback`,
           data: { name },
         },
       });
@@ -112,7 +122,9 @@ export const authClient = {
 
   forgetPassword: async ({ email }: { email: string }) => {
     const supabase = createClient();
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${getAppUrl()}/auth/reset-password`,
+    });
     return { data, error };
   },
 

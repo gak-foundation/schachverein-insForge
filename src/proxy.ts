@@ -26,6 +26,14 @@ const publicRoutes = [
   "/api/webhooks",
 ];
 
+// Security headers for all responses
+const SECURITY_HEADERS = {
+  "X-Frame-Options": "DENY",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+};
+
 function getHostname(request: NextRequest): string {
   const host = request.headers.get("host");
   return host?.split(":")[0] ?? "localhost";
@@ -94,14 +102,28 @@ export async function proxy(request: NextRequest) {
   // If not authenticated and trying to access protected route, redirect to login
   if (!user && !isPublicRoute) {
     const loginUrl = new URL("/auth/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+    loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // If authenticated and trying to access login page, redirect to dashboard
   if (user && (pathname === "/auth/login" || pathname === "/auth/signup")) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const next = request.nextUrl.searchParams.get("next") || "/dashboard";
+    return NextResponse.redirect(new URL(next, request.url));
   }
+
+  // Apply security headers
+  Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
+    supabaseResponse.headers.set(key, value);
+  });
+
+  // Add CSP header (non-blocking for development)
+  const isDev = process.env.NODE_ENV === "development";
+  const cspHeader = isDev
+    ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
+
+  supabaseResponse.headers.set("Content-Security-Policy", cspHeader);
 
   return supabaseResponse;
 }

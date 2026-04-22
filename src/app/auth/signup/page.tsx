@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,15 +48,10 @@ export default function SignupPage() {
     const name = formData.get("name") as string;
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error } = await authClient.signUp.email({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            full_name: name,
-          },
-        },
+        name,
       });
 
       if (error) {
