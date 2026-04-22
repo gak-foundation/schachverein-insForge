@@ -30,7 +30,7 @@ import { ChevronLeft, Edit, Trash2, Calendar, Mail, Phone, User, Award, ShieldCh
 import { Member } from "@/types";
 
 export const metadata = {
-  title: "Mitglied Details | CheckMate Manager",
+  title: "Mitglied Details | schach.studio",
 };
 
 export default async function MemberDetailPage({

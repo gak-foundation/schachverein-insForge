@@ -3,7 +3,7 @@ import { MemberForm } from "@/components/members/member-form";
 import { ChevronLeft } from "lucide-react";
 
 export const metadata = {
-  title: "Neues Mitglied anlegen | CheckMate Manager",
+  title: "Neues Mitglied anlegen | schach.studio",
   description: "Erfassen Sie ein neues Vereinsmitglied mit allen relevanten Schach- und Verwaltungsdaten.",
 };
 

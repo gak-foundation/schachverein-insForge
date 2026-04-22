@@ -6,7 +6,7 @@ import { MemberForm } from "@/components/members/member-form";
 import { ChevronLeft } from "lucide-react";
 
 export const metadata = {
-  title: "Mitglied bearbeiten | CheckMate Manager",
+  title: "Mitglied bearbeiten | schach.studio",
   description: "Aktualisieren Sie die Daten eines Vereinsmitglieds.",
 };
 

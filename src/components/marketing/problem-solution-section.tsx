@@ -60,7 +60,7 @@ export function ProblemSolutionSection() {
         </div>
 
         <div className="mt-12 text-center">
-          <p className="text-lg font-medium text-primary mb-2">„CheckMate Manager spart uns ca. 4 Stunden Verwaltungsarbeit pro Woche.“</p>
+          <p className="text-lg font-medium text-primary mb-2">„schach.studio spart uns ca. 4 Stunden Verwaltungsarbeit pro Woche.“</p>
           <p className="text-sm text-muted-foreground">— Beispiel-Vorstand, SC Musterstadt</p>
         </div>
       </div>

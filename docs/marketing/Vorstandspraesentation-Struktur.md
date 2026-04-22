@@ -1,6 +1,6 @@
 # Präsentationsstruktur: Modernisierung des Vereinsvorstands
 
-Diese Struktur hilft dabei, die Einführung des CheckMate Managers in einer Vorstandssitzung (ca. 15-20 Minuten) überzeugend zu präsentieren.
+Diese Struktur hilft dabei, die Einführung von schach.studio in einer Vorstandssitzung (ca. 15-20 Minuten) überzeugend zu präsentieren.
 
 ---
 
@@ -14,7 +14,7 @@ Diese Struktur hilft dabei, die Einführung des CheckMate Managers in einer Vors
 *   **Inhalt:** Bilder von Excel-Listen, Papierstapeln, WhatsApp-Screenshots.
 *   **Botschaft:** Unsere Prozesse sind fehleranfällig, hängen an Einzelpersonen (Laptops) und sind rechtlich riskant (DSGVO).
 
-### Folie 3: Die Lösung – CheckMate Manager
+### Folie 3: Die Lösung – schach.studio
 *   **Inhalt:** Logo der Software + Screenshot der Startseite.
 *   **Botschaft:** Eine zentrale Plattform für Mitglieder, Turniere, Finanzen und Webseite.
 

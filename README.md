@@ -1,4 +1,4 @@
-# CheckMate Manager
+# schach.studio
 
 Eine ganzheitliche, digitale SaaS-Plattform für Schachvereine. Vereint Mitgliederverwaltung, Finanzwesen, Turnierleitung, Mannschaftsbetrieb und Trainings-Tools in einem sicheren, modernen System.
 

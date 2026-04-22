@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Kontakt | schach.studio",
   description:
     "Nehmen Sie Kontakt mit uns auf. Wir helfen Ihnen gerne bei Fragen zu schach.studio.",
+  alternates: {
+    canonical: "/kontakt",
+  },
 };
 
 export default function ContactPage() {

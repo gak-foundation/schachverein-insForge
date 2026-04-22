@@ -4,6 +4,9 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Erklärung zur Barrierefreiheit | schach.studio",
   description: "Informationen zur Barrierefreiheit von schach.studio gemäß BFSG",
+  alternates: {
+    canonical: "/barrierefreiheit",
+  },
 };
 
 export default function BarrierefreiheitPage() {

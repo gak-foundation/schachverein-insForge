@@ -1,12 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Sparkles, Users, Trophy, Calendar, Shield } from "lucide-react";
-import { redirectToDemo } from "@/lib/actions/demo";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Demo erkunden | schach.studio",
   description: "Erleben Sie schach.studio in Aktion - interaktive Demo mit einem Beispiel-Verein",
+  alternates: {
+    canonical: "/demo",
+  },
 };
 
 export default function DemoPage() {

@@ -4,6 +4,9 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Datenschutzerklärung | schach.studio",
   description: "Datenschutzerklärung und Informationen zum Datenschutz bei schach.studio",
+  alternates: {
+    canonical: "/datenschutz",
+  },
 };
 
 export default function DatenschutzPage() {

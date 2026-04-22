@@ -1,4 +1,4 @@
-# 🔍 Blindspots & kritische Lücken im Projekt "CheckMate Manager"
+# 🔍 Blindspots & kritische Lücken im Projekt "schach.studio"
 
 Nach kritischer Analyse der drei Konzeptdokumente zeigen sich erhebliche Blindspots – sowohl fachlich-domänenspezifisch als auch strategisch, rechtlich und technisch. Hier die ehrliche Bestandsaufnahme:
 

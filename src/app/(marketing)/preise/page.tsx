@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Check, HelpCircle, Rocket, Sparkles } from "lucide-react";
@@ -145,10 +146,13 @@ function renderValue(value: boolean | string) {
   return <span className="font-medium">{value}</span>;
 }
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Preise | schach.studio",
   description:
     "Transparente Preise für jeden Verein. Starter kostenlos, Verein ab 9 €/Monat, Pro ab 20 €/Monat.",
+  alternates: {
+    canonical: "/preise",
+  },
 };
 
 export default function PricingPage() {

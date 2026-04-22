@@ -1,10 +1,10 @@
-# 🏁 CheckMate Manager: Der digitale Turbo für Ihren Schachverein
+# 🏁 schach.studio: Der digitale Turbo für Ihren Schachverein
 
-**Schluss mit Zettelwirtschaft, Excel-Chaos und veralteten Webseiten.** Der CheckMate Manager ist die erste All-in-One Plattform, die speziell für die Bedürfnisse deutscher Schachvereine entwickelt wurde.
+**Schluss mit Zettelwirtschaft, Excel-Chaos und veralteten Webseiten.** Das schach.studio ist die erste All-in-One Plattform, die speziell für die Bedürfnisse deutscher Schachvereine entwickelt wurde.
 
 ---
 
-## 🚀 Warum CheckMate Manager? (Der Vorstand-Check)
+## 🚀 Warum schach.studio? (Der Vorstand-Check)
 
 ### 1. Radikale Zeitersparnis für den Vorstand
 *   **Selbstverwaltung:** Mitglieder pflegen ihre Daten (Anschrift, Kontakt) selbst.
@@ -25,7 +25,7 @@
 
 ## 📊 Problem vs. Lösung
 
-| Heute (Schmerz) | Mit CheckMate Manager (Lösung) |
+| Heute (Schmerz) | Mit schach.studio (Lösung) |
 | :--- | :--- |
 | Excel-Listen auf privaten Laptops | Zentrale, cloudbasierte Mitgliederakte |
 | Manuelle SEPA-Eingabe bei der Bank | Automatischer Export (pain.008 XML) |

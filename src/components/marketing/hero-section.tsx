@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Zap, Wallet, Sparkles, Rocket, Play } from "lucide-react";
+import { ArrowRight, Shield, Zap, Wallet, Sparkles, Rocket, Play, Lock } from "lucide-react";
 
 export function HeroSection() {
   return (
@@ -47,7 +47,7 @@ export function HeroSection() {
             </Link>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-6 text-left">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
             <div className="flex gap-4 p-4 rounded-lg bg-card border">
               <div className="shrink-0">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -72,6 +72,20 @@ export function HeroSection() {
                 <h3 className="font-bold mb-1">BFSG 2025</h3>
                 <p className="text-sm text-muted-foreground">
                   Barrierefrei nach WCAG 2.2 AA umgesetzt. Bereit für die BFSG.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 p-4 rounded-lg bg-card border">
+              <div className="shrink-0">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Lock className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <div>
+                <h3 className="font-bold mb-1">Datenschutz</h3>
+                <p className="text-sm text-muted-foreground">
+                  DSGVO-konform. Hosting in Deutschland, verschlüsselte Daten.
                 </p>
               </div>
             </div>

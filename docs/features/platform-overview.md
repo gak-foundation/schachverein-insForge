@@ -1,4 +1,4 @@
-# 📋 Ausführliche Funktionsliste: CheckMate Manager / Schachverein-Software
+# 📋 Ausführliche Funktionsliste: schach.studio / Schachverein-Software
 
 Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidierte, ausführliche Übersicht aller Funktionen und Funktionalitäten des Online Schach Club Managers.
 

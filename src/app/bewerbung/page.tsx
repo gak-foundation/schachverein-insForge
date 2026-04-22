@@ -3,8 +3,11 @@ import { WaitlistApplicationForm } from "./waitlist-form";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Verein bewerben - Schachstudio",
-  description: "Bewirb dich als Schachverein für Schachstudio",
+  title: "Verein bewerben | schach.studio",
+  description: "Bewirb dich als einer der ersten Vereine für schach.studio und profitiere von exklusiven Vorteilen.",
+  alternates: {
+    canonical: "/bewerbung",
+  },
 };
 
 export default function WaitlistPage() {
