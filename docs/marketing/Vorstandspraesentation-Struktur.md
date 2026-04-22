@@ -59,9 +59,4 @@ Diese Struktur hilft dabei, die Einführung von schach.studio in einer Vorstands
 **Frage:** "Können unsere älteren Mitglieder das bedienen?"
 *   **Antwort:** Ja, die Oberfläche ist extrem einfach gehalten. Wer eine E-Mail schreiben kann, kann auch sein Profil bestätigen.
 
----
 
-## 💻 Live-Demo Skript (3 Minuten)
-1.  **Dashboard:** Zeigen, wie übersichtlich alles ist.
-2.  **Turnier-Anmeldung:** Gast-Anmeldung auf der Webseite zeigen (geht in 30 Sek).
-3.  **SEPA-Export:** Einmal zeigen, wie die Datei für die Bank erzeugt wird.

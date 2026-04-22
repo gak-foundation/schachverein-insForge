@@ -1,0 +1,1 @@
+DROP INDEX "auth_user_email_idx";

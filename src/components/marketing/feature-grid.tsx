@@ -8,7 +8,6 @@ import {
   Globe,
   FileText,
   Lock,
-  Clock,
   ClipboardCheck,
   CalendarCheck,
 } from "lucide-react";
@@ -88,11 +87,11 @@ export function FeatureGrid() {
       {features.map((feature) => (
         <div
           key={feature.title}
-          className="group p-6 rounded-xl bg-card border hover:border-primary/50 transition-colors"
+          className="group p-6 rounded-xl bg-card border hover:border-primary/50 transition-all duration-200 hover:shadow-md"
         >
           <div className="mb-4">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <feature.icon className="h-5 w-5 text-primary" />
+              <feature.icon className="h-5 w-5 text-primary" aria-hidden="true" />
             </div>
           </div>
           <h3 className="font-bold mb-2">{feature.title}</h3>

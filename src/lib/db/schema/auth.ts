@@ -8,7 +8,6 @@ import {
   text,
   jsonb,
   index,
-  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { memberRoleEnum } from "./enums";
@@ -39,7 +38,6 @@ export const authUsers = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => ({
-    emailIdx: uniqueIndex("auth_user_email_idx").on(table.email),
     memberIdIdx: index("auth_user_member_id_idx").on(table.memberId),
     activeClubIdx: index("auth_user_active_club_idx").on(table.activeClubId),
   }),

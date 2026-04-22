@@ -676,17 +676,6 @@ export default function FAQPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="demo">
-                <AccordionTrigger className="text-left">
-                  Gibt es eine Demo-Umgebung?
-                </AccordionTrigger>
-                <AccordionContent>
-                  <p className="text-gray-600 leading-relaxed">
-                    Ja, auf Anfrage stellen wir gerne Zugang zu einer Demo-Umgebung mit Testdaten bereit. So können Sie die Software in Ruhe erkunden, bevor Sie sich entscheiden.
-                  </p>
-                </AccordionContent>
-              </AccordionItem>
-
               <AccordionItem value="anmeldung">
                 <AccordionTrigger className="text-left">
                   Wie melde ich mich an?

@@ -9,7 +9,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static marketing routes
   const routes = [
     "",
-    "/demo",
     "/kontakt",
     "/impressum",
     "/datenschutz",
@@ -42,7 +41,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [...staticRoutes, ...clubRoutes];
   } catch (error) {
-    console.error("Error generating sitemap for clubs:", error);
+    // Suppress DB connection errors during static generation (e.g., build/ci)
+    // Sitemap gracefully falls back to static routes only
+    if (process.env.NEXT_PHASE !== "phase-production-build") {
+      console.error("Error generating sitemap for clubs:", error);
+    }
     return staticRoutes;
   }
 }

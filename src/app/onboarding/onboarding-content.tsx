@@ -48,14 +48,14 @@ export function OnboardingContent({ hasClubs, userClubs }: OnboardingContentProp
   return (
     <div className="space-y-6">
       {error && (
-        <div className="p-4 text-sm text-red-600 bg-red-50 rounded-md">{error}</div>
+        <div className="p-4 text-sm text-destructive bg-destructive/10 rounded-md border border-destructive/20">{error}</div>
       )}
 
       {hasClubs && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+              <Users className="h-5 w-5" aria-hidden="true" />
               Ihre Vereine
             </CardTitle>
             <CardDescription>
@@ -71,21 +71,22 @@ export function OnboardingContent({ hasClubs, userClubs }: OnboardingContentProp
               userClubs.map((club) => (
                 <button
                   key={club.id}
+                  type="button"
                   onClick={() => handleSwitchClub(club.id)}
                   disabled={isSwitching === club.id}
-                  className="w-full flex items-center gap-4 p-4 rounded-lg border hover:bg-accent transition-colors text-left"
+                  className="w-full flex items-center gap-4 p-4 rounded-lg border hover:bg-accent transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary overflow-hidden shrink-0">
                     {club.logoUrl ? (
                       <Image
                         src={club.logoUrl}
-                        alt={club.name}
+                        alt=""
                         width={48}
                         height={48}
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <Building2 className="h-6 w-6" />
+                      <Building2 className="h-6 w-6" aria-hidden="true" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -97,9 +98,9 @@ export function OnboardingContent({ hasClubs, userClubs }: OnboardingContentProp
                     </p>
                   </div>
                   {isSwitching === club.id ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
                   ) : (
-                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                    <ArrowRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
                   )}
                 </button>
               ))
@@ -112,7 +113,7 @@ export function OnboardingContent({ hasClubs, userClubs }: OnboardingContentProp
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5" />
+              <Info className="h-5 w-5" aria-hidden="true" />
               Prototypenphase
             </CardTitle>
           </CardHeader>

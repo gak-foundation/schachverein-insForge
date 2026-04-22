@@ -121,7 +121,6 @@ export const applicationStatusEnum = pgEnum("application_status", [
 
 export const applicationTypeEnum = pgEnum("application_type", [
   "waitlist",
-  "demo",
   "contact",
   "pilot",
 ]);

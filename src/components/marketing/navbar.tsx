@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X, LayoutDashboard, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
 
@@ -23,7 +23,7 @@ export function MarketingNavbar() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
               <span className="text-xl font-serif">♔</span>
             </div>
@@ -37,15 +37,15 @@ export function MarketingNavbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "text-sm font-medium transition-colors relative",
-                  item.highlighted 
-                    ? "text-primary font-bold hover:text-primary/80" 
+                  "text-sm font-medium transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md px-1 py-0.5",
+                  item.highlighted
+                    ? "text-primary font-bold hover:text-primary/80"
                     : "text-muted-foreground hover:text-primary"
                 )}
               >
                 {item.label}
                 {item.highlighted && (
-                  <span className="absolute -top-1 -right-4 flex h-2 w-2">
+                  <span className="absolute -top-1 -right-4 flex h-2 w-2" aria-hidden="true">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                   </span>
@@ -59,24 +59,27 @@ export function MarketingNavbar() {
             {!isPending && (
               <>
                 {session ? (
-                  <Link href="/dashboard">
-                    <Button variant="default" size="sm" className="gap-2">
-                      <LayoutDashboard className="h-4 w-4" />
-                      Zum Dashboard
-                    </Button>
+                  <Link
+                    href="/dashboard"
+                    className={cn(buttonVariants({ variant: "default", size: "sm" }), "gap-2")}
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Zum Dashboard
                   </Link>
                 ) : (
                   <>
-                    <Link href="/auth/login">
-                      <Button variant="ghost" size="sm">
-                        Login
-                      </Button>
+                    <Link
+                      href="/auth/login"
+                      className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                    >
+                      Login
                     </Link>
-                    <Link href="/auth/signup">
-                      <Button size="sm" className="gap-2">
-                        Jetzt starten
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
+                    <Link
+                      href="/auth/signup"
+                      className={cn(buttonVariants({ size: "sm" }), "gap-2")}
+                    >
+                      Jetzt starten
+                      <ArrowRight className="h-4 w-4" />
                     </Link>
                   </>
                 )}
@@ -86,26 +89,32 @@ export function MarketingNavbar() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg hover:bg-accent transition-colors"
+            className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Menü öffnen"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-nav"
+            aria-label={mobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
+            type="button"
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileMenuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
           </button>
         </div>
 
         {/* Mobile Navigation */}
-        <div className={cn(
-          "md:hidden overflow-hidden transition-all duration-300 ease-in-out",
-          mobileMenuOpen ? "max-h-[500px] opacity-100 py-4 border-t" : "max-h-0 opacity-0"
-        )}>
-          <nav className="flex flex-col gap-2">
+        <div
+          id="mobile-nav"
+          className={cn(
+            "md:hidden overflow-hidden transition-all duration-300 ease-in-out motion-reduce:transition-none",
+            mobileMenuOpen ? "max-h-[500px] opacity-100 py-4 border-t" : "max-h-0 opacity-0"
+          )}
+        >
+          <nav className="flex flex-col gap-2" aria-label="Mobile Navigation">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "px-4 py-2 text-base font-medium rounded-md transition-colors flex items-center justify-between",
+                  "px-4 py-2 text-base font-medium rounded-md transition-colors flex items-center justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   item.highlighted
                     ? "text-primary bg-primary/5 font-bold"
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -114,8 +123,8 @@ export function MarketingNavbar() {
               >
                 {item.label}
                 {item.highlighted && (
-                  <span className="flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-75"></span>
+                  <span className="flex h-2 w-2 relative" aria-hidden="true">
+                    <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-75 motion-reduce:animate-none"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                   </span>
                 )}
@@ -123,21 +132,29 @@ export function MarketingNavbar() {
             ))}
             <div className="px-4 pt-4 border-t mt-2 flex flex-col gap-2">
               {session ? (
-                <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Zum Dashboard
-                  </Button>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(buttonVariants({ variant: "default" }), "w-full gap-2 justify-center")}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Zum Dashboard
                 </Link>
               ) : (
                 <>
-                  <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full">
-                      Login
-                    </Button>
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(buttonVariants({ variant: "outline" }), "w-full justify-center")}
+                  >
+                    Login
                   </Link>
-                  <Link href="/auth/signup" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full">Jetzt starten</Button>
+                  <Link
+                    href="/auth/signup"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(buttonVariants({ variant: "default" }), "w-full justify-center")}
+                  >
+                    Jetzt starten
                   </Link>
                 </>
               )}

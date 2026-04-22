@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getSupabaseClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 
 // Get the app base URL for auth redirects
@@ -31,8 +31,8 @@ export const authClient = {
     const [isPending, setIsPending] = useState(true);
 
     useEffect(() => {
-      const supabase = createClient();
-      
+      const supabase = getSupabaseClient();
+
       const fetchProfile = async () => {
         const response = await fetch("/api/user/profile");
         if (!response.ok) return null;
@@ -41,7 +41,16 @@ export const authClient = {
       };
 
       // Get initial session
-      supabase.auth.getSession().then(async ({ data: { session: authSession } }) => {
+      supabase.auth.getSession().then(async ({ data: { session: authSession }, error }) => {
+        if (error) {
+          if (error.code !== "refresh_token_not_found") {
+            console.error("Error getting session:", error.message);
+          }
+          setSession(null);
+          setIsPending(false);
+          return;
+        }
+
         if (authSession?.user) {
           const profile = await fetchProfile();
           setSession({
@@ -91,7 +100,7 @@ export const authClient = {
 
   signIn: {
     email: async ({ email, password }: { email: string; password: string }) => {
-      const supabase = createClient();
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -102,7 +111,7 @@ export const authClient = {
 
   signUp: {
     email: async ({ email, password, name }: { email: string; password: string; name?: string }) => {
-      const supabase = createClient();
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -116,12 +125,12 @@ export const authClient = {
   },
 
   signOut: async () => {
-    const supabase = createClient();
+    const supabase = getSupabaseClient();
     await supabase.auth.signOut();
   },
 
   forgetPassword: async ({ email }: { email: string }) => {
-    const supabase = createClient();
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${getAppUrl()}/auth/reset-password`,
     });
@@ -129,7 +138,7 @@ export const authClient = {
   },
 
   changePassword: async ({ newPassword }: { newPassword: string }) => {
-    const supabase = createClient();
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword,
     });

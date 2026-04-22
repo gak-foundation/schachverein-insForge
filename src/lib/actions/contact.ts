@@ -48,7 +48,6 @@ async function sendNotificationEmail(data: {
 
   const typeLabels: Record<string, string> = {
     waitlist: "Warteliste",
-    demo: "Demo-Anfrage",
     contact: "Kontaktanfrage",
     pilot: "Pilot-Programm",
   };
@@ -109,7 +108,6 @@ async function sendConfirmationEmail(data: {
 
   const typeLabels: Record<string, string> = {
     waitlist: "Auf die Warteliste",
-    demo: "Für eine Demo",
     contact: "Ihre Anfrage",
     pilot: "Für das Pilot-Programm",
   };
@@ -201,7 +199,7 @@ export async function submitContactForm(
     const memberCountNum = data.memberCount ? Number(data.memberCount) : null;
 
     await db.insert(waitlistApplications).values({
-      type: data.type as "waitlist" | "demo" | "contact" | "pilot",
+      type: data.type as "waitlist" | "contact" | "pilot",
       clubName: data.clubName,
       contactEmail: data.email,
       contactName: data.contactName,

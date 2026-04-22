@@ -190,7 +190,7 @@ Main Branch:
 | **Onboarding-Flow** für neue Vereine (Setup-Wizard) | 🔴 |
 | **Pilotverein-Vertrag** (unentgeltlich, 12 Monate, Feedback-Pflicht) | 🟠 |
 | **Marketing-Website** + SEO-Content | 🟠 |
-| **Demo-Verein** mit Seed-Daten | 🔴 |
+| **Beispiel-Verein** mit Seed-Daten | 🔴 |
 | **Dokumentation / Wissensbasis** | 🟠 |
 | **Video-Tutorials** (für Zielgruppe 55+!) | 🟠 |
 

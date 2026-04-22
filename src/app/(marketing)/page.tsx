@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { ArrowRight, Shield, Zap, Wallet } from "lucide-react";
 import { HeroSection } from "@/components/marketing/hero-section";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
@@ -7,6 +7,7 @@ import { ProblemSolutionSection } from "@/components/marketing/problem-solution-
 import { PilotProjectSection } from "@/components/marketing/pilot-project-section";
 import { FAQAccordion } from "@/components/marketing/faq-accordion";
 import { MiniManager } from "@/components/marketing/mini-manager";
+import { cn } from "@/lib/utils";
 
 export default function HomePage() {
   return (
@@ -23,7 +24,7 @@ export default function HomePage() {
           </div>
           <div className="max-w-5xl mx-auto mb-16">
             <div className="relative rounded-2xl overflow-hidden border shadow-2xl">
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-indigo-600 rounded-2xl blur opacity-20" />
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-indigo-600 rounded-2xl blur opacity-20 motion-reduce:blur-none" />
               <div className="relative bg-card">
                 <MiniManager />
               </div>
@@ -42,7 +43,7 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4 border border-primary/20">
-                <Shield className="h-3.5 w-3.5" />
+                <Shield className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Barrierefreiheit</span>
               </div>
               <h2 className="text-3xl font-bold mb-4">Bereit für die BFSG</h2>
@@ -53,38 +54,19 @@ export default function HomePage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="p-6 rounded-xl bg-card border">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Zap className="h-5 w-5 text-primary" />
+              {[
+                { icon: Zap, title: "WCAG 2.2 AA", desc: "Vollständig umgesetzt nach den Web Content Accessibility Guidelines. Tastaturbedienbar, ausreichender Kontrast, klare Sprache." },
+                { icon: Wallet, title: "Keine Extra-Kosten", desc: "Barrierefreiheit ist bei uns keine Option, sondern Standard. In allen Plänen inklusive — auch im kostenlosen Starter." },
+                { icon: Shield, title: "DSGVO-konform", desc: "Hosting in Deutschland, transparente Datenverarbeitung und automatische Löschfristen. Datenschutz ist bei uns Standard." },
+              ].map((item) => (
+                <div key={item.title} className="p-6 rounded-xl bg-card border transition-all duration-200 hover:shadow-md">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <item.icon className="h-5 w-5 text-primary" aria-hidden="true" />
+                  </div>
+                  <h3 className="font-bold mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
                 </div>
-                <h3 className="font-bold mb-2">WCAG 2.2 AA</h3>
-                <p className="text-sm text-muted-foreground">
-                  Vollständig umgesetzt nach den Web Content Accessibility Guidelines.
-                  Tastaturbedienbar, ausreichender Kontrast, klare Sprache.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-xl bg-card border">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Wallet className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="font-bold mb-2">Keine Extra-Kosten</h3>
-                <p className="text-sm text-muted-foreground">
-                  Barrierefreiheit ist bei uns keine Option, sondern Standard.
-                  In allen Plänen inklusive — auch im kostenlosen Starter.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-xl bg-card border">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Shield className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="font-bold mb-2">DSGVO-konform</h3>
-                <p className="text-sm text-muted-foreground">
-                  Hosting in Deutschland, transparente Datenverarbeitung und
-                  automatische Löschfristen. Datenschutz ist bei uns Standard.
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -109,16 +91,15 @@ export default function HomePage() {
             Schließe dich modernen Schachvereinen an und bringe deine Verwaltung auf das nächste Level.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/signup">
-              <Button size="lg" className="h-14 px-8 text-lg font-bold">
-                Kostenlos starten
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/kontakt">
-              <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold">
-                Demo anfordern
-              </Button>
+            <Link
+              href="/auth/signup"
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "h-14 px-8 text-lg font-bold gap-2"
+              )}
+            >
+              Kostenlos starten
+              <ArrowRight className="h-5 w-5" aria-hidden="true" />
             </Link>
           </div>
         </div>

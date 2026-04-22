@@ -29,10 +29,33 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Refresh session if expired - gracefully handle invalid/missing sessions
+  let user = null
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (error) {
+      const isMissingSession =
+        error.code === 'refresh_token_not_found' ||
+        error.code === 'session_not_found' ||
+        error.message?.toLowerCase().includes('session missing')
+
+      if (!isMissingSession) {
+        console.error('Auth error in middleware:', error.message)
+      }
+    } else {
+      user = data.user
+    }
+  } catch (error: any) {
+    const isMissingSession =
+      error?.code === 'refresh_token_not_found' ||
+      error?.code === 'session_not_found' ||
+      error?.message?.toLowerCase().includes('session missing')
+
+    if (!isMissingSession) {
+      console.error('Unexpected auth error in middleware:', error)
+    }
+    user = null
+  }
 
   return { supabaseResponse, user }
 }

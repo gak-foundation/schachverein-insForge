@@ -75,10 +75,13 @@ export function MiniManager() {
           </div>
         </div>
         <button
+          type="button"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="lg:hidden p-1 hover:bg-slate-200 rounded"
+          className="lg:hidden p-1 hover:bg-slate-200 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          aria-label={isMobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
+          aria-expanded={isMobileMenuOpen}
         >
-          <Menu className="h-4 w-4" />
+          <Menu className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -106,12 +109,13 @@ export function MiniManager() {
             {navItems.map((item) => (
               <button
                 key={item.id}
+                type="button"
                 onClick={() => {
                   setActiveTab(item.id);
                   setIsMobileMenuOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all text-left",
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   activeTab === item.id
                     ? "bg-primary text-primary-foreground font-medium shadow-sm"
                     : "text-slate-600 hover:bg-slate-200"
@@ -139,16 +143,9 @@ export function MiniManager() {
         {/* Mobile Nav Overlay */}
         {isMobileMenuOpen && (
           <div
-            role="button"
-            tabIndex={-1}
-            aria-label="Menü schließen"
             className="fixed inset-0 bg-black/50 z-10 lg:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                setIsMobileMenuOpen(false);
-              }
-            }}
+            aria-hidden="true"
           />
         )}
 
@@ -170,12 +167,20 @@ export function MiniManager() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2 hover:bg-slate-100 rounded-lg relative">
-                <Bell className="h-4 w-4 text-slate-600" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full" />
+              <button
+                type="button"
+                className="p-2 hover:bg-slate-100 rounded-lg relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Benachrichtigungen"
+              >
+                <Bell className="h-4 w-4 text-slate-600" aria-hidden="true" />
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full" aria-hidden="true" />
               </button>
-              <button className="p-2 hover:bg-slate-100 rounded-lg">
-                <Settings className="h-4 w-4 text-slate-600" />
+              <button
+                type="button"
+                className="p-2 hover:bg-slate-100 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Einstellungen"
+              >
+                <Settings className="h-4 w-4 text-slate-600" aria-hidden="true" />
               </button>
             </div>
           </header>
@@ -231,9 +236,10 @@ function DashboardView() {
               {["Mitglied", "Turnier", "Mannschaft"].map((action) => (
                 <button
                   key={action}
-                  className="p-3 border rounded-lg hover:bg-slate-50 hover:border-primary/30 transition-all text-center group"
+                  type="button"
+                  className="p-3 border rounded-lg hover:bg-slate-50 hover:border-primary/30 transition-all text-center group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <Plus className="h-4 w-4 mx-auto mb-1 text-slate-400 group-hover:text-primary" />
+                  <Plus className="h-4 w-4 mx-auto mb-1 text-slate-400 group-hover:text-primary" aria-hidden="true" />
                   <span className="text-xs font-medium">{action}</span>
                 </button>
               ))}
@@ -244,7 +250,10 @@ function DashboardView() {
           <div className="bg-white border rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold">Nächste Kämpfe</h3>
-              <button className="text-xs text-primary font-medium hover:underline">
+              <button
+                type="button"
+                className="text-xs text-primary font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+              >
                 Alle anzeigen
               </button>
             </div>
@@ -334,15 +343,21 @@ function MembersView() {
       {/* Search & Filter */}
       <div className="flex gap-3">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" aria-hidden="true" />
+          <label htmlFor="member-search" className="sr-only">Mitglied suchen</label>
           <input
+            id="member-search"
             type="text"
             placeholder="Mitglied suchen..."
             className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
-        <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90">
-          <Plus className="h-4 w-4" />
+        <button
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          aria-label="Mitglied hinzufügen"
+          type="button"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -351,10 +366,10 @@ function MembersView() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Name</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">DWZ</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Rolle</th>
+              <th scope="col" className="px-4 py-3 text-left font-medium text-slate-600">Name</th>
+              <th scope="col" className="px-4 py-3 text-left font-medium text-slate-600">DWZ</th>
+              <th scope="col" className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
+              <th scope="col" className="px-4 py-3 text-left font-medium text-slate-600">Rolle</th>
             </tr>
           </thead>
           <tbody>
@@ -395,8 +410,11 @@ function TeamsView() {
   return (
     <div className="space-y-4">
       <div className="flex gap-3 mb-4">
-        <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
-          <Plus className="h-4 w-4 inline mr-2" />
+        <button
+          type="button"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <Plus className="h-4 w-4 inline mr-2" aria-hidden="true" />
           Neue Mannschaft
         </button>
       </div>
@@ -423,7 +441,12 @@ function TeamsView() {
                   <span className="font-medium">{team.points}</span> Punkte
                 </span>
               </div>
-              <button className="text-primary font-medium hover:underline">Details →</button>
+              <button
+                type="button"
+                className="text-primary font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+              >
+                Details →
+              </button>
             </div>
           </div>
         ))}
@@ -443,8 +466,11 @@ function TournamentsView() {
   return (
     <div className="space-y-4">
       <div className="flex gap-3 mb-4">
-        <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
-          <Plus className="h-4 w-4 inline mr-2" />
+        <button
+          type="button"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <Plus className="h-4 w-4 inline mr-2" aria-hidden="true" />
           Neues Turnier
         </button>
       </div>
@@ -550,7 +576,10 @@ function FinanceView() {
             <h3 className="font-bold text-indigo-900">SEPA-Export bereit</h3>
             <p className="text-xs text-indigo-700">12 Lastschriften für Mai 2025</p>
           </div>
-          <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+          <button
+            type="button"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             Exportieren
           </button>
         </div>
@@ -578,8 +607,11 @@ function CalendarView() {
   return (
     <div className="space-y-4">
       <div className="flex gap-3 mb-4">
-        <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
-          <Plus className="h-4 w-4 inline mr-2" />
+        <button
+          type="button"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <Plus className="h-4 w-4 inline mr-2" aria-hidden="true" />
           Termin anlegen
         </button>
       </div>
@@ -613,8 +645,20 @@ function CalendarView() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold">April 2025</h3>
           <div className="flex gap-1">
-            <button className="p-1 hover:bg-slate-100 rounded">←</button>
-            <button className="p-1 hover:bg-slate-100 rounded">→</button>
+            <button
+              type="button"
+              className="p-1 hover:bg-slate-100 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label="Vorheriger Monat"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              className="p-1 hover:bg-slate-100 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label="Nächster Monat"
+            >
+              →
+            </button>
           </div>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center text-xs">
@@ -625,18 +669,19 @@ function CalendarView() {
             const isToday = day === 21;
             const hasEvent = [21, 25, 27, 28].includes(day);
             return (
-              <div
+              <button
                 key={day}
+                type="button"
                 className={cn(
-                  "py-1.5 rounded relative cursor-pointer hover:bg-slate-50",
+                  "py-1.5 rounded relative hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                   isToday && "bg-primary text-primary-foreground font-bold hover:bg-primary/90"
                 )}
               >
                 {day}
                 {hasEvent && (
-                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 bg-amber-500 rounded-full" />
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 bg-amber-500 rounded-full" aria-hidden="true" />
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

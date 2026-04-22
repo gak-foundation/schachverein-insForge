@@ -45,13 +45,13 @@ export function ProblemSolutionSection() {
           </div>
           <div className="divide-y">
             {comparisons.map((item, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x transition-colors hover:bg-muted/30">
                 <div className="p-6 flex items-start gap-3 bg-muted/20">
-                  <X className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <X className="h-5 w-5 text-destructive shrink-0 mt-0.5" aria-hidden="true" />
                   <span className="text-muted-foreground italic">{item.problem}</span>
                 </div>
                 <div className="p-6 flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
                   <span className="font-medium">{item.solution}</span>
                 </div>
               </div>

@@ -10,9 +10,35 @@ import { eq } from "drizzle-orm";
 export const getSession = cache(async () => {
   try {
     const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (error || !user) {
+    let user = null;
+
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) {
+        const isMissingSession =
+          error.code === 'refresh_token_not_found' ||
+          error.code === 'session_not_found' ||
+          error.message?.toLowerCase().includes('session missing');
+
+        if (!isMissingSession) {
+          console.error("Auth error in getSession:", error.message);
+        }
+        return null;
+      }
+      user = data.user;
+    } catch (error: any) {
+      const isMissingSession =
+        error?.code === 'refresh_token_not_found' ||
+        error?.code === 'session_not_found' ||
+        error?.message?.toLowerCase().includes('session missing');
+
+      if (!isMissingSession) {
+        console.error("Unexpected auth error in getSession:", error);
+      }
+      return null;
+    }
+
+    if (!user) {
       return null;
     }
     

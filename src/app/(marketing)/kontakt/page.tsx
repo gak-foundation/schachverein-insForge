@@ -68,10 +68,6 @@ export default function ContactPage() {
             <h3 className="font-bold mb-4">Schnelle Antworten</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
               <p>
-                <span className="font-medium text-foreground">Demo-Anfragen:</span>{" "}
-                Innerhalb von 24 Stunden
-              </p>
-              <p>
                 <span className="font-medium text-foreground">Technischer Support:</span>{" "}
                 Innerhalb von 48 Stunden
               </p>

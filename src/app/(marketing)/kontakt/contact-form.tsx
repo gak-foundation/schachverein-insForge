@@ -23,14 +23,12 @@ export function ContactForm() {
 
   const defaultType = searchParams.get("type") as
     | "waitlist"
-    | "demo"
     | "contact"
     | "pilot"
     | null;
 
   const typeLabels: Record<string, string> = {
     waitlist: "Warteliste",
-    demo: "Demo anfordern",
     contact: "Allgemeine Anfrage",
     pilot: "Pilot-Programm",
   };
