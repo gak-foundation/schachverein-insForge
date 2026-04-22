@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getDashboardStats } from "@/lib/actions/audit";
+import { getCurrentClubId } from "@/lib/actions/utils";
 import {
   getUpcomingMatchesForAvailability,
   getMemberAvailability,
@@ -47,6 +48,11 @@ export default async function DashboardPage() {
   const permissions = (user?.permissions as string[]) ?? [];
 
   const isSuperAdmin = user?.isSuperAdmin ?? false;
+
+  const clubId = await getCurrentClubId();
+  if (!clubId) {
+    redirect("/onboarding");
+  }
 
   const [stats, availabilityMatches, memberAvailability] = await Promise.all([
     getDashboardStats(),

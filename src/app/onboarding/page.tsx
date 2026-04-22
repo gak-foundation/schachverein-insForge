@@ -64,8 +64,8 @@ export default async function OnboardingPage() {
             </h1>
             <p className="text-muted-foreground text-lg">
               {hasClubs
-                ? "Wählen Sie einen Verein aus oder erstellen Sie einen neuen"
-                : "Erstellen Sie Ihren ersten Verein, um zu beginnen"}
+                ? "Wählen Sie einen Verein aus"
+                : "In der Prototypenphase können Vereine nur durch den Systemadministrator erstellt werden"}
             </p>
           </div>
 

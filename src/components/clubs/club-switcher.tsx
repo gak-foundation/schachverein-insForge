@@ -16,16 +16,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreateClubForm } from "./create-club-form";
 
 interface ClubSwitcherProps {
   minimal?: boolean;
@@ -47,7 +39,6 @@ export function ClubSwitcher({ minimal = false }: ClubSwitcherProps) {
   const { activeClub, userClubs, switchClub, isLoading } = useClub();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   if (minimal) {
     return (
@@ -167,32 +158,6 @@ export function ClubSwitcher({ minimal = false }: ClubSwitcherProps) {
               <span>Vereinseinstellungen</span>
             </Link>
           </DropdownMenuItem>
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DropdownMenuItem
-              className="gap-3 py-2 cursor-pointer"
-              onSelect={(e) => {
-                e.preventDefault();
-                setCreateDialogOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4 shrink-0" />
-              <span>Neuen Verein erstellen</span>
-            </DropdownMenuItem>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Neuen Verein erstellen</DialogTitle>
-                <DialogDescription>
-                  Erstellen Sie einen neuen Verein. Sie können später Mitglieder einladen.
-                </DialogDescription>
-              </DialogHeader>
-              <CreateClubForm
-                onSuccess={() => {
-                  setCreateDialogOpen(false);
-                  setOpen(false);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

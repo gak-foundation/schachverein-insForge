@@ -26,6 +26,11 @@ import {
 
 export async function createClubAction(formData: FormData) {
   const session = await requireAuth();
+
+  if (!session.user.isSuperAdmin) {
+    throw new Error("Nicht autorisiert");
+  }
+
   const name = formData.get("name") as string;
   const contactEmail = formData.get("contactEmail") as string;
   const website = formData.get("website") as string;
@@ -83,6 +88,48 @@ export async function createClubAction(formData: FormData) {
   await updateUserActiveClub(session.user.id, club.id);
 
   revalidatePath("/dashboard");
+  return { success: true, club };
+}
+
+export async function createClubAsSuperAdminAction(formData: FormData) {
+  const session = await requireAuth();
+
+  if (!session.user.isSuperAdmin) {
+    throw new Error("Nicht autorisiert");
+  }
+
+  const name = formData.get("name") as string;
+  const contactEmail = formData.get("contactEmail") as string;
+  const website = formData.get("website") as string;
+  const street = formData.get("street") as string;
+  const zipCode = formData.get("zipCode") as string;
+  const city = formData.get("city") as string;
+  const country = (formData.get("country") as string) || "DE";
+
+  if (!name) {
+    throw new Error("Vereinsname ist erforderlich");
+  }
+
+  const slug = await generateUniqueSlug(name);
+
+  const address = street
+    ? {
+        street,
+        zipCode,
+        city,
+        country,
+      }
+    : undefined;
+
+  const club = await createClub({
+    name,
+    slug,
+    contactEmail,
+    website,
+    address,
+  });
+
+  revalidatePath("/super-admin");
   return { success: true, club };
 }
 

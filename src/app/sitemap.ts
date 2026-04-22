@@ -9,7 +9,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static marketing routes
   const routes = [
     "",
-    "/preise",
     "/demo",
     "/kontakt",
     "/impressum",

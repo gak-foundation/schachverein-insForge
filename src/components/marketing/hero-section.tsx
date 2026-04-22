@@ -24,8 +24,8 @@ export function HeroSection() {
           </h1>
 
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Barrierefrei nach BFSG umgesetzt. Bezahlbar für jeden Verein —
-            ab 9 € pro Monat. <strong>Jetzt als Pilotverein 100% sparen!</strong>
+            Barrierefrei nach BFSG umgesetzt. Für jeden Verein bezahlbar —
+            aktuell <strong>0 € im Pilotprojekt</strong>.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">

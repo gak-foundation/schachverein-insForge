@@ -15,6 +15,7 @@ import {
   Power,
   PowerOff,
   Mail,
+  Plus,
 } from "lucide-react";
 import {
   Table,
@@ -42,8 +43,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { impersonateClubAction, toggleClubStatusAction } from "@/lib/clubs/actions";
+import { impersonateClubAction, toggleClubStatusAction, createClubAsSuperAdminAction } from "@/lib/clubs/actions";
+import { CreateClubForm } from "@/components/clubs/create-club-form";
 import { toast } from "@/hooks/use-toast";
 
 interface Club {
@@ -104,6 +113,7 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
   const [isPending, startTransition] = useTransition();
   const [searchQuery, setSearchQuery] = useState("");
   const [impersonating, setImpersonating] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const filteredClubs = clubs.filter(
     (club) =>
@@ -224,16 +234,41 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
             <TabsTrigger value="clubs">Vereine ({clubs.length})</TabsTrigger>
             <TabsTrigger value="users">Benutzer ({users.length})</TabsTrigger>
           </TabsList>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Suchen..."
-              className="pl-9"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Suchen..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Verein erstellen
+            </Button>
           </div>
         </div>
+
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Neuen Verein erstellen</DialogTitle>
+              <DialogDescription>
+                Erstellen Sie einen neuen Verein als Systemadministrator.
+              </DialogDescription>
+            </DialogHeader>
+            <CreateClubForm
+              action={createClubAsSuperAdminAction}
+              onSuccess={() => {
+                setCreateDialogOpen(false);
+                router.refresh();
+                toast({ title: "Verein erstellt", description: "Der neue Verein wurde erfolgreich angelegt." });
+              }}
+            />
+          </DialogContent>
+        </Dialog>
 
         <TabsContent value="clubs" className="animate-in fade-in duration-300">
           <Card>

@@ -10,9 +10,10 @@ import { createClubAction } from "@/lib/clubs/actions";
 
 interface CreateClubFormProps {
   onSuccess?: () => void;
+  action?: (formData: FormData) => Promise<{ success: boolean }>;
 }
 
-export function CreateClubForm({ onSuccess }: CreateClubFormProps) {
+export function CreateClubForm({ onSuccess, action }: CreateClubFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,10 +40,12 @@ export function CreateClubForm({ onSuccess }: CreateClubFormProps) {
       if (formData.zipCode) data.append("zipCode", formData.zipCode);
       if (formData.city) data.append("city", formData.city);
 
-      await createClubAction(data);
+      await (action ?? createClubAction)(data);
 
       onSuccess?.();
-      router.push("/dashboard");
+      if (!action) {
+        router.push("/dashboard");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verein konnte nicht erstellt werden");
     } finally {

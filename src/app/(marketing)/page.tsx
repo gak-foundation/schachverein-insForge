@@ -4,7 +4,7 @@ import { ArrowRight, Shield, Zap, Wallet } from "lucide-react";
 import { HeroSection } from "@/components/marketing/hero-section";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { ProblemSolutionSection } from "@/components/marketing/problem-solution-section";
-import { PricingCards } from "@/components/marketing/pricing-cards";
+import { PilotProjectSection } from "@/components/marketing/pilot-project-section";
 import { FAQAccordion } from "@/components/marketing/faq-accordion";
 import { MiniManager } from "@/components/marketing/mini-manager";
 
@@ -35,17 +35,7 @@ export default function HomePage() {
 
       <ProblemSolutionSection />
 
-      <section className="py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4">Faire Preise für jeden Verein</h2>
-            <p className="text-muted-foreground">
-              Starte kostenlos und wachse mit uns. Keine versteckten Kosten.
-            </p>
-          </div>
-          <PricingCards />
-        </div>
-      </section>
+      <PilotProjectSection />
 
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
