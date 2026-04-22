@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, Calendar, Shield, Sparkles, Trophy, Users } from "lucide-react";
+import { redirectToDemo } from "@/lib/actions/demo";
 
 export const metadata: Metadata = {
   title: "Demo erkunden | schach.studio",
