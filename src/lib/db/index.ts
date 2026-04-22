@@ -2,7 +2,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-const connectionString = process.env.DATABASE_URL!;
+const connectionString = process.env.DATABASE_URL || "";
 
 // Determine if we are running in a serverless environment (like Vercel)
 // or a long-running process (like a background worker or local dev)
