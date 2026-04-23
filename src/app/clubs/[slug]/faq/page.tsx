@@ -63,53 +63,6 @@ export default function FAQPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="preise">
-                <AccordionTrigger className="text-left">
-                  Was kostet die Software?
-                </AccordionTrigger>
-                <AccordionContent>
-                  <p className="text-gray-600 leading-relaxed mb-4">
-                    Die Preisgestaltung orientiert sich an der Vereinsgröße:
-                  </p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-2 pr-4">Vereinsgröße</th>
-                          <th className="text-left py-2 pr-4">Monatlicher Preis</th>
-                          <th className="text-left py-2">Jahrespreis</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b">
-                          <td className="py-2 pr-4">Bis 50 Mitglieder</td>
-                          <td className="py-2 pr-4">29 €</td>
-                          <td className="py-2">290 € (2 Monate gratis)</td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="py-2 pr-4">51–150 Mitglieder</td>
-                          <td className="py-2 pr-4">49 €</td>
-                          <td className="py-2">490 € (2 Monate gratis)</td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="py-2 pr-4">151–300 Mitglieder</td>
-                          <td className="py-2 pr-4">79 €</td>
-                          <td className="py-2">790 € (2 Monate gratis)</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 pr-4">Über 300 Mitglieder</td>
-                          <td className="py-2 pr-4">Auf Anfrage</td>
-                          <td className="py-2">Auf Anfrage</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="text-gray-600 leading-relaxed mt-4">
-                    Alle Preise verstehen sich zzgl. MwSt. Eine 30-tägige kostenlose Testphase ist verfügbar.
-                  </p>
-                </AccordionContent>
-              </AccordionItem>
-
               <AccordionItem value="testversion">
                 <AccordionTrigger className="text-left">
                   Gibt es eine kostenlose Testversion?
@@ -697,12 +650,6 @@ export default function FAQPage() {
             Weiterführende Links
           </h3>
           <ul className="space-y-2">
-            <li>
-              <a href="/preise" className="text-primary hover:underline flex items-center gap-2">
-                <ArrowRight className="h-4 w-4" />
-                Preise
-              </a>
-            </li>
             <li>
               <a href="/kontakt" className="text-primary hover:underline flex items-center gap-2">
                 <ArrowRight className="h-4 w-4" />

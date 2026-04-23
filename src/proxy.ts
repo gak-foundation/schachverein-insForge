@@ -21,7 +21,6 @@ const publicRoutes = [
   "/kontakt",
   "/impressum",
   "/datenschutz",
-  "/preise",
   "/api/health",
   "/api/webhooks",
 ];

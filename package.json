@@ -46,6 +46,7 @@
     "@tiptap/pm": "^3.22.3",
     "@tiptap/react": "^3.22.3",
     "@tiptap/starter-kit": "^3.22.3",
+    "@vercel/analytics": "^2.0.1",
     "ai": "^6.0.168",
     "chess.js": "^1.4.0",
     "class-variance-authority": "^0.7.1",
