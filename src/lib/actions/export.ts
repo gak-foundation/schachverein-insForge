@@ -12,7 +12,7 @@ import {
   contributionRates,
   seasons
 } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { requireClubId } from "./utils";
 import { decrypt } from "@/lib/crypto";
 import { exportMembersToCSV } from "@/lib/csv/members";

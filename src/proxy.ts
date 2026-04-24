@@ -2,36 +2,59 @@ import { updateSession } from "@/lib/supabase/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Routes that don't require authentication
-const publicRoutes = [
-  "/",
-  "/auth/login",
-  "/auth/signup",
-  "/auth/forgot-password",
-  "/auth/reset-password",
-  "/auth/callback",
-  "/auth/error",
-  "/auth/verify-request",
-  "/auth/verify-email",
-  "/auth/invite",
-  "/vereinswebsite",
-  "/mannschaften",
-  "/turniere",
-  "/termine",
-  "/kontakt",
-  "/impressum",
-  "/datenschutz",
-  "/api/health",
-  "/api/webhooks",
+// =============================================================================
+// Route allow-lists
+// =============================================================================
+
+const appRoutes = [
+  "/dashboard",
+  "/auth",
+  "/onboarding",
+  "/super-admin",
 ];
 
-// Security headers for all responses
+const marketingRoutes = [
+  "/",
+  "/kontakt",
+  "/preise",
+  "/termine",
+  "/turniere",
+  "/mannschaften",
+  "/faq",
+  "/impressum",
+  "/datenschutz",
+  "/barrierefreiheit",
+  "/bewerbung",
+  "/coming-soon",
+  "/design-test",
+  "/clubs",
+];
+
+const sharedRoutes = [
+  "/api",
+  "/_next",
+  "/favicon.ico",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/manifest.json",
+  "/sw.js",
+  "/icons",
+];
+
+// =============================================================================
+// Security headers
+// =============================================================================
+
 const SECURITY_HEADERS = {
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
 };
+
+// =============================================================================
+// Helpers
+// =============================================================================
 
 function getHostname(request: NextRequest): string {
   const host = request.headers.get("host");
@@ -52,83 +75,123 @@ function isLocalhost(hostname: string): boolean {
   return hostname === "localhost";
 }
 
-export async function proxy(request: NextRequest) {
+function isSharedRoute(pathname: string): boolean {
+  if (sharedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
+    return true;
+  }
+  if (/\.(ico|png|jpg|jpeg|svg|gif|webp|css|js|woff|woff2|ttf|otf|eot)$/.test(pathname)) {
+    return true;
+  }
+  return false;
+}
+
+function isAppRoute(pathname: string): boolean {
+  return appRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function isMarketingRoute(pathname: string): boolean {
+  return marketingRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function getAppUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL ?? "https://app.schach.studio";
+}
+
+function getMarketingUrl(): string {
+  return process.env.NEXT_PUBLIC_MARKETING_URL ?? "https://schach.studio";
+}
+
+// =============================================================================
+// Middleware
+// =============================================================================
+
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = getHostname(request);
 
-  // Static assets are always public - skip processing
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/static") ||
-    pathname.startsWith("/favicon.ico") ||
-    pathname.startsWith("/sw.js") ||
-    pathname.startsWith("/manifest.json") ||
-    pathname.startsWith("/icons/") ||
-    pathname === "/sitemap.xml" ||
-    pathname === "/robots.txt" ||
-    pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff|woff2)$/)
-  ) {
-    return NextResponse.next();
-  }
+  const isShared = isSharedRoute(pathname);
 
-  // Host-based routing (skip for localhost to allow local development)
+  // ---------------------------------------------------------------------------
+  // Host-based routing (skip for localhost)
+  // ---------------------------------------------------------------------------
   if (!isLocalhost(hostname)) {
     if (isAppHost(hostname)) {
-      // On app.schach.studio: allow dashboard/*, redirect everything else to auth
-      if (!pathname.startsWith("/dashboard") && !pathname.startsWith("/auth")) {
-        if (pathname === "/") {
-          return NextResponse.redirect(new URL("/auth/login", request.url));
-        }
+      if (isShared) {
+        // pass through
+      } else if (pathname === "/") {
         return NextResponse.redirect(new URL("/auth/login", request.url));
+      } else if (isMarketingRoute(pathname)) {
+        return NextResponse.redirect(new URL(pathname, getMarketingUrl()));
+      } else if (!isAppRoute(pathname)) {
+        // Unknown route on app domain → treat as app route (allow + auth check)
       }
     } else if (isMarketingHost(hostname)) {
-      // On schach.studio: marketing routes are public, /dashboard redirects to app
-      if (pathname.startsWith("/dashboard")) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.schach.studio";
-        return NextResponse.redirect(new URL(pathname, appUrl));
+      if (isShared) {
+        // pass through
+      } else if (isAppRoute(pathname)) {
+        return NextResponse.redirect(new URL(pathname, getAppUrl()));
+      } else if (!isMarketingRoute(pathname)) {
+        // Unknown route on marketing domain → let it 404 naturally
       }
     }
   }
 
-  // Check if it's a public route
-  const isPublicRoute = publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
+  // ---------------------------------------------------------------------------
+  // Public route check (for auth guard)
+  // ---------------------------------------------------------------------------
+  const isPublicRoute =
+    isShared ||
+    isMarketingRoute(pathname) ||
+    pathname === "/auth/login" ||
+    pathname === "/auth/signup" ||
+    pathname === "/auth/forgot-password" ||
+    pathname === "/auth/reset-password" ||
+    pathname === "/auth/callback" ||
+    pathname === "/auth/error" ||
+    pathname === "/auth/verify-request" ||
+    pathname === "/auth/verify-email" ||
+    pathname === "/auth/invite" ||
+    pathname === "/api/health" ||
+    pathname === "/api/webhooks";
 
-  // Update session
+  // ---------------------------------------------------------------------------
+  // Update session via Supabase
+  // ---------------------------------------------------------------------------
   const { supabaseResponse, user } = await updateSession(request);
 
-  // If not authenticated and trying to access protected route, redirect to login
+  // ---------------------------------------------------------------------------
+  // Auth guards
+  // ---------------------------------------------------------------------------
   if (!user && !isPublicRoute) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // If authenticated and trying to access login page, redirect to dashboard
   if (user && (pathname === "/auth/login" || pathname === "/auth/signup")) {
     const next = request.nextUrl.searchParams.get("next") || "/dashboard";
     return NextResponse.redirect(new URL(next, request.url));
   }
 
-  // Apply security headers
+  // ---------------------------------------------------------------------------
+  // Security headers & CSP
+  // ---------------------------------------------------------------------------
   Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
     supabaseResponse.headers.set(key, value);
   });
 
-  // Add CSP header (non-blocking for development)
   const isDev = process.env.NODE_ENV === "development";
   const cspHeader = isDev
-    ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
-    : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    : "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
   supabaseResponse.headers.set("Content-Security-Policy", cspHeader);
 
   return supabaseResponse;
 }
 
-export const proxyConfig = {
+export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons/|sitemap.xml|robots.txt|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons/|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

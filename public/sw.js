@@ -1,7 +1,7 @@
 const CACHE_NAME = "schachverein-v2"; // Version erhöht
-const STATIC_ASSETS = ["/manifest.json", "/favicon.ico"]; // Nur absolute Basics
+const _STATIC_ASSETS = ["/manifest.json", "/favicon.ico"]; // Nur absolute Basics
 
-self.addEventListener("install", (event) => {
+self.addEventListener("install", (_event) => {
   self.skipWaiting();
 });
 

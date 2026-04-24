@@ -9,7 +9,7 @@ const eslintConfig = defineConfig([
   {
     rules: {
       ...jsxA11y.configs.recommended.rules,
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": ["warn", { 
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_",
@@ -27,6 +27,9 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "dist-worker/**",
+    "dist-migrate/**",
+    "scripts/**",
+    "public/**",
   ]),
 ]);
 

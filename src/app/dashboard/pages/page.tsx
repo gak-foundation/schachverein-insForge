@@ -4,7 +4,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getPages, type PageSortField, type SortOrder } from "@/lib/actions/cms";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+
 import {
   Card,
   CardContent,

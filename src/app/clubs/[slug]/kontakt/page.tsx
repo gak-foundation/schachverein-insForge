@@ -1,5 +1,5 @@
 import { Mail, MapPin, Phone, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";

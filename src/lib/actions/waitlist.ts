@@ -38,11 +38,6 @@ const waitlistSchema = {
   },
 };
 
-function generateUniqueSlug(baseSlug: string): string {
-  const timestamp = Date.now().toString(36);
-  return `${baseSlug}-${timestamp}`;
-}
-
 export async function submitWaitlistApplication(formData: FormData) {
   try {
     const clubName = formData.get("clubName") as string;
@@ -110,7 +105,7 @@ export async function submitWaitlistApplication(formData: FormData) {
       country: (formData.get("country") as string) || "Deutschland",
     };
 
-    const result = await db
+    await db
       .insert(waitlistApplications)
       .values({
         clubName,

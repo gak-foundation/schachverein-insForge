@@ -3,6 +3,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { ArrowRight, Shield, Zap, Sparkles, Rocket, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { APP_URL } from "@/lib/urls";
+
 export function HeroSection() {
   return (
     <section className="relative pt-16 pb-24 lg:pt-24 lg:pb-32 overflow-hidden">
@@ -33,16 +35,16 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <Link
-              href="/auth/signup"
+            <a
+              href={`${APP_URL}/auth/signup`}
               className={cn(
                 buttonVariants({ size: "lg" }),
-                "h-14 px-8 text-lg font-bold w-full sm:w-auto gap-2"
+                "h-14 px-8 text-lg font-bold w-full sm:w-auto gap-2 inline-flex items-center justify-center"
               )}
             >
               Kostenlos starten
               <ArrowRight className="h-5 w-5" aria-hidden="true" />
-            </Link>
+            </a>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">

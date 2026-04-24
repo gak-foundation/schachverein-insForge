@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { AnalysisBoard } from "@/components/training/analysis-board";
-import { Button } from "@/components/ui/button";
+
 
 export const metadata = {
   title: "Analysebrett",

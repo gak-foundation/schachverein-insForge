@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { ArrowRight, Shield, Zap, Wallet } from "lucide-react";
 import { HeroSection } from "@/components/marketing/hero-section";
@@ -91,16 +90,16 @@ export default function HomePage() {
             Schließe dich modernen Schachvereinen an und bringe deine Verwaltung auf das nächste Level.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/auth/signup"
+            <a
+              href={`${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.schach.studio"}/auth/signup`}
               className={cn(
                 buttonVariants({ size: "lg" }),
-                "h-14 px-8 text-lg font-bold gap-2"
+                "h-14 px-8 text-lg font-bold gap-2 inline-flex items-center justify-center"
               )}
             >
               Kostenlos starten
               <ArrowRight className="h-5 w-5" aria-hidden="true" />
-            </Link>
+            </a>
           </div>
         </div>
       </section>

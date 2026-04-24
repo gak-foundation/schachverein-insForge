@@ -23,7 +23,7 @@ export default function WaitlistPage() {
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
             <p>Bereits registriert?</p>
-            <a href="/auth/login" className="text-primary hover:underline">
+            <a href={`${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.schach.studio"}/auth/login`} className="text-primary hover:underline">
               Zum Login
             </a>
           </div>

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getAuthUserWithClub } from "@/lib/db/queries/auth";
 import { createClient } from "@/lib/supabase/server";
 

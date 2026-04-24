@@ -9,7 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 import { db } from "../src/lib/db";
 import { authUsers, members } from "../src/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
+
 
 /**
  * Script zum Erstellen oder Aktualisieren eines Super-Admins.

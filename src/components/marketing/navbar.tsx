@@ -6,6 +6,7 @@ import { Menu, X, LayoutDashboard, ArrowRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
+import { APP_URL } from "@/lib/urls";
 
 const navItems = [
   { label: "Features", href: "/#features" },
@@ -59,28 +60,28 @@ export function MarketingNavbar() {
             {!isPending && (
               <>
                 {session ? (
-                  <Link
-                    href="/dashboard"
+                  <a
+                    href={`${APP_URL}/dashboard`}
                     className={cn(buttonVariants({ variant: "default", size: "sm" }), "gap-2")}
                   >
                     <LayoutDashboard className="h-4 w-4" />
                     Zum Dashboard
-                  </Link>
+                  </a>
                 ) : (
                   <>
-                    <Link
-                      href="/auth/login"
+                    <a
+                      href={`${APP_URL}/auth/login`}
                       className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
                     >
                       Login
-                    </Link>
-                    <Link
-                      href="/auth/signup"
+                    </a>
+                    <a
+                      href={`${APP_URL}/auth/signup`}
                       className={cn(buttonVariants({ size: "sm" }), "gap-2")}
                     >
                       Jetzt starten
                       <ArrowRight className="h-4 w-4" />
-                    </Link>
+                    </a>
                   </>
                 )}
               </>
@@ -132,30 +133,27 @@ export function MarketingNavbar() {
             ))}
             <div className="px-4 pt-4 border-t mt-2 flex flex-col gap-2">
               {session ? (
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
+                <a
+                  href={`${APP_URL}/dashboard`}
                   className={cn(buttonVariants({ variant: "default" }), "w-full gap-2 justify-center")}
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Zum Dashboard
-                </Link>
+                </a>
               ) : (
                 <>
-                  <Link
-                    href="/auth/login"
-                    onClick={() => setMobileMenuOpen(false)}
+                  <a
+                    href={`${APP_URL}/auth/login`}
                     className={cn(buttonVariants({ variant: "outline" }), "w-full justify-center")}
                   >
                     Login
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    onClick={() => setMobileMenuOpen(false)}
+                  </a>
+                  <a
+                    href={`${APP_URL}/auth/signup`}
                     className={cn(buttonVariants({ variant: "default" }), "w-full justify-center")}
                   >
                     Jetzt starten
-                  </Link>
+                  </a>
                 </>
               )}
             </div>

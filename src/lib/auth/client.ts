@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient, getSupabaseClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 
 // Get the app base URL for auth redirects
