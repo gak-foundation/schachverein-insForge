@@ -1,0 +1,453 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "♔ schach.studio" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e8]: ♔
+          - generic [ref=e9]: schach.studio
+        - navigation [ref=e10]:
+          - link "Features" [ref=e11] [cursor=pointer]:
+            - /url: /#features
+          - link "Pilot-Programm" [ref=e12] [cursor=pointer]:
+            - /url: /bewerbung?type=pilot
+            - text: Pilot-Programm
+          - link "FAQ" [ref=e16] [cursor=pointer]:
+            - /url: /faq
+          - link "Kontakt" [ref=e17] [cursor=pointer]:
+            - /url: /kontakt
+        - generic [ref=e18]:
+          - link "Login" [ref=e19] [cursor=pointer]:
+            - /url: /auth/login
+          - link "Jetzt starten" [ref=e20] [cursor=pointer]:
+            - /url: /auth/signup
+            - text: Jetzt starten
+            - img
+    - main [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e28]:
+          - 'link "Pilot-Programm: 1 Jahr kostenlos" [ref=e29] [cursor=pointer]':
+            - /url: /bewerbung?type=pilot
+            - img [ref=e30]
+            - generic [ref=e32]: "Pilot-Programm: 1 Jahr kostenlos"
+            - img [ref=e33]
+          - heading "Die All-in-One-Schachvereinssoftware." [level=1] [ref=e35]
+          - paragraph [ref=e36]:
+            - text: Barrierefrei nach BFSG umgesetzt. Für jeden Verein bezahlbar — aktuell
+            - strong [ref=e37]: 0 € im Pilotprojekt
+            - text: .
+          - link "Kostenlos starten" [ref=e39] [cursor=pointer]:
+            - /url: /auth/signup
+            - text: Kostenlos starten
+            - img
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - img [ref=e44]
+              - generic [ref=e46]:
+                - heading "All-in-One" [level=3] [ref=e47]
+                - paragraph [ref=e48]: Mitglieder, Turniere, Finanzen und mehr — alles an einem Ort.
+            - generic [ref=e49]:
+              - img [ref=e52]
+              - generic [ref=e54]:
+                - heading "BFSG 2025" [level=3] [ref=e55]
+                - paragraph [ref=e56]: Barrierefrei nach WCAG 2.2 AA umgesetzt. Bereit für die BFSG.
+            - generic [ref=e57]:
+              - img [ref=e60]
+              - generic [ref=e63]:
+                - heading "Datenschutz" [level=3] [ref=e64]
+                - paragraph [ref=e65]: DSGVO-konform. Hosting in Deutschland, verschlüsselte Daten.
+            - generic [ref=e66]:
+              - img [ref=e69]
+              - generic [ref=e74]:
+                - heading "Pilot-Aktion" [level=3] [ref=e75]
+                - paragraph [ref=e76]: 1 Jahr kostenlos + lebenslang 50% Rabatt für Pilotvereine.
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - heading "Alles was dein Verein braucht" [level=2] [ref=e80]
+            - paragraph [ref=e81]: Entwickelt von Schachspielern für Schachvereine. Wir kennen eure Abläufe.
+          - generic [ref=e86]:
+            - generic [ref=e93]:
+              - generic [ref=e94]: 🔒
+              - text: schach.studio/dashboard
+            - generic [ref=e95]:
+              - complementary [ref=e96]:
+                - generic [ref=e98]:
+                  - generic [ref=e99]: ♔
+                  - generic [ref=e100]:
+                    - generic [ref=e101]: SC Beispiel
+                    - generic [ref=e102]: Vereins-Manager
+                - navigation [ref=e103]:
+                  - button "Dashboard" [ref=e104]:
+                    - img [ref=e105]
+                    - text: Dashboard
+                  - button "Mitglieder" [ref=e108]:
+                    - img [ref=e109]
+                    - text: Mitglieder
+                  - button "Mannschaften" [ref=e114]:
+                    - img [ref=e115]
+                    - text: Mannschaften
+                  - button "Turniere" [ref=e124]:
+                    - img [ref=e125]
+                    - text: Turniere
+                  - button "Finanzen" [ref=e131]:
+                    - img [ref=e132]
+                    - text: Finanzen
+                  - button "Kalender" [ref=e135]:
+                    - img [ref=e136]
+                    - text: Kalender
+                - generic [ref=e139]:
+                  - generic [ref=e140]: MV
+                  - generic [ref=e141]:
+                    - generic [ref=e142]: Max Vorstand
+                    - generic [ref=e143]: Vorsitzender
+              - main [ref=e144]:
+                - generic [ref=e145]:
+                  - generic [ref=e146]:
+                    - heading "Dashboard" [level=2] [ref=e147]
+                    - paragraph [ref=e148]: Übersicht deines Vereins
+                  - generic [ref=e149]:
+                    - button "Benachrichtigungen" [ref=e150]:
+                      - img [ref=e151]
+                    - button "Einstellungen" [ref=e155]:
+                      - img [ref=e156]
+                - generic [ref=e160]:
+                  - generic [ref=e161]:
+                    - generic [ref=e163] [cursor=pointer]:
+                      - generic [ref=e164]:
+                        - paragraph [ref=e165]: Mitglieder
+                        - paragraph [ref=e166]: "42"
+                      - img [ref=e168]
+                    - generic [ref=e174] [cursor=pointer]:
+                      - generic [ref=e175]:
+                        - paragraph [ref=e176]: Mannschaften
+                        - paragraph [ref=e177]: "3"
+                      - img [ref=e179]
+                    - generic [ref=e189] [cursor=pointer]:
+                      - generic [ref=e190]:
+                        - paragraph [ref=e191]: Aktive Turniere
+                        - paragraph [ref=e192]: "1"
+                      - img [ref=e194]
+                    - generic [ref=e201] [cursor=pointer]:
+                      - generic [ref=e202]:
+                        - paragraph [ref=e203]: Offene Beiträge
+                        - paragraph [ref=e204]: €2.450
+                      - img [ref=e206]
+                  - generic [ref=e209]:
+                    - generic [ref=e210]:
+                      - generic [ref=e211]:
+                        - heading "Schnellaktionen" [level=3] [ref=e212]:
+                          - img [ref=e213]
+                          - text: Schnellaktionen
+                        - generic [ref=e214]:
+                          - button "Mitglied" [ref=e215]:
+                            - img [ref=e216]
+                            - text: Mitglied
+                          - button "Turnier" [ref=e217]:
+                            - img [ref=e218]
+                            - text: Turnier
+                          - button "Mannschaft" [ref=e219]:
+                            - img [ref=e220]
+                            - text: Mannschaft
+                      - generic [ref=e221]:
+                        - generic [ref=e222]:
+                          - heading "Nächste Kämpfe" [level=3] [ref=e223]
+                          - button "Alle anzeigen" [ref=e224]
+                        - generic [ref=e225]:
+                          - generic [ref=e226]:
+                            - generic [ref=e227]:
+                              - generic [ref=e228]: APR
+                              - generic [ref=e229]: "24"
+                            - generic [ref=e230]:
+                              - paragraph [ref=e231]: SC Beispiel 1 vs SC Gegner
+                              - paragraph [ref=e232]:
+                                - img [ref=e233]
+                                - text: 14:00
+                                - generic [ref=e236]: •
+                                - img [ref=e237]
+                                - text: Vereinsheim
+                            - img [ref=e240]
+                          - generic [ref=e242]:
+                            - generic [ref=e243]:
+                              - generic [ref=e244]: APR
+                              - generic [ref=e245]: "28"
+                            - generic [ref=e246]:
+                              - paragraph [ref=e247]: SC Gast vs SC Beispiel 2
+                              - paragraph [ref=e248]:
+                                - img [ref=e249]
+                                - text: 15:00
+                                - generic [ref=e252]: •
+                                - img [ref=e253]
+                                - text: Auswärts
+                            - img [ref=e256]
+                    - generic [ref=e258]:
+                      - generic [ref=e259]:
+                        - generic [ref=e260]:
+                          - generic [ref=e261]:
+                            - img [ref=e262]
+                            - heading "Vereinsstärke" [level=3] [ref=e266]
+                          - paragraph [ref=e267]: "1.847"
+                          - paragraph [ref=e268]: Ø DWZ aller Spieler
+                        - img [ref=e269]
+                      - generic [ref=e271]:
+                        - generic [ref=e272]:
+                          - img [ref=e273]
+                          - heading "Aktivität" [level=3] [ref=e276]
+                        - paragraph [ref=e277]: "156"
+                        - paragraph [ref=e278]: Partien diesen Monat
+                        - generic [ref=e279]:
+                          - img [ref=e280]
+                          - generic [ref=e283]: +12% zum Vormonat
+                      - generic [ref=e284]:
+                        - heading "Nächster Termin" [level=3] [ref=e285]
+                        - paragraph [ref=e286]: Vereinsmeisterschaft Runde 3
+                        - paragraph [ref=e287]: Fr, 25. April • 19:00 Uhr
+          - generic [ref=e288]:
+            - generic [ref=e289]:
+              - img [ref=e292]
+              - heading "Mitgliederverwaltung" [level=3] [ref=e297]
+              - paragraph [ref=e298]: Mitglieder pflegen ihre Daten selbst. Inklusive DWZ-Integration, Familien-Verknüpfungen und automatischer Beitragsstufen.
+            - generic [ref=e299]:
+              - img [ref=e302]
+              - heading "Mannschafts-Planer" [level=3] [ref=e305]
+              - paragraph [ref=e306]: Strukturierte Verfügbarkeitsabfragen und Aufstellungsplanung per Drag & Drop für Mannschaftsführer.
+            - generic [ref=e307]:
+              - img [ref=e310]
+              - heading "Turniere & Live-Ticker" [level=3] [ref=e316]
+              - paragraph [ref=e317]: Schweizer System und Rundenturniere. Ergebnisse werden in Echtzeit auf der Vereins-Webseite veröffentlicht.
+            - generic [ref=e318]:
+              - img [ref=e321]
+              - heading "Finanzen & SEPA" [level=3] [ref=e324]
+              - paragraph [ref=e325]: Automatische Beitragsberechnung und SEPA-XML Export (pain.008). 3-stufiges Mahnwesen inklusive.
+            - generic [ref=e326]:
+              - img [ref=e329]
+              - heading "Protokoll-Generator" [level=3] [ref=e333]
+              - paragraph [ref=e334]: Revisionssichere Protokollierung von Mitgliederversammlungen und Vorstandssitzungen direkt im System.
+            - generic [ref=e335]:
+              - img [ref=e338]
+              - heading "E-Mail-Verteiler" [level=3] [ref=e341]
+              - paragraph [ref=e342]: DSGVO-konforme Kommunikation mit Zielgruppen-Filtern. Opt-in/Opt-out Management für Newsletter.
+            - generic [ref=e343]:
+              - img [ref=e346]
+              - heading "Mobile-First PWA" [level=3] [ref=e348]
+              - paragraph [ref=e349]: Mitglieder nutzen alle Funktionen bequem am Smartphone — keine Installation im App-Store nötig.
+            - generic [ref=e350]:
+              - img [ref=e353]
+              - heading "Vereins-Website" [level=3] [ref=e356]
+              - paragraph [ref=e357]: Vollautomatische Webseite mit Terminkalender, News und Mannschaftsseiten. SEO-optimiert.
+            - generic [ref=e358]:
+              - img [ref=e361]
+              - heading "Datenschutz (DSGVO)" [level=3] [ref=e363]
+              - paragraph [ref=e364]: Vollständiges Einwilligungsmanagement für Bilder und Daten. Hosting ausschließlich in Deutschland.
+            - generic [ref=e365]:
+              - img [ref=e368]
+              - heading "Sicherheit & Audit" [level=3] [ref=e371]
+              - paragraph [ref=e372]: AES-256 Verschlüsselung für IBANs, Rollen-basierte Rechte und lückenloses Audit-Logging.
+            - generic [ref=e373]:
+              - img [ref=e376]
+              - heading "DSB/DeWIS-Sync" [level=3] [ref=e379]
+              - paragraph [ref=e380]: Automatischer Abgleich mit der DeWIS-Datenbank und Exporte für offizielle Verbandsmeldungen.
+        - generic [ref=e382]:
+          - generic [ref=e383]:
+            - heading "Schluss mit der Zettelwirtschaft" [level=2] [ref=e384]
+            - paragraph [ref=e385]: Wir haben die typischen Schmerzpunkte der Vereinsverwaltung analysiert und moderne Lösungen geschaffen.
+          - generic [ref=e386]:
+            - generic [ref=e387]:
+              - generic [ref=e388]: Heute (Der Schmerz)
+              - generic [ref=e389]: Morgen (Die Lösung)
+            - generic [ref=e390]:
+              - generic [ref=e391]:
+                - generic [ref=e392]:
+                  - img [ref=e393]
+                  - generic [ref=e396]: Excel-Listen auf privaten Laptops
+                - generic [ref=e397]:
+                  - img [ref=e398]
+                  - generic [ref=e400]: Zentrale, cloudbasierte Mitgliederakte
+              - generic [ref=e401]:
+                - generic [ref=e402]:
+                  - img [ref=e403]
+                  - generic [ref=e406]: Manuelle SEPA-Eingabe bei der Bank
+                - generic [ref=e407]:
+                  - img [ref=e408]
+                  - generic [ref=e410]: Automatischer Export (pain.008 XML)
+              - generic [ref=e411]:
+                - generic [ref=e412]:
+                  - img [ref=e413]
+                  - generic [ref=e416]: Ergebnisse erst Tage später online
+                - generic [ref=e417]:
+                  - img [ref=e418]
+                  - generic [ref=e420]: Live-Turnierkarten mit Echtzeit-Tabelle
+              - generic [ref=e421]:
+                - generic [ref=e422]:
+                  - img [ref=e423]
+                  - generic [ref=e426]: WhatsApp-Chaos bei Aufstellungen
+                - generic [ref=e427]:
+                  - img [ref=e428]
+                  - generic [ref=e430]: Strukturierte Verfügbarkeitsabfragen
+              - generic [ref=e431]:
+                - generic [ref=e432]:
+                  - img [ref=e433]
+                  - generic [ref=e436]: Ungewissheit bei Bildrechten
+                - generic [ref=e437]:
+                  - img [ref=e438]
+                  - generic [ref=e440]: Versioniertes Consent-Management
+          - generic [ref=e441]:
+            - paragraph [ref=e442]: „schach.studio spart uns ca. 4 Stunden Verwaltungsarbeit pro Woche.“
+            - paragraph [ref=e443]: — Beispiel-Vorstand, SC Musterstadt
+        - generic [ref=e446]:
+          - generic [ref=e447]:
+            - generic [ref=e448]:
+              - img [ref=e449]
+              - generic [ref=e451]: Pilotprojekt
+            - 'heading "Aktuell: 0 € für Pilotvereine" [level=2] [ref=e452]'
+            - paragraph [ref=e453]: Wir suchen die ersten 5 Vereine, die mit uns gemeinsam schach.studio aufbauen. Als Dankeschön gibt es das volle Paket ein Jahr komplett kostenlos — und danach lebenslang 50 % Rabatt.
+          - generic [ref=e454]:
+            - generic [ref=e455]:
+              - generic [ref=e456]:
+                - generic [ref=e457]: 0 €
+                - generic [ref=e458]: / Monat
+              - paragraph [ref=e459]: Im Pilotprojekt sind alle Funktionen enthalten — ohne Einschränkungen.
+              - list [ref=e460]:
+                - listitem [ref=e461]:
+                  - img [ref=e462]
+                  - generic [ref=e464]: Unbegrenzte Mitglieder
+                - listitem [ref=e465]:
+                  - img [ref=e466]
+                  - generic [ref=e468]: Turnier-Manager & Paarungen
+                - listitem [ref=e469]:
+                  - img [ref=e470]
+                  - generic [ref=e472]: Finanzmodul & Beiträge
+                - listitem [ref=e473]:
+                  - img [ref=e474]
+                  - generic [ref=e476]: Vereins-Website
+                - listitem [ref=e477]:
+                  - img [ref=e478]
+                  - generic [ref=e480]: Prioritäts-Support
+                - listitem [ref=e481]:
+                  - img [ref=e482]
+                  - generic [ref=e484]: Lebenslang 50 % Rabatt nach dem Pilotjahr
+              - link "Jetzt als Pilotverein bewerben" [ref=e485] [cursor=pointer]:
+                - /url: /bewerbung?type=pilot
+                - img
+                - text: Jetzt als Pilotverein bewerben
+              - paragraph [ref=e486]: Nur noch wenige Plätze verfügbar
+            - generic [ref=e487]:
+              - generic [ref=e488]:
+                - heading "Was ist das Pilotprojekt?" [level=3] [ref=e489]
+                - paragraph [ref=e490]: Gemeinsam mit dir entwickeln wir die ideale Software für deinen Verein. Du bekommst frühzeitig Zugang zu allen Funktionen und hilfst uns, das Produkt noch besser zu machen.
+              - generic [ref=e491]:
+                - heading "Was kostet es nach dem Pilotjahr?" [level=3] [ref=e492]
+                - paragraph [ref=e493]: Nach dem kostenlosen Jahr kannst du mit lebenslang 50 % Rabatt weitermachen. Die regulären Preise werden später bekannt gegeben — Pilotvereine bleiben auf jeden Fall die Günstigsten.
+              - generic [ref=e494]:
+                - heading "Wie kann ich mich bewerben?" [level=3] [ref=e495]
+                - paragraph [ref=e496]: Fülle einfach das Bewerbungsformular aus. Wir prüfen deine Anmeldung und melden uns innerhalb von 48 Stunden bei dir.
+                - link "Zur Bewerbung" [ref=e497] [cursor=pointer]:
+                  - /url: /bewerbung?type=pilot
+                  - text: Zur Bewerbung
+                  - img [ref=e498]
+        - generic [ref=e502]:
+          - generic [ref=e503]:
+            - generic [ref=e504]:
+              - img [ref=e505]
+              - generic [ref=e507]: Barrierefreiheit
+            - heading "Bereit für die BFSG" [level=2] [ref=e508]
+            - paragraph [ref=e509]: Das Barrierefreiheitsstärkungsgesetz (BFSG) verpflichtet Vereine ab einer bestimmten Größe, digitale Angebote barrierefrei zugänglich zu machen. Wir haben das schon für Sie erledigt.
+          - generic [ref=e510]:
+            - generic [ref=e511]:
+              - img [ref=e513]
+              - heading "WCAG 2.2 AA" [level=3] [ref=e515]
+              - paragraph [ref=e516]: Vollständig umgesetzt nach den Web Content Accessibility Guidelines. Tastaturbedienbar, ausreichender Kontrast, klare Sprache.
+            - generic [ref=e517]:
+              - img [ref=e519]
+              - heading "Keine Extra-Kosten" [level=3] [ref=e522]
+              - paragraph [ref=e523]: Barrierefreiheit ist bei uns keine Option, sondern Standard. In allen Plänen inklusive — auch im kostenlosen Starter.
+            - generic [ref=e524]:
+              - img [ref=e526]
+              - heading "DSGVO-konform" [level=3] [ref=e528]
+              - paragraph [ref=e529]: Hosting in Deutschland, transparente Datenverarbeitung und automatische Löschfristen. Datenschutz ist bei uns Standard.
+        - generic [ref=e531]:
+          - generic [ref=e532]:
+            - heading "Häufig gestellte Fragen" [level=2] [ref=e533]
+            - paragraph [ref=e534]: Antworten auf die wichtigsten Fragen zu schach.studio.
+          - generic [ref=e535]:
+            - heading "Was bedeutet barrierefrei nach WCAG 2.2 AA umgesetzt?" [level=3] [ref=e537]:
+              - button "Was bedeutet barrierefrei nach WCAG 2.2 AA umgesetzt?" [ref=e538]:
+                - text: Was bedeutet barrierefrei nach WCAG 2.2 AA umgesetzt?
+                - img [ref=e539]
+            - heading "Wie funktioniert das Preismodell?" [level=3] [ref=e542]:
+              - button "Wie funktioniert das Preismodell?" [ref=e543]:
+                - text: Wie funktioniert das Preismodell?
+                - img [ref=e544]
+            - heading "Kann ich meine bestehenden Daten importieren?" [level=3] [ref=e547]:
+              - button "Kann ich meine bestehenden Daten importieren?" [ref=e548]:
+                - text: Kann ich meine bestehenden Daten importieren?
+                - img [ref=e549]
+            - heading "Wo werden meine Daten gespeichert?" [level=3] [ref=e552]:
+              - button "Wo werden meine Daten gespeichert?" [ref=e553]:
+                - text: Wo werden meine Daten gespeichert?
+                - img [ref=e554]
+            - heading "Wie sicher ist die Software?" [level=3] [ref=e557]:
+              - button "Wie sicher ist die Software?" [ref=e558]:
+                - text: Wie sicher ist die Software?
+                - img [ref=e559]
+            - heading "Benötigen meine Mitglieder eine App?" [level=3] [ref=e562]:
+              - button "Benötigen meine Mitglieder eine App?" [ref=e563]:
+                - text: Benötigen meine Mitglieder eine App?
+                - img [ref=e564]
+            - heading "Wie lange dauert die Einrichtung?" [level=3] [ref=e567]:
+              - button "Wie lange dauert die Einrichtung?" [ref=e568]:
+                - text: Wie lange dauert die Einrichtung?
+                - img [ref=e569]
+            - heading "Gibt es einen Support?" [level=3] [ref=e572]:
+              - button "Gibt es einen Support?" [ref=e573]:
+                - text: Gibt es einen Support?
+                - img [ref=e574]
+        - generic [ref=e577]:
+          - heading "Bereit für den ersten Zug?" [level=2] [ref=e578]
+          - paragraph [ref=e579]: Schließe dich modernen Schachvereinen an und bringe deine Verwaltung auf das nächste Level.
+          - link "Kostenlos starten" [ref=e581] [cursor=pointer]:
+            - /url: /auth/signup
+            - text: Kostenlos starten
+            - img
+    - contentinfo [ref=e582]:
+      - generic [ref=e583]:
+        - generic [ref=e584]:
+          - generic [ref=e585]:
+            - link "♔ schach.studio" [ref=e586] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e588]: ♔
+              - generic [ref=e589]: schach.studio
+            - paragraph [ref=e590]: Die moderne Plattform für die Verwaltung und Organisation von Schachvereinen in Deutschland.
+          - generic [ref=e591]:
+            - heading "Produkt" [level=3] [ref=e592]
+            - list [ref=e593]:
+              - listitem [ref=e594]:
+                - link "Features" [ref=e595] [cursor=pointer]:
+                  - /url: /
+              - listitem [ref=e596]:
+                - link "Pilot-Programm" [ref=e597] [cursor=pointer]:
+                  - /url: /bewerbung?type=pilot
+          - generic [ref=e598]:
+            - heading "Rechtliches" [level=3] [ref=e599]
+            - list [ref=e600]:
+              - listitem [ref=e601]:
+                - link "Impressum" [ref=e602] [cursor=pointer]:
+                  - /url: /impressum
+              - listitem [ref=e603]:
+                - link "Datenschutz" [ref=e604] [cursor=pointer]:
+                  - /url: /datenschutz
+              - listitem [ref=e605]:
+                - link "Barrierefreiheit" [ref=e606] [cursor=pointer]:
+                  - /url: /barrierefreiheit
+          - generic [ref=e607]:
+            - heading "Support" [level=3] [ref=e608]
+            - list [ref=e609]:
+              - listitem [ref=e610]:
+                - link "Kontakt" [ref=e611] [cursor=pointer]:
+                  - /url: /kontakt
+              - listitem [ref=e612]:
+                - link "Hilfebereich" [ref=e613] [cursor=pointer]:
+                  - /url: /hilfe
+        - paragraph [ref=e615]: © 2026 schach.studio. Alle Rechte vorbehalten.
+  - button "Open Next.js Dev Tools" [ref=e621] [cursor=pointer]:
+    - img [ref=e622]
+  - alert [ref=e625]
