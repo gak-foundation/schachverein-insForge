@@ -8,6 +8,7 @@ import { getSession } from "@/lib/auth/session";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { requireClubId } from "./utils";
 import { pageSchema } from "@/lib/validations/cms";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 import { z } from "zod";
 
@@ -165,13 +166,34 @@ export async function deletePage(id: string) {
   revalidatePath("/dashboard/pages");
 }
 
+function sanitizeBlockData(block: any): any {
+  if (!block || typeof block !== "object") return block;
+
+  const sanitized = { ...block };
+
+  // HTML-Inhalt in Textblöcken sanitisisieren
+  if (sanitized.contentHtml && typeof sanitized.contentHtml === "string") {
+    sanitized.contentHtml = sanitizeHtml(sanitized.contentHtml);
+  }
+
+  // Auch content-String sanitisisieren falls es HTML enthält
+  if (sanitized.content && typeof sanitized.content === "string" && sanitized.content.includes("<")) {
+    sanitized.content = sanitizeHtml(sanitized.content);
+  }
+
+  return sanitized;
+}
+
 export async function savePageBlocks(pageId: string, blocksData: any[]) {
   const clubId = await requireClubId();
   const session = await getSession();
-  
+
   if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
     throw new Error("Keine Berechtigung");
   }
+
+  // Blöcke vor dem Speichern sanitisisieren
+  const sanitizedBlocks = blocksData.map((b) => sanitizeBlockData(b));
 
   // In einer Transaktion: alte Blöcke löschen, neue einfügen
   await db.transaction(async (tx) => {
@@ -186,9 +208,9 @@ export async function savePageBlocks(pageId: string, blocksData: any[]) {
     await tx.delete(pageBlocks).where(eq(pageBlocks.pageId, pageId));
 
     // Neue Blöcke einfügen
-    if (blocksData.length > 0) {
+    if (sanitizedBlocks.length > 0) {
       await tx.insert(pageBlocks).values(
-        blocksData.map((b, index) => ({
+        sanitizedBlocks.map((b, index) => ({
           pageId,
           blockType: b.type,
           order: index * 10,

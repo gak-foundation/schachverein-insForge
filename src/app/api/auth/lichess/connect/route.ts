@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { generateCodeVerifier, generateCodeChallenge } from "@/lib/auth/lichess";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
+  // Nur angemeldete Benutzer dürfen Lichess verbinden
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    return NextResponse.json(
+      { error: "Nicht autorisiert. Bitte melden Sie sich an." },
+      { status: 401 }
+    );
+  }
+
   const clientId = process.env.LICHESS_CLIENT_ID;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const redirectUri = `${appUrl}/api/auth/lichess/callback`;
@@ -17,16 +29,16 @@ export async function GET() {
   const state = Math.random().toString(36).substring(7);
 
   const cookieStore = await cookies();
-  
+
   // Store verifier and state in cookies
-  cookieStore.set("lichess_oauth_verifier", verifier, { 
+  cookieStore.set("lichess_oauth_verifier", verifier, {
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
     maxAge: 600, // 10 minutes
     path: "/",
   });
-  
-  cookieStore.set("lichess_oauth_state", state, { 
+
+  cookieStore.set("lichess_oauth_state", state, {
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
     maxAge: 600,

@@ -2,15 +2,46 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-const connectionString = process.env.DATABASE_URL || "";
+const rawConnectionString = process.env.DATABASE_URL || "";
 
-// Determine if we are running in a serverless environment (like Vercel)
-// or a long-running process (like a background worker or local dev)
+// RLS via Supavisor Transaction Pooler (Port 6543) requires a JWT claim context.
+// Without a Supabase PostgREST/Auth proxy, direct queries via port 6543
+// evaluate RLS policies with an empty identity, blocking access.
+// Fix: rewrite the Pooler URL to the direct Postgres port (5432)
+// so the 'postgres' role bypasses RLS naturally.
+function getDirectUrl(url: string): string {
+  if (typeof url !== "string" || !url) {
+    return url;
+  }
+
+  // Only rewrite Supabase Pooler transaction port URLs
+  if (!url.includes(".pooler.supabase.com:6543")) {
+    return url;
+  }
+
+  try {
+    const urlObj = new URL(url);
+    const userParts = urlObj.username.split(".");
+    if (userParts.length !== 2 || userParts[0] !== "postgres") {
+      return url;
+    }
+    const projectRef = userParts[1];
+
+    urlObj.username = "postgres";
+    urlObj.hostname = `db.${projectRef}.supabase.co`;
+    urlObj.port = "5432";
+
+    return urlObj.toString();
+  } catch {
+    return url;
+  }
+}
+
+const connectionString = getDirectUrl(rawConnectionString);
+
 const isServerless = !!process.env.VERCEL || !!process.env.NEXT_PUBLIC_VERCEL_ENV;
-const isSupabasePooler = connectionString.includes("pooler.supabase.com");
+const isSupabasePooler = rawConnectionString.includes("pooler.supabase.com");
 
-// In serverless environments with a connection pooler, keep connections per instance low
-// as the pooler handles the actual connection multiplexing to the database.
 const client = postgres(connectionString, {
   max: isServerless && isSupabasePooler ? 1 : 10,
   idle_timeout: 20,

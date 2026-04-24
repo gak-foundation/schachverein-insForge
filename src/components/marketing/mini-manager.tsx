@@ -85,12 +85,14 @@ export function MiniManager() {
         </button>
       </div>
 
-      <div className="flex min-h-[480px]">
+      <div className="relative flex min-h-[480px]">
         {/* Sidebar */}
         <aside
           className={cn(
-            "w-56 bg-slate-50 border-r flex-col hidden lg:flex",
-            isMobileMenuOpen && "flex absolute inset-0 z-20 bg-slate-50"
+            "w-56 bg-slate-50 border-r flex-col",
+            isMobileMenuOpen
+              ? "flex absolute inset-y-0 left-0 z-20 bg-slate-50 shadow-2xl"
+              : "hidden lg:flex"
           )}
         >
           <div className="p-4 border-b">
@@ -143,7 +145,7 @@ export function MiniManager() {
         {/* Mobile Nav Overlay */}
         {isMobileMenuOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-10 lg:hidden"
+            className="absolute inset-0 bg-black/50 z-10 lg:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-hidden="true"
           />
