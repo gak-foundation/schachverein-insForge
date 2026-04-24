@@ -101,6 +101,22 @@ function getMarketingUrl(): string {
   return process.env.NEXT_PUBLIC_MARKETING_URL ?? "https://schach.studio";
 }
 
+function sanitizeNext(next: string | null): string {
+  if (!next) return "/dashboard";
+  if (!next.startsWith("/")) return "/dashboard";
+  if (next.startsWith("//")) return "/dashboard";
+  if (next.length > 512) return "/dashboard";
+  return next;
+}
+
+function redirectWithCookies(url: string | URL, sourceResponse: NextResponse): NextResponse {
+  const redirectResponse = NextResponse.redirect(url);
+  sourceResponse.headers.getSetCookie().forEach((cookie) => {
+    redirectResponse.headers.append("Set-Cookie", cookie);
+  });
+  return redirectResponse;
+}
+
 // =============================================================================
 // Middleware
 // =============================================================================
@@ -151,6 +167,7 @@ export default async function proxy(request: NextRequest) {
     pathname === "/auth/verify-request" ||
     pathname === "/auth/verify-email" ||
     pathname === "/auth/invite" ||
+    pathname === "/auth/invitation" ||
     pathname === "/api/health" ||
     pathname === "/api/webhooks";
 
@@ -165,12 +182,12 @@ export default async function proxy(request: NextRequest) {
   if (!user && !isPublicRoute) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    return redirectWithCookies(loginUrl, supabaseResponse);
   }
 
   if (user && (pathname === "/auth/login" || pathname === "/auth/signup")) {
-    const next = request.nextUrl.searchParams.get("next") || "/dashboard";
-    return NextResponse.redirect(new URL(next, request.url));
+    const next = sanitizeNext(request.nextUrl.searchParams.get("next"));
+    return redirectWithCookies(new URL(next, request.url), supabaseResponse);
   }
 
   // ---------------------------------------------------------------------------
