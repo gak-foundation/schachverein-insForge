@@ -1,9 +1,9 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { GDPRPortal } from "@/components/auth/gdpr-portal";
-import { LichessConnect } from "@/components/auth/lichess-connect";
+import { GDPRPortal } from "@/features/auth/components/gdpr-portal";
+import { LichessConnect } from "@/features/auth/components/lichess-connect";
 import { getHeritageGame } from "@/lib/actions/heritage";
-import { getMemberById } from "@/lib/actions/members";
+import { getMemberById } from "@/features/members/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
 

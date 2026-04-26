@@ -3,7 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getPageById } from "@/lib/actions/cms";
-import { EditorShell } from "@/components/cms/editor/editor-shell";
+import { EditorShell } from "@/features/cms/components/editor/editor-shell";
 
 export const metadata = {
   title: "Seite bearbeiten",

@@ -1,12 +1,12 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { getDashboardStats } from "@/lib/actions/audit";
+import { getDashboardStats } from "@/features/audit/actions";
 import { getCurrentClubId } from "@/lib/actions/utils";
 import {
   getUpcomingMatchesForAvailability,
   getMemberAvailability,
-} from "@/lib/actions/availability";
-import { AvailabilityForm } from "@/components/teams/availability-form";
+} from "@/features/teams/availability-actions";
+import { AvailabilityForm } from "@/features/teams/components/availability-form";
 import {
   Card,
   CardContent,

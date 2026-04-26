@@ -2,9 +2,9 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getTournamentById, getTournamentParticipants, addTournamentParticipantForm, removeTournamentParticipantForm } from "@/lib/actions/tournaments";
-import { getGames } from "@/lib/actions/games";
-import { getMembersForForms, getMemberById } from "@/lib/actions/members";
+import { getTournamentById, getTournamentParticipants, addTournamentParticipantForm, removeTournamentParticipantForm } from "@/features/tournaments/actions";
+import { getGames } from "@/features/tournaments/games-actions";
+import { getMembersForForms, getMemberById } from "@/features/members/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,12 +29,11 @@ import {
   TrendingUp,
   ChevronLeft,
 } from "lucide-react";
-import { TRFImportDialog } from "@/components/tournaments/trf-import-dialog";
-import { TRFExportButton } from "@/components/tournaments/trf-export-button";
-
-import { GameResultDialog } from "@/components/tournaments/game-result-dialog";
-import { GenerateRoundsDialog } from "@/components/tournaments/generate-rounds-dialog";
-import { CrossTableDialog } from "@/components/tournaments/cross-table-dialog";
+import { TRFImportDialog } from "@/features/tournaments/components/trf-import-dialog";
+import { TRFExportButton } from "@/features/tournaments/components/trf-export-button";
+import { GameResultDialog } from "@/features/tournaments/components/game-result-dialog";
+import { GenerateRoundsDialog } from "@/features/tournaments/components/generate-rounds-dialog";
+import { CrossTableDialog } from "@/features/tournaments/components/cross-table-dialog";
 import { generateCrossTable } from "@/lib/pairings/round-robin";
 
 const typeLabels: Record<string, string> = {

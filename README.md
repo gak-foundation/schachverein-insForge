@@ -1,8 +1,17 @@
-# schach.studio
+# schach.studio: Der digitale Heimathafen für Ihren Schachverein
 
-Eine ganzheitliche, digitale SaaS-Plattform für Schachvereine. Vereint Mitgliederverwaltung, Finanzwesen, Turnierleitung, Mannschaftsbetrieb und Trainings-Tools in einem sicheren, modernen System.
+**Die einzige All-in-One Plattform für Schachvereine, bei der die interne Verwaltung automatisch Ihre öffentliche Website befüllt.**
 
-## Features
+schach.studio vereint Mitgliederverwaltung, Finanzwesen, Turnierleitung, Mannschaftsbetrieb und Trainingstools in einem modernen System. Der entscheidende Vorteil: Jede Aktion in der Verwaltung (Turniererstellung, Ergebniseingabe, Terminplanung) wird in Echtzeit auf Ihrer öffentlichen Vereins-Website sichtbar — ohne Doppeltpflege, ohne WordPress-Chaos.
+
+## 🚀 Kern-USP: Single Source of Truth
+
+- **Keine Doppeltpflege:** Ergebnisse und Tabellen fließen automatisch aus der Verwaltung auf die Website.
+- **Radikale Zeitersparnis:** Vorstände sparen bis zu 80% ihrer Administrationszeit durch Automatisierung.
+- **Sportliche Exzellenz:** Tiefenintegration von Lichess, DWZ-Daten und TRF-Exporten.
+- **Rechtssicherheit:** Vollständig DSGVO-konform (Hosting in DE) und bereit für das Barrierefreiheitsstärkungsgesetz (BFSG 2025).
+
+## ✨ Features
 
 - ♟️ **Turnierverwaltung** (Schweizer System via bbpPairings, echte DeWIS-Synchronisation, TRF-Export)
 - 💶 **Finanzwesen** (Verschlüsselte SEPA-Daten, Beitragsberechnung)

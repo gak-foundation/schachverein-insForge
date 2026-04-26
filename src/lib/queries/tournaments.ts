@@ -7,7 +7,7 @@ import {
   deleteTournament,
   getTournamentParticipants,
   getTournamentGames,
-} from "@/lib/actions/tournaments";
+} from "@/features/tournaments/actions";
 
 // Query Keys
 export const tournamentKeys = {

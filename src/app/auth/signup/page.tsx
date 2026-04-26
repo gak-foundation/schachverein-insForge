@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { AuthLayout } from "@/components/auth/auth-layout";
-import { AuthCard } from "@/components/auth/auth-card";
-import { AuthHeader } from "@/components/auth/auth-header";
-import { SocialButtons } from "@/components/auth/social-buttons";
-import { ErrorMessage } from "@/components/auth/error-message";
+import { AuthLayout } from "@/features/auth/components/auth-layout";
+import { AuthCard } from "@/features/auth/components/auth-card";
+import { AuthHeader } from "@/features/auth/components/auth-header";
+import { SocialButtons } from "@/features/auth/components/social-buttons";
+import { ErrorMessage } from "@/features/auth/components/error-message";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function SignupPage() {
     strengthCount <= 3 ? "bg-amber-500" : 
     "bg-green-500";
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -47,15 +47,46 @@ export default function SignupPage() {
     const password = formData.get("password") as string;
     const name = formData.get("name") as string;
 
+    // Extract subdomain slug for tenant binding
+    const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "schach.studio";
+    let slug = "";
+    if (hostname.endsWith(`.${rootDomain}`)) {
+      const parts = hostname.split(".");
+      if (parts.length > rootDomain.split(".").length) {
+        slug = parts.slice(0, -rootDomain.split(".").length).join(".");
+      }
+    }
+
     try {
-      const { error } = await authClient.signUp.email({
+      const { data, error } = await authClient.signUp.email({
         email,
         password,
         name,
+        slug,
       });
 
       if (error) {
         setError(error.message || "Ein Fehler ist aufgetreten");
+      } else if (data?.user) {
+        // Bind user to tenant immediately after Supabase signup
+        if (slug) {
+          try {
+            await fetch("/api/auth/bind-tenant", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId: data.user.id,
+                email,
+                name,
+                slug,
+              }),
+            });
+          } catch (bindError: any) {
+            console.error("Tenant binding error:", bindError?.message);
+          }
+        }
+        router.push("/auth/verify-email");
       } else {
         router.push("/auth/verify-email");
       }

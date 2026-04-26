@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { createEvent } from "@/lib/actions/events";
-import EventForm from "@/components/calendar/EventForm";
+import { createEvent } from "@/features/calendar/actions";
+import EventForm from "@/features/calendar/components/EventForm";
 
 export const metadata = {
   title: "Neues Event",

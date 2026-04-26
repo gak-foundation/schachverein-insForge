@@ -18,6 +18,8 @@ export const members = pgTable(
   "members",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    clubId: uuid("club_id")
+      .references(() => clubs.id, { onDelete: "cascade" }),
     firstName: varchar("first_name", { length: 100 }).notNull(),
     lastName: varchar("last_name", { length: 100 }).notNull(),
     email: varchar("email", { length: 255 }).notNull(),
@@ -71,6 +73,7 @@ export const members = pgTable(
     emailIdx: index("members_email_idx").on(table.email),
     dwzIdIdx: index("members_dwz_id_idx").on(table.dwzId),
     parentIdIdx: index("members_parent_id_idx").on(table.parentId),
+    clubIdx: index("members_club_idx").on(table.clubId),
   }),
 );
 

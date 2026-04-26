@@ -7,10 +7,10 @@ import { Loader2, Mail, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AuthLayout } from "@/components/auth/auth-layout";
-import { AuthCard } from "@/components/auth/auth-card";
-import { AuthHeader } from "@/components/auth/auth-header";
-import { ErrorMessage } from "@/components/auth/error-message";
+import { AuthLayout } from "@/features/auth/components/auth-layout";
+import { AuthCard } from "@/features/auth/components/auth-card";
+import { AuthHeader } from "@/features/auth/components/auth-header";
+import { ErrorMessage } from "@/features/auth/components/error-message";
 import { authClient } from "@/lib/auth/client";
 
 export default function ForgotPasswordPage() {

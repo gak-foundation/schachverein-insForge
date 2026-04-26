@@ -25,6 +25,7 @@ export const authUsers = pgTable(
     password: varchar("password", { length: 255 }),
     memberId: uuid("member_id").references(() => members.id),
     activeClubId: uuid("active_club_id").references(() => clubs.id),
+    clubId: uuid("club_id").references(() => clubs.id, { onDelete: "cascade" }),
     role: memberRoleEnum("role").default("mitglied").notNull(),
     permissions: jsonb("permissions").$type<string[]>().default([]),
     failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
@@ -40,6 +41,8 @@ export const authUsers = pgTable(
   (table) => ({
     memberIdIdx: index("auth_user_member_id_idx").on(table.memberId),
     activeClubIdx: index("auth_user_active_club_idx").on(table.activeClubId),
+    clubIdx: index("auth_user_club_idx").on(table.clubId),
+    emailIdx: index("auth_user_email_idx").on(table.email),
   }),
 );
 
@@ -50,6 +53,10 @@ export const authUsersRelations = relations(authUsers, ({ one }) => ({
   }),
   activeClub: one(clubs, {
     fields: [authUsers.activeClubId],
+    references: [clubs.id],
+  }),
+  club: one(clubs, {
+    fields: [authUsers.clubId],
     references: [clubs.id],
   }),
 }));

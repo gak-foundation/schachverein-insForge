@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getPages, type PageSortField, type SortOrder } from "@/lib/actions/cms";
+import { getPages, type PageSortField, type SortOrder } from "@/features/cms/actions";
 import Link from "next/link";
 
 import {

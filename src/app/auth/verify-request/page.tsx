@@ -4,9 +4,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Mail, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AuthLayout } from "@/components/auth/auth-layout";
-import { AuthCard } from "@/components/auth/auth-card";
-import { AuthHeader } from "@/components/auth/auth-header";
+import { AuthLayout } from "@/features/auth/components/auth-layout";
+import { AuthCard } from "@/features/auth/components/auth-card";
+import { AuthHeader } from "@/features/auth/components/auth-header";
 
 export default function VerifyRequestPage() {
   return (

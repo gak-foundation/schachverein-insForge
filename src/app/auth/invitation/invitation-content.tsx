@@ -7,7 +7,7 @@ import { acceptClubInvitationAction } from "@/lib/clubs/actions";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { ErrorMessage } from "@/components/auth/error-message";
+import { ErrorMessage } from "@/features/auth/components/error-message";
 
 interface InvitationContentProps {
   token: string;

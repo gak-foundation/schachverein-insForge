@@ -1,8 +1,8 @@
 import { getInvitationByToken } from "@/lib/clubs/queries";
 import { getSession } from "@/lib/auth/session";
-import { AuthLayout } from "@/components/auth/auth-layout";
-import { AuthCard } from "@/components/auth/auth-card";
-import { AuthHeader } from "@/components/auth/auth-header";
+import { AuthLayout } from "@/features/auth/components/auth-layout";
+import { AuthCard } from "@/features/auth/components/auth-card";
+import { AuthHeader } from "@/features/auth/components/auth-header";
 import { InvitationContent } from "./invitation-content";
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";

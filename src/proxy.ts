@@ -6,11 +6,10 @@ import type { NextRequest } from "next/server";
 // Route allow-lists
 // =============================================================================
 
-const appRoutes = [
+const tenantAppRoutes = [
   "/dashboard",
   "/auth",
   "/onboarding",
-  "/super-admin",
 ];
 
 const marketingRoutes = [
@@ -30,6 +29,10 @@ const marketingRoutes = [
   "/clubs",
 ];
 
+const adminRoutes = [
+  "/admin",
+];
+
 const sharedRoutes = [
   "/api",
   "/_next",
@@ -42,6 +45,13 @@ const sharedRoutes = [
 ];
 
 // =============================================================================
+// Config constants
+// =============================================================================
+
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "schach.studio";
+const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "app.schach.studio";
+
+// =============================================================================
 // Security headers
 // =============================================================================
 
@@ -52,6 +62,11 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
 };
 
+const SHARED_CSP_DEV =
+  "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
+const SHARED_CSP_PROD =
+  "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -61,18 +76,29 @@ function getHostname(request: NextRequest): string {
   return host?.split(":")[0] ?? "localhost";
 }
 
-function isAppHost(hostname: string): boolean {
-  const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "app.schach.studio";
-  return hostname === appDomain || hostname === "app.localhost";
-}
-
-function isMarketingHost(hostname: string): boolean {
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "schach.studio";
-  return hostname === rootDomain;
-}
-
 function isLocalhost(hostname: string): boolean {
-  return hostname === "localhost";
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function extractSubdomain(hostname: string): string | null {
+  if (isLocalhost(hostname)) return null;
+  if (hostname === ROOT_DOMAIN) return null;
+  if (hostname === `www.${ROOT_DOMAIN}`) return null;
+  if (hostname === APP_DOMAIN) return null;
+  if (hostname === `www.${APP_DOMAIN}`) return null;
+
+  // Handle wildcard subdomains: {slug}.root.domain
+  const rootParts = ROOT_DOMAIN.split(".");
+  const hostParts = hostname.split(".");
+
+  if (hostParts.length <= rootParts.length) return null;
+
+  // Verify the suffix matches ROOT_DOMAIN
+  const suffix = hostParts.slice(-rootParts.length).join(".");
+  if (suffix !== ROOT_DOMAIN) return null;
+
+  const subdomain = hostParts.slice(0, -rootParts.length).join(".");
+  return subdomain || null;
 }
 
 function isSharedRoute(pathname: string): boolean {
@@ -85,20 +111,31 @@ function isSharedRoute(pathname: string): boolean {
   return false;
 }
 
-function isAppRoute(pathname: string): boolean {
-  return appRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-}
-
 function isMarketingRoute(pathname: string): boolean {
   return marketingRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
-function getAppUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "https://app.schach.studio";
+function isAdminRoute(pathname: string): boolean {
+  return adminRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
-function getMarketingUrl(): string {
-  return process.env.NEXT_PUBLIC_MARKETING_URL ?? "https://schach.studio";
+function isTenantAppRoute(pathname: string): boolean {
+  return tenantAppRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function isPublicAuthRoute(pathname: string): boolean {
+  return (
+    pathname.startsWith("/auth/login") ||
+    pathname.startsWith("/auth/signup") ||
+    pathname.startsWith("/auth/forgot-password") ||
+    pathname.startsWith("/auth/reset-password") ||
+    pathname.startsWith("/auth/callback") ||
+    pathname.startsWith("/auth/error") ||
+    pathname.startsWith("/auth/verify") ||
+    pathname.startsWith("/auth/invite") ||
+    pathname.startsWith("/api/webhooks") ||
+    pathname === "/api/health"
+  );
 }
 
 function sanitizeNext(next: string | null): string {
@@ -109,11 +146,32 @@ function sanitizeNext(next: string | null): string {
   return next;
 }
 
-function redirectWithCookies(url: string | URL, sourceResponse: NextResponse): NextResponse {
+function redirectWithCookies(
+  url: string | URL,
+  sourceResponse: NextResponse,
+  request: NextRequest,
+): NextResponse {
   const redirectResponse = NextResponse.redirect(url);
   sourceResponse.headers.getSetCookie().forEach((cookie) => {
     redirectResponse.headers.append("Set-Cookie", cookie);
   });
+
+  // Redirect loop detection: increment counter cookie from request
+  const loopCount = Number(request.cookies.get("_rd_loop")?.value ?? "0") + 1;
+  if (loopCount > 5) {
+    const fallback = new URL(
+      "/auth/error?reason=too_many_redirects",
+      typeof url === "string" ? url : url.toString(),
+    );
+    const fallbackResponse = NextResponse.redirect(fallback);
+    fallbackResponse.cookies.set("_rd_loop", "0", { maxAge: 60, path: "/" });
+    sourceResponse.headers.getSetCookie().forEach((cookie) => {
+      fallbackResponse.headers.append("Set-Cookie", cookie);
+    });
+    return fallbackResponse;
+  }
+  redirectResponse.cookies.set("_rd_loop", String(loopCount), { maxAge: 10, path: "/" });
+
   return redirectResponse;
 }
 
@@ -124,30 +182,52 @@ function redirectWithCookies(url: string | URL, sourceResponse: NextResponse): N
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = getHostname(request);
+  const subdomain = extractSubdomain(hostname);
+  const isSubdomain = subdomain !== null;
 
   const isShared = isSharedRoute(pathname);
 
   // ---------------------------------------------------------------------------
-  // Host-based routing (skip for localhost)
+  // Subdomain routing: inject tenant headers
+  // ---------------------------------------------------------------------------
+  // We set headers on the request so downstream Server Components / Layouts
+  // can resolve the club. Actual club existence/isActive is checked there.
+  if (isSubdomain && subdomain) {
+    request.headers.set("x-club-slug", subdomain);
+    request.headers.set("x-is-subdomain", "true");
+  } else {
+    request.headers.set("x-is-subdomain", "false");
+  }
+
+  // ---------------------------------------------------------------------------
+  // Host-based routing rules
   // ---------------------------------------------------------------------------
   if (!isLocalhost(hostname)) {
-    if (isAppHost(hostname)) {
+    if (isSubdomain && subdomain) {
+      // Subdomain only serves tenant routes
       if (isShared) {
         // pass through
-      } else if (pathname === "/") {
-        return NextResponse.redirect(new URL("/auth/login", request.url));
       } else if (isMarketingRoute(pathname)) {
-        return NextResponse.redirect(new URL(pathname, getMarketingUrl()));
-      } else if (!isAppRoute(pathname)) {
-        // Unknown route on app domain → treat as app route (allow + auth check)
+        // Marketing pages on subdomain not allowed
+        return NextResponse.redirect(new URL(pathname, `https://${ROOT_DOMAIN}`));
+      } else if (isAdminRoute(pathname)) {
+        // Admin on subdomain not allowed
+        return NextResponse.redirect(new URL(pathname, `https://${ROOT_DOMAIN}`));
+      } else if (!isTenantAppRoute(pathname) && !isPublicAuthRoute(pathname)) {
+        // Unknown route on subdomain — treat as dashboard to allow 404s naturally
       }
-    } else if (isMarketingHost(hostname)) {
+    } else {
+      // Root domain
       if (isShared) {
         // pass through
-      } else if (isAppRoute(pathname)) {
-        return NextResponse.redirect(new URL(pathname, getAppUrl()));
-      } else if (!isMarketingRoute(pathname)) {
-        // Unknown route on marketing domain → let it 404 naturally
+      } else if (isTenantAppRoute(pathname)) {
+        // App routes on root → redirect to app domain (legacy behavior)
+        const fallbackSlug = "app";
+        return NextResponse.redirect(
+          new URL(pathname, `https://${fallbackSlug}.${ROOT_DOMAIN}`),
+        );
+      } else if (!isMarketingRoute(pathname) && !isAdminRoute(pathname)) {
+        // Unknown route on root — let it 404 naturally
       }
     }
   }
@@ -158,22 +238,18 @@ export default async function proxy(request: NextRequest) {
   const isPublicRoute =
     isShared ||
     isMarketingRoute(pathname) ||
-    pathname === "/auth/login" ||
-    pathname === "/auth/signup" ||
-    pathname === "/auth/forgot-password" ||
-    pathname === "/auth/reset-password" ||
-    pathname === "/auth/callback" ||
-    pathname === "/auth/error" ||
-    pathname === "/auth/verify-request" ||
-    pathname === "/auth/verify-email" ||
-    pathname === "/auth/invite" ||
-    pathname === "/auth/invitation" ||
-    pathname === "/api/health" ||
-    pathname === "/api/webhooks";
+    isPublicAuthRoute(pathname) ||
+    (isSubdomain && pathname === "/"); // Allow subdomain root if desired
 
   // ---------------------------------------------------------------------------
-  // Update session via Supabase
+  // Update session via Supabase (with subdomain-scoped cookies if on subdomain)
   // ---------------------------------------------------------------------------
+  let cookieOptions = {};
+  if (isSubdomain) {
+    // Scope cookies to the exact subdomain only
+    cookieOptions = { domain: hostname };
+  }
+
   const { supabaseResponse, user } = await updateSession(request);
 
   // ---------------------------------------------------------------------------
@@ -182,12 +258,12 @@ export default async function proxy(request: NextRequest) {
   if (!user && !isPublicRoute) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("next", pathname);
-    return redirectWithCookies(loginUrl, supabaseResponse);
+    return redirectWithCookies(loginUrl, supabaseResponse, request);
   }
 
   if (user && (pathname === "/auth/login" || pathname === "/auth/signup")) {
     const next = sanitizeNext(request.nextUrl.searchParams.get("next"));
-    return redirectWithCookies(new URL(next, request.url), supabaseResponse);
+    return redirectWithCookies(new URL(next, request.url), supabaseResponse, request);
   }
 
   // ---------------------------------------------------------------------------
@@ -198,11 +274,10 @@ export default async function proxy(request: NextRequest) {
   });
 
   const isDev = process.env.NODE_ENV === "development";
-  const cspHeader = isDev
-    ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
-    : "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
-
-  supabaseResponse.headers.set("Content-Security-Policy", cspHeader);
+  supabaseResponse.headers.set(
+    "Content-Security-Policy",
+    isDev ? SHARED_CSP_DEV : SHARED_CSP_PROD,
+  );
 
   return supabaseResponse;
 }

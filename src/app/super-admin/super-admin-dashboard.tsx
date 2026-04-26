@@ -52,8 +52,8 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { impersonateClubAction, toggleClubStatusAction, createClubAsSuperAdminAction } from "@/lib/clubs/actions";
-import { CreateClubForm } from "@/components/clubs/create-club-form";
-import { toast } from "@/hooks/use-toast";
+import { CreateClubForm } from "@/features/clubs/components/create-club-form";
+import { toast } from "@/components/ui/use-toast";
 
 interface Club {
   id: string;
@@ -85,9 +85,6 @@ interface SuperAdminDashboardProps {
   stats: {
     totalUsers: number;
     totalClubs: number;
-    activeSubscriptions: number;
-    proClubs: number;
-    enterpriseClubs: number;
   };
 }
 
@@ -194,35 +191,35 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
           <CardContent>
             <div className="text-3xl font-bold">{stats.totalUsers}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {Math.round((stats.totalUsers / stats.totalClubs) * 10) / 10} User pro Verein ø
+              {stats.totalClubs > 0 ? Math.round((stats.totalUsers / stats.totalClubs) * 10) / 10 : 0} User pro Verein ø
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Umsatz (MRR)</CardTitle>
+            <CardTitle className="text-sm font-medium">Status</CardTitle>
             <CreditCard className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">€{stats.proClubs * 29 + stats.enterpriseClubs * 99}</div>
+            <div className="text-3xl font-bold">Free</div>
             <p className="text-xs text-muted-foreground mt-1">
-               {stats.activeSubscriptions} aktive Abonnements
+               Plattform ist 100% kostenfrei
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Konversion</CardTitle>
+            <CardTitle className="text-sm font-medium">Wachstum</CardTitle>
             <TrendingUp className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-                {Math.round((stats.activeSubscriptions / stats.totalClubs) * 100)}%
+                Aktiv
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-                Free-to-Paid Ratio
+                Open Source & Community
             </p>
           </CardContent>
         </Card>
@@ -283,7 +280,6 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead className="font-bold">Verein</TableHead>
-                    <TableHead className="font-bold">Plan</TableHead>
                     <TableHead className="font-bold">Status</TableHead>
                     <TableHead className="font-bold">Mitglieder</TableHead>
                     <TableHead className="font-bold">Erstellt am</TableHead>
@@ -302,14 +298,6 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={`${getPlanColor(club.plan)} border-none font-medium`}
-                        >
-                          {club.plan.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         <div className="flex items-center gap-2">
                             {club.isActive ? (
                                 <Badge className="bg-green-500/10 text-green-600 border-green-200 hover:bg-green-500/20">
@@ -318,11 +306,6 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
                             ) : (
                                 <Badge variant="destructive" className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20">
                                     Inaktiv
-                                </Badge>
-                            )}
-                            {club.subscriptionStatus && (
-                                <Badge variant="outline" className={`text-[10px] uppercase ${getStatusColor(club.subscriptionStatus)}`}>
-                                    {club.subscriptionStatus}
                                 </Badge>
                             )}
                         </div>

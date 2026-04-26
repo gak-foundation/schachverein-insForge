@@ -11,14 +11,14 @@ import {
   getDunningStats,
   getSepaExports,
   getMembersForFinance,
-} from "@/lib/actions/finance";
+} from "@/features/finance/actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PaymentsOverview } from "@/components/finance/payments-overview";
-import { ContributionRatesList } from "@/components/finance/contribution-rates-list";
-import { SepaExport } from "@/components/finance/sepa-export";
-import { ClubBankSettings } from "@/components/finance/club-bank-settings";
-import { DunningOverview } from "@/components/finance/dunning-overview";
-import { ClubExportButton } from "@/components/clubs/club-export-button";
+import { PaymentsOverview } from "@/features/finance/components/payments-overview";
+import { ContributionRatesList } from "@/features/finance/components/contribution-rates-list";
+import { SepaExport } from "@/features/finance/components/sepa-export";
+import { ClubBankSettings } from "@/features/finance/components/club-bank-settings";
+import { DunningOverview } from "@/features/finance/components/dunning-overview";
+import { ClubExportButton } from "@/features/clubs/components/club-export-button";
 
 export const metadata = {
   title: "Finanzen",

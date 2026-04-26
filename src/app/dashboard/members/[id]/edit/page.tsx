@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect, notFound } from "next/navigation";
 import { getMemberById, getContributionRatesForMemberSelect } from "@/lib/actions/members";
 import Link from "next/link";
-import { MemberForm } from "@/components/members/member-form";
+import { MemberForm } from "@/features/members/components/member-form";
 import { ChevronLeft } from "lucide-react";
 
 export const metadata = {

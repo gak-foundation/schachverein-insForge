@@ -6,15 +6,15 @@
 
 ## 🚀 Warum schach.studio? (Der Vorstand-Check)
 
-### 1. Radikale Zeitersparnis für den Vorstand
-*   **Selbstverwaltung:** Mitglieder pflegen ihre Daten (Anschrift, Kontakt) selbst.
-*   **Automatisierung:** SEPA-Lastschriften werden auf Knopfdruck generiert.
-*   **Dokumentation:** Protokolle für Mitgliederversammlungen werden im System revisionssicher archiviert.
+### 1. Das Ende der Doppeltpflege (Kern-USP)
+*   **Automatische Website:** Jede Aktion in der Verwaltung (Turniere, Ergebnisse, Termine) befüllt automatisch Ihre öffentliche Vereins-Website. Nie wieder Copy-Paste aus Excel oder Word.
+*   **Zeitersparnis:** Vorstände sparen bis zu 80% ihrer Administrationszeit.
+*   **Professionelle Außenwirkung:** Ihr Verein präsentiert sich digital auf Top-Niveau, ohne dass Sie IT-Experte sein müssen.
 
-### 2. Sportliche Professionalität (USP)
-*   **Live-Turniere:** Ergebnisse werden sofort auf der Webseite aktualisiert.
-*   **Mannschafts-Planer:** Nie wieder Telefonketten. Spieler melden ihre Verfügbarkeit digital; der Mannschaftsführer plant per Drag & Drop.
-*   **Digitale Partiedatenbank:** Verknüpfen Sie Vereinspartien direkt mit Lichess für das Training.
+### 2. Sportliche Professionalität
+*   **Live-Turniere:** Ergebnisse werden sofort auf der Webseite aktualisiert (Live-Ticker).
+*   **Mannschafts-Planer:** Nie wieder Telefonketten. Spieler melden Verfügbarkeiten digital; Planung per Drag & Drop.
+*   **Lichess-Integration:** Verknüpfen Sie Vereinspartien direkt mit Lichess für Training und Analyse.
 
 ### 3. Rechtssicherheit & DSGVO
 *   **Datenschutz:** Vollständiges Einwilligungsmanagement (Bildrechte, Mail-Versand).

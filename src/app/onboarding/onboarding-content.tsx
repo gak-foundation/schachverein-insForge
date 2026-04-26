@@ -91,11 +91,6 @@ export function OnboardingContent({ hasClubs, userClubs }: OnboardingContentProp
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{club.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {club.plan === "free" && "Free Plan"}
-                      {club.plan === "pro" && "Pro Plan"}
-                      {club.plan === "enterprise" && "Enterprise Plan"}
-                    </p>
                   </div>
                   {isSwitching === club.id ? (
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />

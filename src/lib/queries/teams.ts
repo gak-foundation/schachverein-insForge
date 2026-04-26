@@ -6,7 +6,7 @@ import {
   updateTeam,
   deleteTeam,
   getTeamMembers,
-} from "@/lib/actions/teams";
+} from "@/features/teams/actions";
 
 // Query Keys
 export const teamKeys = {

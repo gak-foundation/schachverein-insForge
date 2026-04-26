@@ -26,10 +26,16 @@ export const clubs = pgTable(
     }>(),
     contactEmail: varchar("contact_email", { length: 255 }),
     plan: subscriptionPlanEnum("plan").default("free").notNull(),
+    // Deprecated: use club_addons table instead
     stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+    // Deprecated: use club_addons.stripe_subscription_id instead
     stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+    stripeConnectAccountId: varchar("stripe_connect_account_id", { length: 255 }),
+    // Deprecated: use club_addons.status instead
     subscriptionStatus: subscriptionStatusEnum("subscription_status"),
+    // Deprecated: use club_addons.expires_at instead
     subscriptionExpiresAt: timestamp("subscription_expires_at"),
+    // Deprecated: use getClubFeatures() from @/lib/billing/features instead
     features: jsonb("features").$type<Record<string, boolean>>().default({}),
     settings: jsonb("settings").$type<Record<string, unknown>>().default({}),
     isActive: boolean("is_active").default(true).notNull(),
@@ -42,5 +48,6 @@ export const clubs = pgTable(
   (table) => ({
     slugIdx: index("clubs_slug_idx").on(table.slug),
     stripeCustomerIdx: index("clubs_stripe_customer_idx").on(table.stripeCustomerId),
+    stripeConnectIdx: index("clubs_stripe_connect_idx").on(table.stripeConnectAccountId),
   }),
 );

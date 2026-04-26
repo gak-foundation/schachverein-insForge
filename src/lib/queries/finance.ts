@@ -7,7 +7,7 @@ import {
   updatePaymentStatus,
   upsertContributionRate,
   deleteContributionRate,
-} from "@/lib/actions/finance";
+} from "@/features/finance/actions";
 
 // Query Keys
 export const financeKeys = {

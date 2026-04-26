@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { getAuditLogs } from "@/lib/actions/audit";
+import { getAuditLogs } from "@/features/audit/actions";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import {

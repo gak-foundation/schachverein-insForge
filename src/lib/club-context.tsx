@@ -1,13 +1,15 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import type { PlanId, AddonId } from "@/lib/billing/addons";
 
 interface Club {
   id: string;
   name: string;
   slug: string;
   logoUrl?: string | null;
-  plan: "free" | "pro" | "enterprise";
+  plan: PlanId;
+  activeAddons: AddonId[];
   isActive: boolean;
 }
 

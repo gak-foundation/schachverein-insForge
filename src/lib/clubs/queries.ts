@@ -1,19 +1,11 @@
 import { eq, and, or, like, sql, SQL, isNull } from "drizzle-orm";
-import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
 import {
   clubs,
   clubMemberships,
   clubInvitations,
   members,
-  seasons,
-  teams,
-  tournaments,
   events,
-  payments,
-  documents,
-  contributionRates,
-  auditLog,
   authUsers,
 } from "@/lib/db/schema";
 
@@ -29,6 +21,14 @@ export async function getClubBySlug(slug: string) {
   return club ?? null;
 }
 
+export async function getClubByStripeCustomerId(stripeCustomerId: string) {
+  const [club] = await db
+    .select()
+    .from(clubs)
+    .where(eq(clubs.stripeCustomerId, stripeCustomerId));
+  return club ?? null;
+}
+
 export async function getUserClubs(userId: string) {
   return db
     .select({
@@ -38,18 +38,13 @@ export async function getUserClubs(userId: string) {
       logoUrl: clubs.logoUrl,
       plan: clubs.plan,
       isActive: clubs.isActive,
-      membershipRole: clubMemberships.role,
-      isPrimary: clubMemberships.isPrimary,
+      membershipRole: members.role,
+      isPrimary: sql`true`,
     })
-    .from(clubMemberships)
-    .innerJoin(clubs, eq(clubMemberships.clubId, clubs.id))
-    .where(
-      and(
-        eq(clubMemberships.memberId, userId),
-        eq(clubMemberships.status, "active")
-      )
-    )
-    .orderBy(clubMemberships.isPrimary);
+    .from(authUsers)
+    .innerJoin(clubs, eq(authUsers.clubId, clubs.id))
+    .innerJoin(members, eq(authUsers.memberId, members.id))
+    .where(eq(authUsers.id, userId));
 }
 
 export async function getUserPrimaryClub(userId: string) {
@@ -62,57 +57,40 @@ export async function getUserPrimaryClub(userId: string) {
       plan: clubs.plan,
       isActive: clubs.isActive,
     })
-    .from(clubMemberships)
-    .innerJoin(clubs, eq(clubMemberships.clubId, clubs.id))
-    .where(
-      and(
-        eq(clubMemberships.memberId, userId),
-        eq(clubMemberships.isPrimary, true),
-        eq(clubMemberships.status, "active")
-      )
-    );
+    .from(authUsers)
+    .innerJoin(clubs, eq(authUsers.clubId, clubs.id))
+    .where(eq(authUsers.id, userId));
   return result ?? null;
 }
 
 // ─── Club Filtering Functions ──────────────────────────────────
 
 export function withClubFilter<
-  T extends { where: (condition: SQL | undefined) => T } & { clubId: AnyPgColumn },
+  T extends { where: (condition: SQL | undefined) => T } & { clubId: any },
 >(query: T, clubId: string) {
   return query.where(eq(query.clubId, clubId));
 }
 
 export async function isMemberOfClub(memberId: string, clubId: string) {
-  const [membership] = await db
+  const [member] = await db
     .select()
-    .from(clubMemberships)
-    .where(
-      and(
-        eq(clubMemberships.memberId, memberId),
-        eq(clubMemberships.clubId, clubId),
-        eq(clubMemberships.status, "active")
-      )
-    );
-  return !!membership;
+    .from(members)
+    .where(and(eq(members.id, memberId), eq(members.clubId, clubId)));
+  return !!member;
 }
 
 export async function getClubRole(memberId: string, clubId: string) {
-  const [membership] = await db
-    .select({ role: clubMemberships.role })
-    .from(clubMemberships)
-    .where(
-      and(
-        eq(clubMemberships.memberId, memberId),
-        eq(clubMemberships.clubId, clubId)
-      )
-    );
-  return membership?.role ?? null;
+  const [member] = await db
+    .select({ role: members.role })
+    .from(members)
+    .where(and(eq(members.id, memberId), eq(members.clubId, clubId)));
+  return member?.role ?? null;
 }
 
-// ─── Club Data Access (with isolation) ──────────────────────────
+// ─── Club Data Access ───────────────────────────────────────────
 
 export async function getMembersByClub(clubId: string, search?: string) {
-  const conditions: SQL<unknown>[] = [eq(clubMemberships.clubId, clubId)];
+  const conditions: SQL<unknown>[] = [eq(members.clubId, clubId)];
 
   if (search) {
     conditions.push(
@@ -132,58 +110,13 @@ export async function getMembersByClub(clubId: string, search?: string) {
       email: members.email,
       phone: members.phone,
       status: members.status,
-      role: clubMemberships.role,
+      role: members.role,
       dwz: members.dwz,
-      joinedAt: clubMemberships.joinedAt,
+      joinedAt: members.joinedAt,
     })
-    .from(clubMemberships)
-    .innerJoin(members, eq(clubMemberships.memberId, members.id))
+    .from(members)
     .where(and(...conditions))
     .orderBy(members.lastName);
-}
-
-export async function getSeasonsByClub(clubId: string) {
-  return db
-    .select()
-    .from(seasons)
-    .where(eq(seasons.clubId, clubId))
-    .orderBy(seasons.year);
-}
-
-export async function getTeamsByClub(clubId: string, seasonId?: string) {
-  const conditions: SQL<unknown>[] = [eq(teams.clubId, clubId)];
-
-  if (seasonId) {
-    conditions.push(eq(teams.seasonId, seasonId));
-  }
-
-  return db
-    .select({
-      id: teams.id,
-      name: teams.name,
-      league: teams.league,
-      seasonId: teams.seasonId,
-      captainId: teams.captainId,
-    })
-    .from(teams)
-    .where(and(...conditions))
-    .orderBy(teams.name);
-}
-
-export async function getTournamentsByClub(clubId: string) {
-  return db
-    .select({
-      id: tournaments.id,
-      name: tournaments.name,
-      type: tournaments.type,
-      startDate: tournaments.startDate,
-      endDate: tournaments.endDate,
-      location: tournaments.location,
-      isCompleted: tournaments.isCompleted,
-    })
-    .from(tournaments)
-    .where(eq(tournaments.clubId, clubId))
-    .orderBy(tournaments.startDate);
 }
 
 export async function getEventsByClub(clubId: string, limit?: number) {
@@ -206,64 +139,6 @@ export async function getEventsByClub(clubId: string, limit?: number) {
   }
 
   return query;
-}
-
-export async function getPaymentsByClub(clubId: string) {
-  return db
-    .select({
-      id: payments.id,
-      memberId: payments.memberId,
-      amount: payments.amount,
-      description: payments.description,
-      status: payments.status,
-      dueDate: payments.dueDate,
-      year: payments.year,
-    })
-    .from(payments)
-    .where(eq(payments.clubId, clubId))
-    .orderBy(payments.createdAt);
-}
-
-export async function getDocumentsByClub(clubId: string) {
-  return db
-    .select({
-      id: documents.id,
-      title: documents.title,
-      fileName: documents.fileName,
-      category: documents.category,
-      mimeType: documents.mimeType,
-      fileSize: documents.fileSize,
-      createdAt: documents.createdAt,
-    })
-    .from(documents)
-    .where(eq(documents.clubId, clubId))
-    .orderBy(documents.createdAt);
-}
-
-export async function getContributionRatesByClub(clubId: string) {
-  return db
-    .select()
-    .from(contributionRates)
-    .where(eq(contributionRates.clubId, clubId))
-    .orderBy(contributionRates.validFrom);
-}
-
-export async function getAuditLogsByClub(clubId: string, limit = 100) {
-  return db
-    .select({
-      id: auditLog.id,
-      userId: auditLog.userId,
-      action: auditLog.action,
-      entity: auditLog.entity,
-      entityId: auditLog.entityId,
-      changes: auditLog.changes,
-      ipAddress: auditLog.ipAddress,
-      createdAt: auditLog.createdAt,
-    })
-    .from(auditLog)
-    .where(eq(auditLog.clubId, clubId))
-    .orderBy(auditLog.createdAt)
-    .limit(limit);
 }
 
 // ─── Club Management ──────────────────────────────────────────
@@ -322,11 +197,11 @@ export async function updateClub(
   return club;
 }
 
-export async function updateUserActiveClub(userId: string, clubId: string | null) {
+export async function updateUserClub(userId: string, clubId: string | null) {
   await db
     .update(authUsers)
     .set({
-      activeClubId: clubId,
+      clubId: clubId,
       updatedAt: new Date(),
     })
     .where(eq(authUsers.id, userId));
@@ -338,6 +213,11 @@ export async function addMemberToClub(
   role: string = "mitglied",
   isPrimary: boolean = false
 ) {
+  await db
+    .update(members)
+    .set({ clubId, role: role as typeof members.$inferInsert.role, updatedAt: new Date() })
+    .where(eq(members.id, memberId));
+
   const [membership] = await db
     .insert(clubMemberships)
     .values({
@@ -452,89 +332,13 @@ export async function generateUniqueSlug(name: string): Promise<string> {
   return slug;
 }
 
-// ─── Feature Gates ─────────────────────────────────────────────
-
-const PLAN_FEATURES = {
-  free: {
-    maxMembers: 30,
-    tournaments: true,
-    teams: true,
-    payments: true,
-    documents: true,
-    apiAccess: false,
-    customDomain: false,
-    prioritySupport: false,
-  },
-  pro: {
-    maxMembers: Infinity,
-    tournaments: true,
-    teams: true,
-    payments: true,
-    documents: true,
-    apiAccess: true,
-    customDomain: false,
-    prioritySupport: false,
-  },
-  enterprise: {
-    maxMembers: Infinity,
-    tournaments: true,
-    teams: true,
-    payments: true,
-    documents: true,
-    apiAccess: true,
-    customDomain: true,
-    prioritySupport: true,
-  },
-};
-
-export function getPlanFeatures(plan: "free" | "pro" | "enterprise") {
-  return PLAN_FEATURES[plan] ?? PLAN_FEATURES.free;
-}
-
-export async function hasFeature(clubId: string, feature: keyof typeof PLAN_FEATURES["free"]) {
-  const [club] = await db
-    .select({ plan: clubs.plan })
-    .from(clubs)
-    .where(eq(clubs.id, clubId));
-
-  if (!club) return false;
-
-  const features = getPlanFeatures(club.plan);
-  return features[feature] ?? false;
-}
+// Re-export feature checks
+export { hasFeature } from "@/lib/billing/features";
 
 export async function getClubMemberCount(clubId: string): Promise<number> {
   const result = await db
     .select({ count: sql<number>`COUNT(*)` })
-    .from(clubMemberships)
-    .where(
-      and(
-        eq(clubMemberships.clubId, clubId),
-        eq(clubMemberships.status, "active")
-      )
-    );
+    .from(members)
+    .where(eq(members.clubId, clubId));
   return result[0]?.count ?? 0;
-}
-
-export async function canAddMember(clubId: string): Promise<{ allowed: boolean; reason?: string }> {
-  const [club] = await db
-    .select({ plan: clubs.plan })
-    .from(clubs)
-    .where(eq(clubs.id, clubId));
-
-  if (!club) {
-    return { allowed: false, reason: "Verein nicht gefunden" };
-  }
-
-  const features = getPlanFeatures(club.plan);
-  const currentCount = await getClubMemberCount(clubId);
-
-  if (currentCount >= features.maxMembers) {
-    return {
-      allowed: false,
-      reason: `Maximale Mitgliederzahl (${features.maxMembers}) für ${club.plan} Plan erreicht`,
-    };
-  }
-
-  return { allowed: true };
 }

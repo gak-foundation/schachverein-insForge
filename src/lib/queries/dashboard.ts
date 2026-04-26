@@ -3,7 +3,7 @@ import {
   getDashboardStats,
   getAuditLogs,
   getDocuments,
-} from "@/lib/actions/audit";
+} from "@/features/audit/actions";
 
 // Query Keys
 export const dashboardKeys = {

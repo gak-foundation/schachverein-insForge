@@ -5,6 +5,8 @@ import { getAuthUserWithClub } from "@/lib/db/queries/auth";
 import { db } from "@/lib/db";
 import { clubs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { getClubAddons } from "@/lib/billing/queries";
+import type { AddonId, PlanId } from "@/lib/billing/addons";
 
 // Cached session getter for server components
 export const getSession = cache(async () => {
@@ -41,10 +43,10 @@ export const getSession = cache(async () => {
     if (!user) {
       return null;
     }
-    
+
     // Fetch additional user data from database using Drizzle
     const userData = await getAuthUserWithClub(user.id);
-    
+
     return {
       user: {
         id: user.id,
@@ -53,7 +55,7 @@ export const getSession = cache(async () => {
         role: userData?.role || "mitglied",
         permissions: userData?.permissions || [],
         memberId: userData?.memberId,
-        activeClubId: userData?.activeClubId,
+        clubId: userData?.clubId,
         isSuperAdmin: userData?.isSuperAdmin || false,
         emailVerified: userData?.emailVerified || false,
         image: userData?.image || user.user_metadata?.avatar_url,
@@ -72,22 +74,36 @@ export const getSession = cache(async () => {
   }
 });
 
-// Extended session with club context
+// Extended session with club context (resolved via subdomain/membership)
 export const getSessionWithClub = cache(async () => {
   const session = await getSession();
   if (!session) return null;
 
-  // Load club data if user has activeClubId using Drizzle
+  // Strict tenancy: clubId must be set for non-super-admins
   let club = null;
-  if (session.user.activeClubId) {
+  if (session.user.isSuperAdmin) {
+    // Super-admins have no fixed club; they browse via root domain
+    return { ...session, club: null };
+  }
+
+  if (session.user.clubId) {
     try {
       const [clubData] = await db
         .select()
         .from(clubs)
-        .where(eq(clubs.id, session.user.activeClubId))
+        .where(eq(clubs.id, session.user.clubId))
         .limit(1);
-      club = clubData || null;
-    } catch {
+      
+      if (clubData) {
+        const activeAddons = await getClubAddons(clubData.id);
+        club = {
+          ...clubData,
+          plan: clubData.plan as PlanId,
+          activeAddons: activeAddons as AddonId[],
+        };
+      }
+    } catch (error) {
+      console.error("Error fetching club context:", error);
       // Club not found, continue without
     }
   }
@@ -107,20 +123,43 @@ export async function requireAuth() {
   return session;
 }
 
-// Require authentication with club context
 export async function requireClubAuth() {
   const sessionWithClub = await getSessionWithClub();
   if (!sessionWithClub) {
     throw new Error("UNAUTHORIZED");
   }
+  if (sessionWithClub.user.isSuperAdmin) {
+    return sessionWithClub;
+  }
   if (!sessionWithClub.club) {
-    throw new Error("Kein Verein ausgewählt");
+    throw new Error("Kein Verein zugeordnet");
+  }
+  return sessionWithClub;
+}
+
+// Require club and return the club object directly (for actions that only need the club)
+export async function requireClub() {
+  const sessionWithClub = await getSessionWithClub();
+  if (!sessionWithClub) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!sessionWithClub.club) {
+    throw new Error("Kein Verein zugeordnet");
   }
   return sessionWithClub.club;
 }
 
-// Alias for compatibility
-export const requireClub = requireClubAuth;
+// Require club ID and return it directly
+export async function requireClubId() {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!session.user.clubId) {
+    throw new Error("Kein Verein zugeordnet");
+  }
+  return session.user.clubId;
+}
 
 // Require specific permission
 export async function requirePermission(permission: Permission) {
@@ -128,16 +167,16 @@ export async function requirePermission(permission: Permission) {
   if (!session) {
     throw new Error("UNAUTHORIZED");
   }
-  
+
   const user = session.user;
-  
+
   if (user.isSuperAdmin) return session;
-  
+
   if (user.permissions?.includes(permission)) return session;
-  
+
   // Check role-based permissions
   const rolePermissions = ROLE_PERMISSIONS[user.role || "mitglied"] || [];
   if (rolePermissions.includes(permission)) return session;
-  
+
   throw new Error("FORBIDDEN");
 }

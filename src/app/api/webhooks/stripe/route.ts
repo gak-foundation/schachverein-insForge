@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { setClubPlan, setStripeSubscriptionId } from "@/lib/billing/queries";
+import { getClubByStripeCustomerId } from "@/lib/clubs/queries";
+import type { PlanId } from "@/lib/billing/addons";
 import Stripe from "stripe";
 
-// Stripe-Client initialisieren (nur serverseitig)
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-03-25.dahlia" })
   : null;
@@ -9,10 +11,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
 export async function POST(request: Request) {
   if (!stripe) {
     console.error("Stripe webhook received but STRIPE_SECRET_KEY is not configured");
-    return NextResponse.json(
-      { error: "Stripe not configured" },
-      { status: 503 }
-    );
+    return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
   }
 
   const payload = await request.text();
@@ -21,10 +20,7 @@ export async function POST(request: Request) {
 
   if (!sig || !webhookSecret) {
     console.error("Stripe webhook received without signature or secret");
-    return NextResponse.json(
-      { error: "Webhook configuration error" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Webhook configuration error" }, { status: 400 });
   }
 
   let event: Stripe.Event;
@@ -35,29 +31,95 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(`Stripe webhook signature verification failed: ${message}`);
     return NextResponse.json(
-      { error: `Webhook signature verification failed: ${message}` },
+      { error: `Webhook verification failed: ${message}` },
       { status: 400 }
     );
   }
 
-  // Event verarbeiten
   try {
     switch (event.type) {
-      case "invoice.payment_succeeded": {
-        // TODO: Zahlung als erfolgreich markieren
-        console.log("Invoice payment succeeded:", event.data.object.id);
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const subscriptionId = session.subscription as string;
+        const customerId = session.customer as string;
+        const planId = session.metadata?.planId as PlanId | undefined;
+
+        if (!planId || !customerId) {
+          console.warn("Checkout session missing planId or customerId", session.id);
+          break;
+        }
+
+        const club = await getClubByStripeCustomerId(customerId);
+        if (!club) {
+          console.error("No club found for Stripe customer", customerId);
+          break;
+        }
+
+        await setClubPlan(club.id, planId);
+        if (subscriptionId) {
+          await setStripeSubscriptionId(club.id, subscriptionId);
+        }
+        console.log(`Plan ${planId} activated for club ${club.id}`);
         break;
       }
-      case "invoice.payment_failed": {
-        // TODO: Zahlung als fehlgeschlagen markieren
-        console.log("Invoice payment failed:", event.data.object.id);
+
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        const planId = subscription.metadata?.planId as PlanId | undefined;
+        if (!planId) {
+          console.warn("Subscription missing planId metadata", subscription.id);
+          break;
+        }
+
+        const club = await getClubByStripeCustomerId(subscription.customer as string);
+        if (!club) break;
+
+        const status = subscription.status;
+        if (status === "active" || status === "trialing") {
+          await setClubPlan(club.id, planId);
+          await setStripeSubscriptionId(club.id, subscription.id);
+        } else if (status === "canceled" || status === "unpaid" || status === "incomplete_expired") {
+          await setClubPlan(club.id, "free");
+          await setStripeSubscriptionId(club.id, null);
+        }
         break;
       }
+
       case "customer.subscription.deleted": {
-        // TODO: Abonnement als gekündigt markieren
-        console.log("Subscription deleted:", event.data.object.id);
+        const subscription = event.data.object as Stripe.Subscription;
+        const club = await getClubByStripeCustomerId(subscription.customer as string);
+        if (club) {
+          await setClubPlan(club.id, "free");
+          await setStripeSubscriptionId(club.id, null);
+          console.log(`Plan canceled for club ${club.id}`);
+        }
         break;
       }
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subId = (invoice as unknown as { subscription?: string }).subscription;
+        if (subId) {
+          const club = await getClubByStripeCustomerId(invoice.customer as string);
+          if (club && club.plan !== "pro") {
+            await setClubPlan(club.id, "pro");
+          }
+        }
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subId = (invoice as unknown as { subscription?: string }).subscription;
+        if (subId) {
+          const club = await getClubByStripeCustomerId(invoice.customer as string);
+          if (club) {
+            console.warn(`Payment failed for club ${club.id}, subscription ${subId}`);
+          }
+        }
+        break;
+      }
+
       default:
         console.log(`Unhandled Stripe event type: ${event.type}`);
     }
@@ -65,9 +127,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, type: event.type });
   } catch (error) {
     console.error("Stripe webhook processing error:", error);
-    return NextResponse.json(
-      { error: "Webhook processing error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Webhook processing error" }, { status: 500 });
   }
 }

@@ -6,14 +6,14 @@ import {
   getMembers,
   type MemberSortField,
   type SortOrder as MembersListSortOrder,
-} from "@/lib/actions/members";
+} from "@/features/members/actions";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, Upload } from "lucide-react";
 import { PrintButton } from "@/components/print-button";
-import { DwzSyncButton } from "@/components/clubs/dwz-sync-button";
-import { MembersFilters } from "@/components/members/members-filters";
-import { MembersTable } from "@/components/members/members-table";
+import { DwzSyncButton } from "@/features/clubs/components/dwz-sync-button";
+import { MembersFilters } from "@/features/members/components/members-filters";
+import { MembersTable } from "@/features/members/components/members-table";
 
 export const metadata = {
   title: "Mitglieder",

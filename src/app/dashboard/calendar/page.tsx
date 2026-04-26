@@ -2,8 +2,8 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getCalendarEvents } from "@/lib/actions/events";
-import CalendarGrid from "@/components/calendar/CalendarGrid";
+import { getCalendarEvents } from "@/features/calendar/actions";
+import CalendarGrid from "@/features/calendar/components/CalendarGrid";
 import { startOfYear, endOfYear } from "date-fns";
 
 export const metadata = {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MemberForm } from "@/components/members/member-form";
+import { MemberForm } from "@/features/members/components/member-form";
 import { ChevronLeft } from "lucide-react";
 
 export const metadata = {

@@ -7,7 +7,7 @@ import {
   deleteMember,
   type MemberSortField,
   type SortOrder,
-} from "@/lib/actions/members";
+} from "@/features/members/actions";
 
 // Query Keys
 export const memberKeys = {

@@ -16,7 +16,7 @@ export default function HomePage() {
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4">Alles was dein Verein braucht</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold font-heading mb-4 text-foreground tracking-tight">Alles was dein Verein braucht</h2>
             <p className="text-muted-foreground">
               Entwickelt von Schachspielern für Schachvereine. Wir kennen eure Abläufe.
             </p>
@@ -45,7 +45,7 @@ export default function HomePage() {
                 <Shield className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Barrierefreiheit</span>
               </div>
-              <h2 className="text-3xl font-bold mb-4">Bereit für die BFSG</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold font-heading mb-4 text-foreground tracking-tight">Bereit für die BFSG</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Das Barrierefreiheitsstärkungsgesetz (BFSG) verpflichtet Vereine ab einer bestimmten Größe,
                 digitale Angebote barrierefrei zugänglich zu machen. Wir haben das schon für Sie erledigt.
@@ -55,7 +55,7 @@ export default function HomePage() {
             <div className="grid md:grid-cols-3 gap-6">
               {[
                 { icon: Zap, title: "WCAG 2.2 AA", desc: "Vollständig umgesetzt nach den Web Content Accessibility Guidelines. Tastaturbedienbar, ausreichender Kontrast, klare Sprache." },
-                { icon: Wallet, title: "Keine Extra-Kosten", desc: "Barrierefreiheit ist bei uns keine Option, sondern Standard. In allen Plänen inklusive — auch im kostenlosen Starter." },
+                { icon: Wallet, title: "Kostenfrei", desc: "Unsere Plattform ist für alle Vereine dauerhaft kostenfrei. Keine versteckten Kosten, keine Abos — einfach nutzen." },
                 { icon: Shield, title: "DSGVO-konform", desc: "Hosting in Deutschland, transparente Datenverarbeitung und automatische Löschfristen. Datenschutz ist bei uns Standard." },
               ].map((item) => (
                 <div key={item.title} className="p-6 rounded-xl bg-card border transition-all duration-200 hover:shadow-md">
@@ -74,7 +74,7 @@ export default function HomePage() {
       <section className="py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4">Häufig gestellte Fragen</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold font-heading mb-4 text-foreground tracking-tight">Häufig gestellte Fragen</h2>
             <p className="text-muted-foreground">
               Antworten auf die wichtigsten Fragen zu schach.studio.
             </p>
@@ -85,7 +85,7 @@ export default function HomePage() {
 
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Bereit für den ersten Zug?</h2>
+          <h2 className="text-3xl md:text-5xl font-bold font-heading mb-6 text-foreground tracking-tight">Bereit für den ersten Zug?</h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Schließe dich modernen Schachvereinen an und bringe deine Verwaltung auf das nächste Level.
           </p>

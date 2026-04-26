@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect, notFound } from "next/navigation";
 import { getEventById, updateEvent } from "@/lib/actions/events";
-import EventForm from "@/components/calendar/EventForm";
+import EventForm from "@/features/calendar/components/EventForm";
 
 interface EditEventPageProps {
   params: Promise<{ id: string }>;

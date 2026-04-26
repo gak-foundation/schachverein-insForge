@@ -6,6 +6,7 @@ import {
   clubs,
   clubMemberships,
   members,
+  authUsers,
 } from "@/lib/db/schema";
 import { getAllAuthUsers, updateAuthUser } from "@/lib/db/queries/auth";
 import { requireAuth, requireClub } from "@/lib/auth/session";
@@ -18,7 +19,7 @@ import {
   createClubInvitation,
   getInvitationByToken,
   markInvitationUsed,
-  updateUserActiveClub,
+  updateUserClub,
   getClubById,
 } from "./queries";
 
@@ -73,19 +74,21 @@ export async function createClubAction(formData: FormData) {
         email: session.user.email || contactEmail || "",
         status: "active",
         role: "admin",
+        clubId: club.id,
       })
       .returning({ id: members.id });
     memberId = newMember.id;
 
-    // Link member to auth user
-    await updateAuthUser(session.user.id, { memberId: newMember.id });
+    // Link member to auth user and set clubId
+    await updateAuthUser(session.user.id, { memberId: newMember.id, clubId: club.id });
+  } else {
+    // Update existing member with clubId
+    await db.update(members).set({ clubId: club.id, role: "admin" }).where(eq(members.id, memberId));
+    await updateAuthUser(session.user.id, { clubId: club.id });
   }
 
-  // Add creator as admin
+  // Add creator as admin (legacy record for migration period)
   await addMemberToClub(club.id, memberId, "admin", true);
-
-  // Set as active club
-  await updateUserActiveClub(session.user.id, club.id);
 
   revalidatePath("/dashboard");
   return { success: true, club };
@@ -154,30 +157,19 @@ export async function updateClubAction(formData: FormData) {
   return { success: true };
 }
 
-// ─── Club Switching ────────────────────────────────────────────
+// ─── Club Switching (DEPRECATED: Strict tenancy - one club per user) ──────────
 
 export async function switchClubAction(clubId: string) {
   const session = await requireAuth();
 
-  // Verify user is member of this club
-  const [membership] = await db
-    .select()
-    .from(clubMemberships)
-    .where(
-      and(
-        eq(clubMemberships.clubId, clubId),
-        eq(clubMemberships.memberId, session.user.memberId!),
-        eq(clubMemberships.status, "active")
-      )
-    );
-
-  if (!membership && !session.user.isSuperAdmin) {
-    throw new Error("Kein Zugriff auf diesen Verein");
+  if (session.user.isSuperAdmin) {
+    // Super-admins can still switch context for admin purposes
+    await updateUserClub(session.user.id, clubId);
+    return { success: true };
   }
 
-  await updateUserActiveClub(session.user.id, clubId);
-
-  return { success: true };
+  // Regular users cannot switch clubs under strict tenancy
+  throw new Error("Wechsel zwischen Vereinen ist nicht erlaubt");
 }
 
 // ─── Member Management ─────────────────────────────────────────
@@ -193,34 +185,36 @@ export async function inviteMemberToClubAction(formData: FormData) {
     throw new Error("E-Mail ist erforderlich");
   }
 
-  // Check if member already exists
-  const [existingMember] = await db
+  // Check if email already belongs to a member of this club
+  const [existingClubMember] = await db
     .select({ id: members.id })
+    .from(members)
+    .where(and(eq(members.email, email), eq(members.clubId, club.id)));
+
+  if (existingClubMember) {
+    throw new Error("Mitglied ist bereits im Verein");
+  }
+
+  // Check if email belongs to a user in ANOTHER club (strict tenancy)
+  const [otherClubMember] = await db
+    .select({ id: members.id, clubId: members.clubId })
     .from(members)
     .where(eq(members.email, email));
 
-  if (existingMember) {
-    // Check if already member of this club
-    const [existingMembership] = await db
-      .select()
-      .from(clubMemberships)
-      .where(
-        and(
-          eq(clubMemberships.clubId, club.id),
-          eq(clubMemberships.memberId, existingMember.id)
-        )
-      );
+  if (otherClubMember && otherClubMember.clubId && otherClubMember.clubId !== club.id) {
+    throw new Error("Diese E-Mail ist bereits einem anderen Verein zugeordnet");
+  }
 
-    if (existingMembership) {
-      throw new Error("Mitglied ist bereits im Verein");
-    }
-
-    // Add existing member to club
-    await addMemberToClub(club.id, existingMember.id, role);
+  if (otherClubMember) {
+    // Existing member in no club (unlikely) or same club (handled above)
+    await db
+      .update(members)
+      .set({ clubId: club.id, role: role as typeof members.$inferInsert.role })
+      .where(eq(members.id, otherClubMember.id));
 
     return {
       success: true,
-      message: "Mitglied wurde zum Verein hinzugefügt",
+      message: "Mitglied wurde zum Verein hinzugefuegt",
     };
   }
 
@@ -258,9 +252,16 @@ export async function removeMemberFromClubAction(memberId: string) {
 
   // Prevent removing yourself
   if (memberId === session.user.memberId) {
-    throw new Error("Sie können sich nicht selbst entfernen");
+    throw new Error("Sie koennen sich nicht selbst entfernen");
   }
 
+  // Remove club association using strict tenancy (set clubId null)
+  await db
+    .update(members)
+    .set({ clubId: null, updatedAt: new Date() })
+    .where(and(eq(members.id, memberId), eq(members.clubId, club.id)));
+
+  // Also update legacy membership record
   await db
     .update(clubMemberships)
     .set({ status: "inactive", updatedAt: new Date() })
@@ -278,6 +279,13 @@ export async function removeMemberFromClubAction(memberId: string) {
 export async function updateMemberRoleAction(memberId: string, role: string) {
   const club = await requireClub();
 
+  // Update role directly on members table (strict tenancy)
+  await db
+    .update(members)
+    .set({ role: role as typeof members.$inferInsert.role, updatedAt: new Date() })
+    .where(and(eq(members.id, memberId), eq(members.clubId, club.id)));
+
+  // Also update legacy record during migration period
   await db
     .update(clubMemberships)
     .set({ role: role as typeof clubMemberships.$inferInsert.role, updatedAt: new Date() })
@@ -299,7 +307,7 @@ export async function acceptClubInvitationAction(token: string) {
 
   const invitation = await getInvitationByToken(token);
   if (!invitation) {
-    throw new Error("Ungültige oder abgelaufene Einladung");
+    throw new Error("Ungueltige oder abgelaufene Einladung");
   }
 
   // Check if email matches
@@ -309,10 +317,23 @@ export async function acceptClubInvitationAction(token: string) {
     .where(eq(members.id, session.user.memberId!));
 
   if (userMember?.email !== invitation.email) {
-    throw new Error("Die Einladung wurde für eine andere E-Mail-Adresse erstellt");
+    throw new Error("Die Einladung wurde fuer eine andere E-Mail-Adresse erstellt");
   }
 
-  // Add member to club
+  // Set member.clubId for strict tenancy
+  await db
+    .update(members)
+    .set({
+      clubId: invitation.clubId,
+      role: invitation.role as typeof members.$inferInsert.role,
+      updatedAt: new Date(),
+    })
+    .where(eq(members.id, session.user.memberId!));
+
+  // Update authUser.clubId
+  await updateAuthUser(session.user.id, { clubId: invitation.clubId });
+
+  // Add legacy membership record
   await addMemberToClub(
     invitation.clubId,
     session.user.memberId!,
@@ -321,11 +342,6 @@ export async function acceptClubInvitationAction(token: string) {
 
   // Mark invitation as used
   await markInvitationUsed(invitation.id);
-
-  // Set as active club if no active club
-  if (!session.user.activeClubId) {
-    await updateUserActiveClub(session.user.id, invitation.clubId);
-  }
 
   return {
     success: true,
@@ -347,17 +363,13 @@ export async function getAllClubsAction() {
       id: clubs.id,
       name: clubs.name,
       slug: clubs.slug,
-      plan: clubs.plan,
       isActive: clubs.isActive,
-      subscriptionStatus: clubs.subscriptionStatus,
-      subscriptionExpiresAt: clubs.subscriptionExpiresAt,
-      createdAt: clubs.createdAt,
       stripeCustomerId: clubs.stripeCustomerId,
-      stripeSubscriptionId: clubs.stripeSubscriptionId,
+      stripeConnectAccountId: clubs.stripeConnectAccountId,
+      createdAt: clubs.createdAt,
       memberCount: sql<number>`(
-        SELECT COUNT(*) FROM ${clubMemberships}
-        WHERE ${clubMemberships.clubId} = ${clubs.id}
-        AND ${clubMemberships.status} = 'active'
+        SELECT COUNT(*) FROM ${members}
+        WHERE ${members.clubId} = ${clubs.id}
       )`,
     })
     .from(clubs)
@@ -404,8 +416,8 @@ export async function impersonateClubAction(clubId: string) {
     throw new Error("Verein nicht gefunden");
   }
 
-  // Set club as active for this session
-  await updateUserActiveClub(session.user.id, clubId);
+  // Set club as active for this session using strict tenancy
+  await updateUserClub(session.user.id, clubId);
 
   return { success: true, club };
 }

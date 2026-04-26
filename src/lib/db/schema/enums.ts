@@ -3,7 +3,6 @@ import { pgEnum } from "drizzle-orm/pg-core";
 export const subscriptionPlanEnum = pgEnum("subscription_plan", [
   "free",
   "pro",
-  "enterprise",
 ]);
 
 export const subscriptionStatusEnum = pgEnum("subscription_status", [
@@ -12,6 +11,21 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
   "canceled",
   "trialing",
   "paused",
+]);
+
+export const addonIdEnum = pgEnum("addon_id", [
+  "finance",
+  "tournament_pro",
+  "professional",
+  "communication",
+  "storage_plus",
+]);
+
+export const addonStatusEnum = pgEnum("addon_status", [
+  "active",
+  "past_due",
+  "canceled",
+  "trialing",
 ]);
 
 export const clubMemberStatusEnum = pgEnum("club_member_status", [
@@ -124,4 +138,3 @@ export const applicationTypeEnum = pgEnum("application_type", [
   "contact",
   "pilot",
 ]);
-

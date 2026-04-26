@@ -1,5 +1,6 @@
 export * from "./enums";
 export * from "./clubs";
+export * from "./club_addons";
 export * from "./clubs-relations";
 export * from "./members";
 export * from "./members-relations";
@@ -16,4 +17,3 @@ export * from "./audit";
 export * from "./auth";
 export * from "./cms";
 export * from "./waitlist";
-

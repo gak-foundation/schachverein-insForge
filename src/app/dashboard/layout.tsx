@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ClubProvider } from "@/lib/club-context";
-import { ClubSwitcher } from "@/components/clubs/club-switcher";
+import { ClubSwitcher } from "@/features/clubs/components/club-switcher";
 import { getUserClubs } from "@/lib/clubs/queries";
 import Image from "next/image";
+import type { PlanId } from "@/lib/billing/addons";
 
 export default async function DashboardLayout({
   children,
@@ -32,13 +33,22 @@ export default async function DashboardLayout({
 
   return (
     <ClubProvider
-      initialClub={session.club}
+      initialClub={session.club ? {
+        id: session.club.id,
+        name: session.club.name,
+        slug: session.club.slug,
+        logoUrl: session.club.logoUrl,
+        plan: session.club.plan as PlanId,
+        activeAddons: session.club.activeAddons || [],
+        isActive: session.club.isActive,
+      } : null}
       userClubs={userClubs.map((c) => ({
         id: c.id,
         name: c.name,
         slug: c.slug,
         logoUrl: c.logoUrl,
-        plan: c.plan,
+        plan: c.plan as PlanId,
+        activeAddons: [], // We only need activeAddons for the current club usually
         isActive: c.isActive,
       }))}
     >

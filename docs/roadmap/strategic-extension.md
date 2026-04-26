@@ -240,20 +240,39 @@ Mit dem **BFSG (seit 28.06.2025)** wird das kritisch:
 
 ---
 
-## 💰 6. Angepasstes Preismodell (Vorschlag)
+## 💰 6. Angepasstes Preismodell: Freemium + Addons
 
-Das Website-Modul rechtfertigt eine **komplette Neukalibrierung**:
+### Grundprinzip: Kostenlos für immer
 
-| Tarif | Umfang | Preis |
-|-------|--------|-------|
-| **Free** | Subdomain-Website, 5 Seiten, bis 20 Mitglieder, Community-Support | **0 €** |
-| **Starter** | Eigene Domain, Website + Mitgliederverwaltung, bis 50 Mitglieder | **29 €/Monat** |
-| **Club** | + Turniere, Finanzen, SEPA, bis 150 Mitglieder | **59 €/Monat** |
-| **Pro** | + Mehrere Mannschaften, Prioritäts-Support, API-Zugriff | **99 €/Monat** |
-| **Verband** | Multi-Club, zentrale Website, White-Label | **Individuell** |
+Die Software ist **für alle Vereine kostenlos** — ohne Mitgliedslimit, ohne Zeitbegrenzung.
+
+**Kostenlos enthalten:**
+- Unbegrenzte Mitglieder
+- Mitgliederverwaltung
+- Öffentliche Vereinsseite (Subdomain)
+- Terminkalender
+- Mannschaftsaufstellungen
+- Basis-Turniere (Rundenturniere)
+- Ergebniseingabe
+- DSGVO-Tools
+- E-Mail-Support
+
+### Bezahlbare Addons (einzeln buchbar)
+
+| Addon | Preis | Enthaltene Features |
+|-------|-------|---------------------|
+| **Finanzmodul** | 9,90 €/Monat | SEPA-Export, Mahnwesen, Beitragsstufen, Zahlungs-Tracking, Rechnungen |
+| **Turnier-Pro** | 9,90 €/Monat | Schweizer System (bbpPairings), TRF-Import/Export, Live-Ticker, Kreuztabellen |
+| **Professional** | 4,90 €/Monat | Eigene Domain, White-Label, API-Zugang, erweiterte Analytics |
+| **Kommunikation** | 4,90 €/Monat | Newsletter, Push-Benachrichtigungen, Eltern-Portal, Rundmails |
+| **Speicher+** | 2,90 €/Monat | 10 GB Speicher (statt 500 MB), größere Datei-Uploads |
+
+**Kombi-Rabatt:** 2 Addons = 10% Rabatt · 3+ Addons = 20% Rabatt
 
 **Entscheidende Änderungen:**
-- **Free-Tier als Akquise-Hook** (Website zuerst, Verwaltung als Upsell)
+- **Kostenlos für immer** — Keine Mitgliedslimits, keine Zeitbegrenzung
+- **Nur das zahlen, was man braucht** — Ein Verein ohne SEPA braucht kein Finanzmodul
+- **Kombi-Rabatt** belohnt Vereine, die mehrere Module nutzen
 - **Jahresabo -15%** (Vereine planen jährlich!)
 - **Gemeinnützigkeits-Rabatt -20%** (formalisiert)
 - **Setup-Paket** (299 € einmalig, Migration + Schulung)

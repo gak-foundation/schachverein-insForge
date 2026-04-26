@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { AuthLayout } from "@/components/auth/auth-layout";
-import { AuthCard } from "@/components/auth/auth-card";
-import { AuthHeader } from "@/components/auth/auth-header";
-import { SocialButtons } from "@/components/auth/social-buttons";
-import { ErrorMessage } from "@/components/auth/error-message";
+import { AuthLayout } from "@/features/auth/components/auth-layout";
+import { AuthCard } from "@/features/auth/components/auth-card";
+import { AuthHeader } from "@/features/auth/components/auth-header";
+import { SocialButtons } from "@/features/auth/components/social-buttons";
+import { ErrorMessage } from "@/features/auth/components/error-message";
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: "Ungültige E-Mail oder Passwort",
@@ -56,7 +56,7 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const supabase = createClient();
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -83,8 +83,19 @@ function LoginPageContent() {
         return;
       }
 
-      // Redirect after successful login
-      window.location.href = callbackURL;
+      // Tenant verification after successful Supabase login
+      const verifyRes = await fetch("/api/auth/verify-tenant");
+      const verifyData = await verifyRes.json();
+
+      if (!verifyData.ok) {
+        // Tenant mismatch or other issue: sign out and show error
+        await supabase.auth.signOut();
+        setError(verifyData.error || "Tenant-Verifikation fehlgeschlagen");
+        return;
+      }
+
+      // Redirect to onboarding if needed, otherwise to callbackURL
+      window.location.href = verifyData.needsOnboarding ? "/onboarding" : callbackURL;
     } catch {
       setError(ERROR_MESSAGES.default);
     } finally {

@@ -2,6 +2,10 @@ import { Check, X } from "lucide-react";
 
 const comparisons = [
   {
+    problem: "Doppeltpflege (Verwaltung + Website)",
+    solution: "Single Source of Truth: Verwaltung befüllt Website",
+  },
+  {
     problem: "Excel-Listen auf privaten Laptops",
     solution: "Zentrale, cloudbasierte Mitgliederakte",
   },

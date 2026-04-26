@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getAuditLogs } from "@/lib/actions/audit";
+import { getAuditLogs } from "@/features/audit/actions";
 import {
   Card,
   CardContent,

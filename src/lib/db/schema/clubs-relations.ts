@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import { clubs } from "./clubs";
+import { clubAddons } from "./club_addons";
 import { clubMemberships, clubInvitations } from "./members";
 import { seasons } from "./seasons";
 import { teams } from "./teams";
@@ -12,6 +13,7 @@ import { mediaAssets, pages } from "./cms";
 
 export const clubsRelations = relations(clubs, ({ many }) => ({
   memberships: many(clubMemberships, { relationName: "memberships" }),
+  addons: many(clubAddons),
   seasons: many(seasons),
   teams: many(teams, { relationName: "club_teams" }),
   tournaments: many(tournaments),

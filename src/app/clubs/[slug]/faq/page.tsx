@@ -571,29 +571,29 @@ export default function FAQPage() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <p className="text-gray-600 leading-relaxed">
-                    Nein. Der angegebene Preis beinhaltet alle Funktionen, Hosting, Support und Updates. Es fallen keine zusätzlichen Kosten an.
+                    Nein. Die Nutzung der Plattform ist für alle Vereine dauerhaft kostenfrei. Es fallen keine Kosten für Hosting, Support oder Updates an.
                   </p>
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="upgrade">
                 <AccordionTrigger className="text-left">
-                  Können wir das Abo später upgraden?
+                  Müssen wir für mehr Mitglieder bezahlen?
                 </AccordionTrigger>
                 <AccordionContent>
                   <p className="text-gray-600 leading-relaxed">
-                    Ja, bei Mitgliederzuwachs kann das Abo jederzeit auf die nächste Stufe upgegradet werden. Die Abrechnung erfolgt anteilig pro Monat.
+                    Nein, es gibt keine Mitgliederlimits. Egal wie groß Ihr Verein ist oder wie viele Funktionen Sie nutzen — alles bleibt kostenfrei.
                   </p>
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="rabatte">
                 <AccordionTrigger className="text-left">
-                  Gibt es Rabatte für neue Vereine oder Jugendarbeit?
+                  Warum ist die Software kostenlos?
                 </AccordionTrigger>
                 <AccordionContent>
                   <p className="text-gray-600 leading-relaxed">
-                    Ja, Vereine mit überwiegend jugendlichen Mitgliedern (&gt;50% unter 18) erhalten 20% Rabatt. Neue Vereine im ersten Gründungsjahr erhalten den ersten Jahrespreis gratis.
+                    Wir möchten den Schachsport fördern und Vereinen eine moderne digitale Heimat bieten, ohne das Budget zu belasten. Die Software ist als Community-Projekt angelegt.
                   </p>
                 </AccordionContent>
               </AccordionItem>

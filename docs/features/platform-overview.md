@@ -272,13 +272,41 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 
 ---
 
-## 💼 15. Geschäftsmodell (SaaS)
+## 💼 15. Geschäftsmodell (Freemium + Addons)
 
-| Tarif | Zielgruppe | Preis |
-|-------|-----------|-------|
-| **Starter** | Kleine Dorfvereine (bis 30 Mitglieder) | **0,00 € (Dauerhaft)** |
-| **Verein** | Typische Vereine (bis 200 Mitglieder) | **9,90 € / Monat** |
-| **Pro** | Großvereine / Verbände | **24,90 € / Monat** |
+### Grundprinzip: Kostenlos für immer
+
+Die Software ist **für alle Vereine kostenlos** — ohne Mitgliedslimit, ohne Zeitbegrenzung, ohne versteckte Kosten.
+
+**Kostenlos enthalten:**
+- Unbegrenzte Mitglieder
+- Mitgliederverwaltung
+- Öffentliche Vereinsseite (Subdomain)
+- Terminkalender
+- Mannschaftsaufstellungen
+- Basis-Turniere (Rundenturniere)
+- Ergebniseingabe
+- DSGVO-Tools
+- E-Mail-Support
+
+### Bezahlbare Addons (einzeln buchbar)
+
+| Addon | Preis | Enthaltene Features |
+|-------|-------|---------------------|
+| **Finanzmodul** | 9,90 €/Monat | SEPA-Export, Mahnwesen, Beitragsstufen, Zahlungs-Tracking, Rechnungen |
+| **Turnier-Pro** | 9,90 €/Monat | Schweizer System (bbpPairings), TRF-Import/Export, Live-Ticker, Kreuztabellen |
+| **Professional** | 4,90 €/Monat | Eigene Domain, White-Label, API-Zugang, erweiterte Analytics |
+| **Kommunikation** | 4,90 €/Monat | Newsletter, Push-Benachrichtigungen, Eltern-Portal, Rundmails |
+| **Speicher+** | 2,90 €/Monat | 10 GB Speicher (statt 500 MB), größere Datei-Uploads |
+
+**Kombi-Rabatt:** 2 Addons = 10% Rabatt · 3+ Addons = 20% Rabatt
+
+### Warum dieses Modell?
+
+- **Keine Barriere für kleine Vereine** — Dorfvereine mit 10 Mitgliedern zahlen nichts
+- **Nur das zahlen, was man braucht** — Ein Verein ohne SEPA braucht kein Finanzmodul
+- **Skalierbar** — Wachstum des Vereins kostet nicht mehr
+- **Faire Preise** — Keine überhöhten "Pro"-Pläne mit Features, die niemand nutzt
 
 ---
 

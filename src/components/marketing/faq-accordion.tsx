@@ -16,7 +16,7 @@ const faqs = [
   {
     question: "Wie funktioniert das Preismodell?",
     answer:
-      "Unser Starter-Plan ist für bis zu 20 Mitglieder kostenlos. Für größere Vereine bieten wir den Verein-Plan für 9 €/Monat (bis 100 Mitglieder) und den Pro-Plan für 20 €/Monat (unbegrenzte Mitglieder). Alle Pläne können monatlich gekündigt werden. Es gibt keine versteckten Kosten oder Einrichtungsgebühren.",
+      "Die Nutzung unserer Plattform ist für alle Vereine dauerhaft kostenfrei. Es gibt keine Mitgliederlimits, keine versteckten Kosten und keine Abomodelle. Wir möchten den Schachsport unterstützen und die Vereinsverwaltung so einfach und zugänglich wie möglich machen.",
   },
   {
     question: "Kann ich meine bestehenden Daten importieren?",

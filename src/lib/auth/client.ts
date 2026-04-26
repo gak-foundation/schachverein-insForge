@@ -23,7 +23,7 @@ export const authClient = {
         role?: string;
         permissions?: string[];
         memberId?: string;
-        activeClubId?: string;
+        clubId?: string;
         isSuperAdmin?: boolean;
         image?: string;
       } | null;
@@ -62,7 +62,7 @@ export const authClient = {
               role: profile?.role || "mitglied",
               permissions: profile?.permissions || [],
               memberId: profile?.memberId,
-              activeClubId: profile?.activeClubId,
+              clubId: profile?.clubId,
               isSuperAdmin: profile?.isSuperAdmin || false,
             },
           });
@@ -83,7 +83,7 @@ export const authClient = {
               role: profile?.role || "mitglied",
               permissions: profile?.permissions || [],
               memberId: profile?.memberId,
-              activeClubId: profile?.activeClubId,
+              clubId: profile?.clubId,
               isSuperAdmin: profile?.isSuperAdmin || false,
             },
           });
@@ -110,14 +110,14 @@ export const authClient = {
   },
 
   signUp: {
-    email: async ({ email, password, name }: { email: string; password: string; name?: string }) => {
+    email: async ({ email, password, name, slug, invitationToken }: { email: string; password: string; name?: string; slug?: string; invitationToken?: string }) => {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${getAppUrl()}/auth/callback`,
-          data: { name },
+          data: { name, slug, invitation_token: invitationToken },
         },
       });
       return { data, error };

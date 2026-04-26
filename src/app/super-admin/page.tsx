@@ -28,9 +28,6 @@ export default async function SuperAdminPage() {
   const stats = {
     totalUsers: totalUsers[0]?.count ?? 0,
     totalClubs: totalClubs[0]?.count ?? 0,
-    activeSubscriptions: activeSubscriptions[0]?.count ?? 0,
-    proClubs: allClubs.filter((c) => c.plan === "pro").length,
-    enterpriseClubs: allClubs.filter((c) => c.plan === "enterprise").length,
   };
 
   return <SuperAdminDashboard clubs={allClubs as any} users={allUsers as any} stats={stats} />;

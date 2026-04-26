@@ -4,7 +4,7 @@ import {
   getSeasons,
   createEvent,
   createSeason,
-} from "@/lib/actions/events";
+} from "@/features/calendar/actions";
 
 // Query Keys
 export const eventKeys = {
