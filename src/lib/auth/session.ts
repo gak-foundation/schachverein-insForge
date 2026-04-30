@@ -1,5 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { cache } from "react";
+import { headers } from "next/headers";
 import { ROLE_PERMISSIONS, Permission } from "./permissions";
 import { getAuthUserWithClub } from "@/lib/db/queries/auth";
 import { db } from "@/lib/db";
@@ -7,6 +8,7 @@ import { clubs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getClubAddons } from "@/lib/billing/queries";
 import type { AddonId, PlanId } from "@/lib/billing/addons";
+import { getClubById, getClubBySlug } from "@/lib/clubs/queries";
 
 // Cached session getter for server components
 export const getSession = cache(async () => {
@@ -48,53 +50,10 @@ export const getSession = cache(async () => {
     const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
     const isHardcodedAdmin = user.email ? superAdminEmails.includes(user.email) : false;
 
-    // Fetch additional user data from database using Drizzle.
-    // Degrade gracefully on DB errors to prevent redirect loops.
-    let userData = null;
-    try {
-      userData = await getAuthUserWithClub(user.id);
-    } catch (dbError: any) {
-      if (dbError?.digest === 'DYNAMIC_SERVER_USAGE' || dbError?.message?.includes('dynamic-server-error')) {
-        throw dbError;
-      }
+    // Fetch additional user data from database.
+    // getAuthUserWithClub already handles its own fallbacks (REST vs Drizzle)
+    const userData = await getAuthUserWithClub(user.id);
 
-      const isPoolerError = dbError.message?.includes('Tenant or user not found') || dbError.code === 'XX000';
-      
-      // In development, we don't want to spam the console if the fallback works
-      if (process.env.NODE_ENV !== 'development' || !isPoolerError) {
-        console.error(
-          "DB fetch failed in getSession (degraded session returned):",
-          `code=${dbError.code || 'unknown'} severity=${dbError.severity || 'unknown'} message=${dbError.message}`
-        );
-      }
-
-      // Fallback: try Supabase REST API which properly passes JWT claims for RLS
-      try {
-        const supabase = await createClient();
-        const { data, error } = await supabase
-          .from('auth_user')
-          .select('id, name, email, email_verified, image, role, permissions, member_id, club_id, is_super_admin')
-          .eq('id', user.id)
-          .single();
-
-        if (!error && data) {
-          userData = {
-            id: data.id,
-            name: data.name,
-            email: data.email,
-            emailVerified: data.email_verified,
-            image: data.image,
-            role: data.role,
-            permissions: data.permissions || [],
-            memberId: data.member_id,
-            clubId: data.club_id,
-            isSuperAdmin: data.is_super_admin || false,
-          };
-        }
-      } catch {
-        // Both Drizzle and Supabase REST failed, session will be degraded
-      }
-    }
 
     return {
       user: {
@@ -128,33 +87,52 @@ export const getSessionWithClub = cache(async () => {
   const session = await getSession();
   if (!session) return null;
 
-  // Strict tenancy: clubId must be set for non-super-admins
+  const user = session.user;
   let club = null;
-  if (session.user.isSuperAdmin) {
-    // Super-admins have no fixed club; they browse via root domain
-    return { ...session, club: null };
+
+  // 1. Determine which club ID or slug to look for
+  let clubIdLookup = user.clubId;
+  let clubSlugLookup = null;
+
+  // For Super Admins or context switching, check headers (injected by proxy.ts middleware)
+  try {
+    const headerList = await headers();
+    const headerSlug = headerList.get("x-club-slug");
+    if (headerSlug) {
+      clubSlugLookup = headerSlug;
+    }
+  } catch (e) {
+    // Headers might not be available in all contexts (e.g. edge cases)
   }
 
-  if (session.user.clubId) {
-    try {
-      const [clubData] = await db
-        .select()
-        .from(clubs)
-        .where(eq(clubs.id, session.user.clubId))
-        .limit(1);
-      
-      if (clubData) {
-        const activeAddons = await getClubAddons(clubData.id);
-        club = {
-          ...clubData,
-          plan: clubData.plan as PlanId,
-          activeAddons: activeAddons as AddonId[],
-        };
-      }
-    } catch (error) {
-      console.error("Error fetching club context:", error);
-      // Club not found, continue without
+  // 2. Resolve the club
+  try {
+    let clubData = null;
+
+    // Prefer slug from header (subdomain context)
+    if (clubSlugLookup) {
+      clubData = await getClubBySlug(clubSlugLookup);
+    } 
+    // Fallback to user's assigned club
+    else if (clubIdLookup) {
+      clubData = await getClubById(clubIdLookup);
     }
+
+    if (clubData) {
+      const activeAddons = await getClubAddons(clubData.id);
+      club = {
+        ...clubData,
+        plan: clubData.plan as PlanId,
+        activeAddons: activeAddons as AddonId[],
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching club context in getSessionWithClub:", error);
+  }
+
+  // Super-Admins without a club context (e.g. on root domain) are fine
+  if (!club && user.isSuperAdmin) {
+    return { ...session, club: null };
   }
 
   return {

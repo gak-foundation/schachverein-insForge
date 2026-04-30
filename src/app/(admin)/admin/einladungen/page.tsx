@@ -79,7 +79,7 @@ export default async function AdminInvitationsPage() {
                   </td>
                 </tr>
               )}
-              {invitations.map((inv) => {
+              {invitations.map((inv: any) => {
                 const isExpired = new Date(inv.expiresAt) < new Date();
                 const isUsed = !!inv.usedAt;
                 const status = isUsed ? "used" : isExpired ? "expired" : "pending";

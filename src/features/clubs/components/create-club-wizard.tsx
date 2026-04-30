@@ -184,7 +184,7 @@ export function CreateClubWizard() {
             <div className="space-y-2">
               <h2 className="text-3xl font-bold">Alles bereit!</h2>
               <p className="text-muted-foreground max-w-sm mx-auto">
-                Ihr Verein "{clubName}" wurde eingerichtet und ist startklar.
+                Ihr Verein &quot;{clubName}&quot; wurde eingerichtet und ist startklar.
               </p>
             </div>
             <Button onClick={() => window.location.reload()} className="w-full h-12 text-lg px-8 mt-6">Dashboard laden</Button>

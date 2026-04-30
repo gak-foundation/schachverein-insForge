@@ -6,26 +6,63 @@ import { eq, and, sql, gte } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "@/lib/actions/utils";
+import { createServiceClient } from "@/lib/supabase/server";
 
 export async function getUpcomingMatchesForAvailability() {
   const clubId = await requireClubId();
   const today = new Date().toISOString().split("T")[0];
 
-  return db
-    .select({
-      id: matches.id,
-      date: matches.matchDate,
-      opponent: teams.name, // Using home or away team name as opponent context
-      homeTeamId: matches.homeTeamId,
-      awayTeamId: matches.awayTeamId,
-    })
-    .from(matches)
-    .innerJoin(teams, sql`${matches.homeTeamId} = ${teams.id} OR ${matches.awayTeamId} = ${teams.id}`)
-    .where(and(
-      eq(teams.clubId, clubId),
-      gte(matches.matchDate, today)
-    ))
-    .orderBy(matches.matchDate);
+  try {
+    // 1. Try Drizzle
+    return await db
+      .select({
+        id: matches.id,
+        date: matches.matchDate,
+        opponent: teams.name, // Using home or away team name as opponent context
+        homeTeamId: matches.homeTeamId,
+        awayTeamId: matches.awayTeamId,
+      })
+      .from(matches)
+      .innerJoin(teams, sql`${matches.homeTeamId} = ${teams.id} OR ${matches.awayTeamId} = ${teams.id}`)
+      .where(and(
+        eq(teams.clubId, clubId),
+        gte(matches.matchDate, today)
+      ))
+      .orderBy(matches.matchDate);
+  } catch (error) {
+    // 2. Fallback to REST API (Service Role)
+    const supabase = createServiceClient();
+    
+    // Complex join via REST is hard, so we fetch teams first then matches
+    const { data: clubTeams, error: teamsError } = await supabase
+      .from('teams')
+      .select('id, name')
+      .eq('club_id', clubId);
+    
+    if (teamsError || !clubTeams?.length) return [];
+    
+    const teamIds = clubTeams.map(t => t.id);
+    
+    const { data: upcomingMatches, error: matchesError } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`home_team_id.in.(${teamIds.join(',')}),away_team_id.in.(${teamIds.join(',')})`)
+      .gte('match_date', today)
+      .order('match_date');
+      
+    if (matchesError || !upcomingMatches) return [];
+    
+    return upcomingMatches.map(m => {
+      const team = clubTeams.find(t => t.id === m.home_team_id || t.id === m.away_team_id);
+      return {
+        id: m.id,
+        date: m.match_date,
+        opponent: team?.name || "Unbekannt",
+        homeTeamId: m.home_team_id,
+        awayTeamId: m.away_team_id,
+      };
+    });
+  }
 }
 
 export async function getMemberAvailability() {

@@ -312,7 +312,7 @@ export default function OnboardingPage() {
               <div className="space-y-3">
                 <h2 className="text-4xl font-extrabold tracking-tight">Alles bereit!</h2>
                 <p className="text-xl text-muted-foreground max-w-sm mx-auto">
-                  Ihr Verein <span className="text-foreground font-bold">"{clubName}"</span> wurde eingerichtet und ist startklar.
+                  Ihr Verein <span className="text-foreground font-bold">&quot;{clubName}&quot;</span> wurde eingerichtet und ist startklar.
                 </p>
               </div>
               <div className="pt-4">

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { setClubPlan, setStripeSubscriptionId } from "@/lib/billing/queries";
+import { setClubPlan, setStripeSubscriptionId, setAddonStatus } from "@/lib/billing/queries";
 import { getClubByStripeCustomerId } from "@/lib/clubs/queries";
-import type { PlanId } from "@/lib/billing/addons";
+import type { PlanId, AddonId } from "@/lib/billing/addons";
 import Stripe from "stripe";
 
 const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-03-25.dahlia" })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-03-25.dahlia" as any })
   : null;
 
 export async function POST(request: Request) {
@@ -43,9 +43,10 @@ export async function POST(request: Request) {
         const subscriptionId = session.subscription as string;
         const customerId = session.customer as string;
         const planId = session.metadata?.planId as PlanId | undefined;
+        const addonId = session.metadata?.addonId as AddonId | undefined;
 
-        if (!planId || !customerId) {
-          console.warn("Checkout session missing planId or customerId", session.id);
+        if ((!planId && !addonId) || !customerId) {
+          console.warn("Checkout session missing planId/addonId or customerId", session.id);
           break;
         }
 
@@ -55,19 +56,30 @@ export async function POST(request: Request) {
           break;
         }
 
-        await setClubPlan(club.id, planId);
-        if (subscriptionId) {
-          await setStripeSubscriptionId(club.id, subscriptionId);
+        if (planId) {
+          await setClubPlan(club.id, planId);
+          if (subscriptionId) {
+            await setStripeSubscriptionId(club.id, subscriptionId);
+          }
+          console.log(`Plan ${planId} activated for club ${club.id}`);
+        } else if (addonId) {
+          if (subscriptionId) {
+            const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+            const priceId = lineItems.data[0]?.price?.id;
+            await setAddonStatus(club.id, addonId, "active", subscriptionId, priceId);
+          }
+          console.log(`Addon ${addonId} activated for club ${club.id}`);
         }
-        console.log(`Plan ${planId} activated for club ${club.id}`);
         break;
       }
 
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const planId = subscription.metadata?.planId as PlanId | undefined;
-        if (!planId) {
-          console.warn("Subscription missing planId metadata", subscription.id);
+        const addonId = subscription.metadata?.addonId as AddonId | undefined;
+        
+        if (!planId && !addonId) {
+          console.warn("Subscription missing planId/addonId metadata", subscription.id);
           break;
         }
 
@@ -75,23 +87,45 @@ export async function POST(request: Request) {
         if (!club) break;
 
         const status = subscription.status;
-        if (status === "active" || status === "trialing") {
-          await setClubPlan(club.id, planId);
-          await setStripeSubscriptionId(club.id, subscription.id);
-        } else if (status === "canceled" || status === "unpaid" || status === "incomplete_expired") {
-          await setClubPlan(club.id, "free");
-          await setStripeSubscriptionId(club.id, null);
+        const isActive = status === "active" || status === "trialing";
+        
+        if (planId) {
+          if (isActive) {
+            await setClubPlan(club.id, planId);
+            await setStripeSubscriptionId(club.id, subscription.id);
+          } else if (status === "canceled" || status === "unpaid" || status === "incomplete_expired") {
+            await setClubPlan(club.id, "free");
+            await setStripeSubscriptionId(club.id, null);
+          }
+        } else if (addonId) {
+          let addonDbStatus: "active" | "canceled" | "past_due" = "active";
+          if (status === "canceled" || status === "unpaid" || status === "incomplete_expired") {
+            addonDbStatus = "canceled";
+          } else if (status === "past_due") {
+            addonDbStatus = "past_due";
+          }
+          const priceId = subscription.items.data[0]?.price?.id;
+          await setAddonStatus(club.id, addonId, addonDbStatus, subscription.id, priceId);
         }
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
+        const planId = subscription.metadata?.planId as PlanId | undefined;
+        const addonId = subscription.metadata?.addonId as AddonId | undefined;
+        
         const club = await getClubByStripeCustomerId(subscription.customer as string);
         if (club) {
-          await setClubPlan(club.id, "free");
-          await setStripeSubscriptionId(club.id, null);
-          console.log(`Plan canceled for club ${club.id}`);
+          if (planId) {
+            await setClubPlan(club.id, "free");
+            await setStripeSubscriptionId(club.id, null);
+            console.log(`Plan canceled for club ${club.id}`);
+          } else if (addonId) {
+            const priceId = subscription.items.data[0]?.price?.id;
+            await setAddonStatus(club.id, addonId, "canceled", subscription.id, priceId);
+            console.log(`Addon ${addonId} canceled for club ${club.id}`);
+          }
         }
         break;
       }
@@ -101,8 +135,15 @@ export async function POST(request: Request) {
         const subId = (invoice as unknown as { subscription?: string }).subscription;
         if (subId) {
           const club = await getClubByStripeCustomerId(invoice.customer as string);
-          if (club && club.plan !== "pro") {
-            await setClubPlan(club.id, "pro");
+          // Wait, an invoice doesn't easily tell us plan vs addon without checking the subscription.
+          // In customer.subscription.updated we already handle the active status. 
+          // So we don't necessarily need to set the plan to PRO here unless legacy.
+          // For legacy PRO compatibility, we can leave this as is, but maybe we shouldn't force PRO if it's an addon payment.
+          const subscription = await stripe.subscriptions.retrieve(subId);
+          const planId = subscription.metadata?.planId as PlanId | undefined;
+          
+          if (club && planId && club.plan !== planId) {
+            await setClubPlan(club.id, planId);
           }
         }
         break;

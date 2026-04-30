@@ -32,13 +32,13 @@ export default async function AdminDashboardPage() {
         <div className="rounded-lg border bg-card p-6">
           <p className="text-sm text-muted-foreground">Aktive Vereine</p>
           <p className="text-3xl font-bold mt-2">
-            {allClubs.filter((c) => c.isActive).length}
+            {allClubs.filter((c: any) => c.isActive).length}
           </p>
         </div>
         <div className="rounded-lg border bg-card p-6">
           <p className="text-sm text-muted-foreground">Mitglieder gesamt</p>
           <p className="text-3xl font-bold mt-2">
-            {allClubs.reduce((sum, c) => sum + (c.memberCount ?? 0), 0)}
+            {allClubs.reduce((sum: number, c: any) => sum + (c.memberCount ?? 0), 0)}
           </p>
         </div>
       </div>
@@ -58,7 +58,7 @@ export default async function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {allClubs.slice(0, 10).map((club) => (
+              {allClubs.slice(0, 10).map((club: any) => (
                 <tr key={club.id} className="hover:bg-muted/50">
                   <td className="py-3 font-medium">{club.name}</td>
                   <td className="py-3 text-muted-foreground">{club.slug}</td>

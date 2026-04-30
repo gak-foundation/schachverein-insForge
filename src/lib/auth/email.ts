@@ -14,25 +14,28 @@ const transporter = nodemailer.createTransport({
 // Send email wrapper
 export async function sendEmail({
   to,
+  bcc,
   subject,
   html,
   text,
 }: {
-  to: string;
+  to?: string;
+  bcc?: string | string[];
   subject: string;
   html: string;
   text?: string;
 }) {
   // Skip sending in development if no SMTP configured
   if (!process.env.SMTP_HOST) {
-    console.log("Email would be sent (SMTP not configured):", { to, subject });
+    console.log("Email would be sent (SMTP not configured):", { to, bcc, subject });
     return { success: true, messageId: "dev-mode" };
   }
 
   try {
     const result = await transporter.sendMail({
       from: process.env.SMTP_FROM || "noreply@schachverein.de",
-      to,
+      to: to || undefined,
+      bcc,
       subject,
       html,
       text,
@@ -47,18 +50,20 @@ export async function sendEmail({
 // Queue email for async sending (simplified version)
 export async function enqueueEmail({
   to,
+  bcc,
   subject,
   html,
   text,
 }: {
-  to: string;
+  to?: string;
+  bcc?: string | string[];
   subject: string;
   html: string;
   text?: string;
 }) {
   // In production, this would queue to a job system like BullMQ
   // For now, send directly
-  return sendEmail({ to, subject, html, text });
+  return sendEmail({ to, bcc, subject, html, text });
 }
 
 // Send password reset email
@@ -207,10 +212,11 @@ export async function sendClubInvitationEmail({
 
 // Direct email sending without queueing
 export async function sendEmailDirect(
-  to: string,
+  to: string | undefined,
   subject: string,
   html: string,
-  text?: string
+  text?: string,
+  bcc?: string | string[]
 ) {
-  return sendEmail({ to, subject, html, text });
+  return sendEmail({ to, bcc, subject, html, text });
 }

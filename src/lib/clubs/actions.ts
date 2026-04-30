@@ -12,12 +12,13 @@ import {
 import { getAllAuthUsers, updateAuthUser } from "@/lib/db/queries/auth";
 import { requireAuth, requireClub } from "@/lib/auth/session";
 import { sendClubInvitationEmail } from "@/lib/auth/email";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import {
   createClub,
   generateUniqueSlug,
   addMemberToClub,
+  createMember,
   createClubInvitation,
   getInvitationByToken,
   markInvitationUsed,
@@ -65,29 +66,23 @@ export async function createClubAction(formData: FormData) {
   // Ensure user has a member record, create one if not
   let memberId = session.user.memberId;
   if (!memberId) {
-    const [newMember] = await db
-      .insert(members)
-      .values({
-        firstName: session.user.name?.split(" ")[0] || "Vorname",
-        lastName: session.user.name?.split(" ").slice(1).join(" ") || "Nachname",
-        email: session.user.email || contactEmail || "",
-        status: "active",
-        role: "admin",
-        clubId: club.id,
-      })
-      .returning({ id: members.id });
+    const newMember = await createMember({
+      firstName: session.user.name?.split(" ")[0] || "Vorname",
+      lastName: session.user.name?.split(" ").slice(1).join(" ") || "Nachname",
+      email: session.user.email || contactEmail || "",
+      status: "active",
+      role: "admin",
+      clubId: club.id,
+    });
     memberId = newMember.id;
 
     // Link member to auth user and set clubId
     await updateAuthUser(session.user.id, { memberId: newMember.id, clubId: club.id });
   } else {
     // Update existing member with clubId
-    await db.update(members).set({ clubId: club.id, role: "admin" }).where(eq(members.id, memberId));
+    await addMemberToClub(club.id, memberId, "admin", true);
     await updateAuthUser(session.user.id, { clubId: club.id });
   }
-
-  // Add creator as admin (legacy record for migration period)
-  await addMemberToClub(club.id, memberId, "admin", true);
 
   revalidatePath("/dashboard");
   return { success: true, club };
@@ -99,10 +94,8 @@ export async function completeOnboardingAction(_formData?: FormData) {
   const settings = (club.settings as Record<string, any>) || {};
   settings.onboardingCompleted = true;
 
-  await db
-    .update(clubs)
-    .set({ settings, updatedAt: new Date() })
-    .where(eq(clubs.id, club.id));
+  const { updateClub } = await import("./queries");
+  await updateClub(club.id, { settings });
 
   revalidatePath("/dashboard");
 }

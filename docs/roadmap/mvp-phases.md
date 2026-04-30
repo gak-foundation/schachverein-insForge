@@ -67,16 +67,23 @@ Das MVP muss **mindestens eines** dieser Probleme deutlich besser lösen, sonst 
 ### Datenmodell Release 1
 
 ```prisma
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+model Club {
+  id        String   @id @default(uuid())
   name      String
-  role      Role     @default(MEMBER)
-  member    Member?
+  slug      String   @unique
+  members   ClubMembership[]
+}
+
+model User {
+  id        String   @id @default(uuid()) // Supabase Auth UUID
+  email     String   @unique
+  name      String?
+  memberships ClubMembership[]
 }
 
 model Member {
-  id            String   @id @default(cuid())
+  id            String   @id @default(uuid())
+  clubId        String
   firstName     String
   lastName      String
   dateOfBirth   DateTime?
@@ -85,13 +92,20 @@ model Member {
   dwz           Int?
   elo           Int?
   joinedAt      DateTime @default(now())
-  isActive      Boolean  @default(true)
-  userId        String?  @unique
-  user          User?    @relation(fields: [userId], references: [id])
+  memberships   ClubMembership[]
+}
+
+model ClubMembership {
+  id            String   @id @default(uuid())
+  clubId        String
+  userId        String?
+  memberId      String
+  role          Role     @default(mitglied)
 }
 
 model Event {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
+  clubId      String
   title       String
   description String?
   date        DateTime
@@ -100,9 +114,14 @@ model Event {
 }
 
 enum Role {
-  ADMIN
-  BOARD       // Vorstand
-  MEMBER
+  admin
+  vorstand
+  sportwart
+  jugendwart
+  kassenwart
+  trainer
+  mitglied
+  eltern
 }
 
 enum EventType {
@@ -159,7 +178,8 @@ enum EventType {
 
 ```prisma
 model Tournament {
-  id           String       @id @default(cuid())
+  id           String       @id @default(uuid())
+  clubId       String
   name         String
   startDate    DateTime
   endDate      DateTime?
@@ -173,7 +193,7 @@ model Tournament {
 }
 
 model TournamentParticipant {
-  id           String     @id @default(cuid())
+  id           String     @id @default(uuid())
   tournament   Tournament @relation(fields: [tournamentId], references: [id])
   tournamentId String
   member       Member     @relation(fields: [memberId], references: [id])
@@ -185,7 +205,7 @@ model TournamentParticipant {
 }
 
 model Game {
-  id           String     @id @default(cuid())
+  id           String     @id @default(uuid())
   tournament   Tournament @relation(fields: [tournamentId], references: [id])
   tournamentId String
   round        Int
@@ -200,7 +220,8 @@ model Game {
 }
 
 model Team {
-  id        String       @id @default(cuid())
+  id        String       @id @default(uuid())
+  clubId    String
   name      String       // z.B. "SC Beispiel 1" 
   league    String?      // z.B. "Bezirksliga Nord"
   season    Season       @relation(fields: [seasonId], references: [id])
@@ -210,7 +231,7 @@ model Team {
 }
 
 model TeamMember {
-  id       String @id @default(cuid())
+  id       String @id @default(uuid())
   team     Team   @relation(fields: [teamId], references: [id])
   teamId   String
   member   Member @relation(fields: [memberId], references: [id])
@@ -221,7 +242,8 @@ model TeamMember {
 }
 
 model Season {
-  id          String       @id @default(cuid())
+  id          String       @id @default(uuid())
+  clubId      String
   name        String       // z.B. "2025/2026"
   startDate   DateTime
   endDate     DateTime
@@ -318,15 +340,14 @@ enum GameResult {
 
 ```typescript
 enum Role {
-  ADMIN           // Technischer Administrator
-  PRESIDENT       // 1. Vorsitzender
-  BOARD_MEMBER    // Vorstand allgemein
-  SPORT_DIRECTOR  // Sportwart
-  YOUTH_DIRECTOR  // Jugendwart
-  TREASURER       // Kassenwart
-  TRAINER         // Trainer
-  MEMBER          // Reguläres Mitglied
-  PARENT          // Eltern-Zugang (nur Lesen, eigene Kinder)
+  admin           // Technischer Administrator
+  vorstand        // Vorstand (z.B. 1. Vorsitzender, allgemein)
+  sportwart       // Sportwart
+  jugendwart      // Jugendwart
+  kassenwart      // Kassenwart
+  trainer         // Trainer
+  mitglied        // Reguläres Mitglied
+  eltern          // Eltern-Zugang (nur Lesen, eigene Kinder)
 }
 ```
 

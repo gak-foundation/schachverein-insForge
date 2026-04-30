@@ -1,5 +1,6 @@
 import { eq, and, or, like, sql, SQL, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { createServiceClient } from "@/lib/supabase/server";
 import {
   clubs,
   clubMemberships,
@@ -12,11 +13,45 @@ import {
 // ─── Club Query Helpers ─────────────────────────────────────────
 
 export async function getClubById(id: string) {
+  try {
+    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from('clubs')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (data && !error) {
+      return data;
+    }
+  } catch (error) {
+    // Silent fail, try Drizzle
+  }
+
+  // 2. Fallback to Drizzle
   const [club] = await db.select().from(clubs).where(eq(clubs.id, id));
   return club ?? null;
 }
 
 export async function getClubBySlug(slug: string) {
+  try {
+    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from('clubs')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (data && !error) {
+      return data;
+    }
+  } catch (error) {
+    // Silent fail, try Drizzle
+  }
+
+  // 2. Fallback to Drizzle
   const [club] = await db.select().from(clubs).where(eq(clubs.slug, slug));
   return club ?? null;
 }
@@ -30,37 +65,102 @@ export async function getClubByStripeCustomerId(stripeCustomerId: string) {
 }
 
 export async function getUserClubs(userId: string) {
-  return db
-    .select({
-      id: clubs.id,
-      name: clubs.name,
-      slug: clubs.slug,
-      logoUrl: clubs.logoUrl,
-      plan: clubs.plan,
-      isActive: clubs.isActive,
-      membershipRole: members.role,
-      isPrimary: sql`true`,
-    })
-    .from(authUsers)
-    .innerJoin(clubs, eq(authUsers.clubId, clubs.id))
-    .innerJoin(members, eq(authUsers.memberId, members.id))
-    .where(eq(authUsers.id, userId));
+  try {
+    // 1. Try Drizzle
+    return await db
+      .select({
+        id: clubs.id,
+        name: clubs.name,
+        slug: clubs.slug,
+        logoUrl: clubs.logoUrl,
+        plan: clubs.plan,
+        isActive: clubs.isActive,
+        membershipRole: members.role,
+        isPrimary: sql`true`,
+      })
+      .from(authUsers)
+      .innerJoin(clubs, eq(authUsers.clubId, clubs.id))
+      .innerJoin(members, eq(authUsers.memberId, members.id))
+      .where(eq(authUsers.id, userId));
+  } catch (error) {
+    // 2. Fallback to REST API (Service Role)
+    const supabase = createServiceClient();
+    
+    // First get the user's club info from auth_user
+    const { data: userData, error: userError } = await supabase
+      .from('auth_user')
+      .select('club_id, member_id')
+      .eq('id', userId)
+      .single();
+    
+    if (userError || !userData?.club_id) return [];
+
+    // Then get the club and membership details
+    const [{ data: clubData }, { data: memberData }] = await Promise.all([
+      supabase.from('clubs').select('*').eq('id', userData.club_id).single(),
+      supabase.from('members').select('role').eq('id', userData.member_id).single()
+    ]);
+
+    if (!clubData) return [];
+
+    return [{
+      id: clubData.id,
+      name: clubData.name,
+      slug: clubData.slug,
+      logoUrl: clubData.logo_url,
+      plan: clubData.plan,
+      isActive: clubData.is_active,
+      membershipRole: memberData?.role || 'mitglied',
+      isPrimary: true,
+    }];
+  }
 }
 
 export async function getUserPrimaryClub(userId: string) {
-  const [result] = await db
-    .select({
-      id: clubs.id,
-      name: clubs.name,
-      slug: clubs.slug,
-      logoUrl: clubs.logoUrl,
-      plan: clubs.plan,
-      isActive: clubs.isActive,
-    })
-    .from(authUsers)
-    .innerJoin(clubs, eq(authUsers.clubId, clubs.id))
-    .where(eq(authUsers.id, userId));
-  return result ?? null;
+  try {
+    // 1. Try Drizzle
+    const [result] = await db
+      .select({
+        id: clubs.id,
+        name: clubs.name,
+        slug: clubs.slug,
+        logoUrl: clubs.logoUrl,
+        plan: clubs.plan,
+        isActive: clubs.isActive,
+      })
+      .from(authUsers)
+      .innerJoin(clubs, eq(authUsers.clubId, clubs.id))
+      .where(eq(authUsers.id, userId));
+    return result ?? null;
+  } catch (error) {
+    // 2. Fallback to REST API (Service Role)
+    const supabase = createServiceClient();
+    
+    const { data: userData, error: userError } = await supabase
+      .from('auth_user')
+      .select('club_id')
+      .eq('id', userId)
+      .single();
+    
+    if (userError || !userData?.club_id) return null;
+
+    const { data: clubData, error: clubError } = await supabase
+      .from('clubs')
+      .select('*')
+      .eq('id', userData.club_id)
+      .single();
+
+    if (clubError || !clubData) return null;
+
+    return {
+      id: clubData.id,
+      name: clubData.name,
+      slug: clubData.slug,
+      logoUrl: clubData.logo_url,
+      plan: clubData.plan,
+      isActive: clubData.is_active,
+    };
+  }
 }
 
 // ─── Club Filtering Functions ──────────────────────────────────
@@ -155,6 +255,29 @@ export async function createClub(data: {
     country: string;
   };
 }) {
+  try {
+    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    const supabase = createServiceClient();
+    const { data: club, error } = await supabase
+      .from('clubs')
+      .insert({
+        name: data.name,
+        slug: data.slug,
+        contact_email: data.contactEmail,
+        website: data.website,
+        address: data.address,
+      })
+      .select()
+      .single();
+
+    if (club && !error) {
+      return club;
+    }
+  } catch (error) {
+    // Silent fail, try Drizzle
+  }
+
+  // 2. Fallback to Drizzle
   const [club] = await db
     .insert(clubs)
     .values({
@@ -185,6 +308,37 @@ export async function updateClub(
     settings: Record<string, unknown>;
   }>
 ) {
+  try {
+    // 1. Try Supabase REST API (Service Role)
+    const supabase = createServiceClient();
+    
+    // Convert camelCase keys to snake_case for Supabase REST
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+    
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.logoUrl !== undefined) updateData.logo_url = data.logoUrl;
+    if (data.website !== undefined) updateData.website = data.website;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.contactEmail !== undefined) updateData.contact_email = data.contactEmail;
+    if (data.settings !== undefined) updateData.settings = data.settings;
+
+    const { data: club, error } = await supabase
+      .from('clubs')
+      .update(updateData)
+      .eq('id', clubId)
+      .select()
+      .single();
+
+    if (club && !error) {
+      return club;
+    }
+  } catch (error) {
+    // Silent fail
+  }
+
+  // 2. Fallback to Drizzle
   const [club] = await db
     .update(clubs)
     .set({
@@ -198,6 +352,23 @@ export async function updateClub(
 }
 
 export async function updateUserClub(userId: string, clubId: string | null) {
+  try {
+    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    const supabase = createServiceClient();
+    const { error } = await supabase
+      .from('auth_user')
+      .update({
+        club_id: clubId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (!error) return;
+  } catch (error) {
+    // Silent fail, try Drizzle
+  }
+
+  // 2. Fallback to Drizzle
   await db
     .update(authUsers)
     .set({
@@ -207,12 +378,105 @@ export async function updateUserClub(userId: string, clubId: string | null) {
     .where(eq(authUsers.id, userId));
 }
 
+export async function createMember(data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  status?: string;
+  role?: string;
+  clubId?: string;
+}) {
+  try {
+    // 1. Try Supabase REST API (Service Role)
+    const supabase = createServiceClient();
+    const { data: member, error } = await supabase
+      .from('members')
+      .insert({
+        first_name: data.firstName,
+        last_name: data.lastName,
+        email: data.email,
+        status: data.status || 'active',
+        role: data.role || 'mitglied',
+        club_id: data.clubId,
+      })
+      .select()
+      .single();
+
+    if (member && !error) {
+      return {
+        id: member.id,
+        firstName: member.first_name,
+        lastName: member.last_name,
+        email: member.email,
+        status: member.status,
+        role: member.role,
+        clubId: member.club_id,
+      };
+    }
+  } catch (error) {
+    // Silent fail
+  }
+
+  // 2. Fallback to Drizzle
+  const [member] = await db
+    .insert(members)
+    .values({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      status: data.status as any || "active",
+      role: data.role as any || "mitglied",
+      clubId: data.clubId,
+    })
+    .returning();
+
+  return member;
+}
+
 export async function addMemberToClub(
   clubId: string,
   memberId: string,
   role: string = "mitglied",
   isPrimary: boolean = false
 ) {
+  try {
+    // 1. Try Supabase REST API (Service Role)
+    const supabase = createServiceClient();
+    
+    // Update member's club
+    await supabase
+      .from('members')
+      .update({ 
+        club_id: clubId, 
+        role: role, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', memberId);
+
+    // Upsert membership
+    const { data: membership, error } = await supabase
+      .from('club_memberships')
+      .upsert({
+        club_id: clubId,
+        member_id: memberId,
+        role: role,
+        is_primary: isPrimary,
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'club_id,member_id'
+      })
+      .select()
+      .single();
+
+    if (membership && !error) {
+      return membership;
+    }
+  } catch (error) {
+    // Silent fail
+  }
+
+  // 2. Fallback to Drizzle
   await db
     .update(members)
     .set({ clubId, role: role as typeof members.$inferInsert.role, updatedAt: new Date() })
@@ -312,6 +576,23 @@ export function generateClubSlug(name: string): string {
 }
 
 export async function isSlugAvailable(slug: string): Promise<boolean> {
+  try {
+    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from('clubs')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+
+    if (!error) {
+      return !data;
+    }
+  } catch (error) {
+    // Silent fail, try Drizzle
+  }
+
+  // 2. Fallback to Drizzle
   const [existing] = await db
     .select({ id: clubs.id })
     .from(clubs)

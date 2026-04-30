@@ -20,7 +20,7 @@ import { PERMISSIONS, getPermissionsForRole, hasPermission } from "@/lib/auth/pe
 import { fetchLichessProfile, getBestLichessRating } from "@/lib/lichess";
 import { requireClubId } from "@/lib/actions/utils";
 import { encrypt, decrypt } from "@/lib/crypto";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 type ClubMemberRole = typeof clubMemberships.$inferSelect.role;
 type MemberRecordStatus = typeof members.$inferSelect.status;
@@ -91,50 +91,98 @@ export async function getMembers(
       orderBy = desc(members.createdAt);
   }
 
-  const query = db
-    .select({
-      id: members.id,
-      firstName: members.firstName,
-      lastName: members.lastName,
-      email: members.email,
-      phone: members.phone,
-      dateOfBirth: members.dateOfBirth,
-      gender: members.gender,
-      dwz: members.dwz,
-      elo: members.elo,
-      dwzId: members.dwzId,
-      lichessUsername: members.lichessUsername,
-      chesscomUsername: members.chesscomUsername,
-      role: clubMemberships.role,
-      status: members.status,
-      photoConsent: members.photoConsent,
-      newsletterConsent: members.newsletterConsent,
-      notes: members.notes,
-      createdAt: members.createdAt,
-    })
-    .from(clubMemberships)
-    .innerJoin(members, eq(clubMemberships.memberId, members.id))
-    .where(and(...conditions.filter(Boolean)))
-    .orderBy(orderBy)
-    .limit(pageSize)
-    .offset(offset);
+  try {
+    // 1. Try Drizzle
+    const query = db
+      .select({
+        id: members.id,
+        firstName: members.firstName,
+        lastName: members.lastName,
+        email: members.email,
+        phone: members.phone,
+        dateOfBirth: members.dateOfBirth,
+        gender: members.gender,
+        dwz: members.dwz,
+        elo: members.elo,
+        dwzId: members.dwzId,
+        lichessUsername: members.lichessUsername,
+        chesscomUsername: members.chesscomUsername,
+        role: clubMemberships.role,
+        status: members.status,
+        photoConsent: members.photoConsent,
+        newsletterConsent: members.newsletterConsent,
+        notes: members.notes,
+        createdAt: members.createdAt,
+      })
+      .from(clubMemberships)
+      .innerJoin(members, eq(clubMemberships.memberId, members.id))
+      .where(and(...conditions.filter(Boolean)))
+      .orderBy(orderBy)
+      .limit(pageSize)
+      .offset(offset);
 
-  const totalCountQuery = db
-    .select({ count: sql<number>`count(*)` })
-    .from(clubMemberships)
-    .innerJoin(members, eq(clubMemberships.memberId, members.id))
-    .where(and(...conditions.filter(Boolean)));
+    const totalCountQuery = db
+      .select({ count: sql<number>`count(*)` })
+      .from(clubMemberships)
+      .innerJoin(members, eq(clubMemberships.memberId, members.id))
+      .where(and(...conditions.filter(Boolean)));
 
-  const [membersList, [totalCountResult]] = await Promise.all([
-    query,
-    totalCountQuery,
-  ]);
+    const [membersList, [totalCountResult]] = await Promise.all([
+      query,
+      totalCountQuery,
+    ]);
 
-  return {
-    members: membersList,
-    totalCount: Number(totalCountResult?.count ?? 0),
-    totalPages: Math.ceil(Number(totalCountResult?.count ?? 0) / pageSize),
-  };
+    return {
+      members: membersList,
+      totalCount: Number(totalCountResult?.count ?? 0),
+      totalPages: Math.ceil(Number(totalCountResult?.count ?? 0) / pageSize),
+    };
+  } catch (error) {
+    // 2. Fallback to REST API (Service Role)
+    const supabase = createServiceClient();
+    
+    // We fetch memberships first for the club filter
+    let membersQuery = supabase
+      .from('club_memberships')
+      .select('role, members(*)', { count: 'exact' })
+      .eq('club_id', clubId);
+
+    if (role) {
+      membersQuery = membersQuery.eq('role', role);
+    }
+    
+    const { data, count, error: restError } = await membersQuery
+      .range(offset, offset + pageSize - 1);
+      
+    if (restError || !data) return { members: [], totalCount: 0, totalPages: 0 };
+    
+    const membersList = data.map((item: any) => ({
+      id: item.members.id,
+      firstName: item.members.first_name,
+      lastName: item.members.last_name,
+      email: item.members.email,
+      phone: item.members.phone,
+      dateOfBirth: item.members.date_of_birth,
+      gender: item.members.gender,
+      dwz: item.members.dwz,
+      elo: item.members.elo,
+      dwzId: item.members.dwz_id,
+      lichessUsername: item.members.lichess_username,
+      chesscomUsername: item.members.chesscom_username,
+      role: item.role,
+      status: item.members.status,
+      photoConsent: item.members.photo_consent,
+      newsletterConsent: item.members.newsletter_consent,
+      notes: item.members.notes,
+      createdAt: item.members.created_at,
+    }));
+
+    return {
+      members: membersList,
+      totalCount: count || 0,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  }
 }
 
 export async function getMembersForForms() {
@@ -163,9 +211,12 @@ export async function getMemberById(id: string) {
     member = await db.query.members.findFirst({
       where: eq(members.id, id),
       with: {
-        membership: true,
+        clubMemberships: true,
       }
     });
+    if (member) {
+      (member as any).membership = membership;
+    }
   } catch (error: any) {
     console.error("❌ Drizzle getMemberById failed:", {
       message: error.message,
@@ -236,7 +287,7 @@ export async function getMemberStatusHistory(memberId: string) {
       .select()
       .from(memberStatusHistory)
       .where(eq(memberStatusHistory.memberId, memberId))
-      .orderBy(desc(memberStatusHistory.createdAt));
+      .orderBy(desc(memberStatusHistory.changedAt));
   } catch (error: any) {
     console.error("❌ Drizzle getMemberStatusHistory failed, falling back to REST API");
     const supabase = await createClient();

@@ -40,7 +40,7 @@ export default async function AdminClubsPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {allClubs.map((club) => (
+              {allClubs.map((club: any) => (
                 <tr key={club.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-6 py-4 font-medium">{club.name}</td>
                   <td className="px-6 py-4 text-muted-foreground">{club.slug}</td>

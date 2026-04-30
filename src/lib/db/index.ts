@@ -14,10 +14,11 @@ import * as schema from "./schema";
 /**
  * DATABASE CONNECTION CONFIGURATION
  * 
- * We prefer DATABASE_URL (usually the Supavisor Pooler on Port 6543) for the application.
- * DIRECT_URL (Port 5432) is preferred for migrations.
+ * We prefer DIRECT_URL (Port 5432) for the application to avoid Supavisor Pooler issues
+ * (like "Tenant or user not found") when using Drizzle on the server.
+ * DATABASE_URL (usually Port 6543) is used as fallback.
  */
-const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL || "";
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL || "";
 
 if (!connectionString) {
   console.warn("⚠️ Keine Datenbank-URL gefunden (DATABASE_URL oder DIRECT_URL).");
