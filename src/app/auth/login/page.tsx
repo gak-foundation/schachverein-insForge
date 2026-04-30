@@ -94,8 +94,8 @@ function LoginPageContent() {
         return;
       }
 
-      // Redirect to onboarding if needed, otherwise to callbackURL
-      window.location.href = verifyData.needsOnboarding ? "/onboarding" : callbackURL;
+      // Redirect to callbackURL
+      window.location.href = callbackURL;
     } catch {
       setError(ERROR_MESSAGES.default);
     } finally {
@@ -103,15 +103,20 @@ function LoginPageContent() {
     }
   }
 
-  async function handleGithubSignIn() {
-    const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(callbackURL)}`;
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo,
+  function buildOAuthProvider(provider: "github" | "google") {
+    return {
+      id: provider,
+      onClick: () => {
+        const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(callbackURL)}`;
+        void supabase.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo },
+        });
       },
-    });
+    };
   }
+
+  const oauthProviders = [buildOAuthProvider("google"), buildOAuthProvider("github")];
 
   return (
     <AuthLayout>
@@ -203,7 +208,7 @@ function LoginPageContent() {
           </div>
 
           <div className="mt-6">
-            <SocialButtons onGithubClick={handleGithubSignIn} />
+            <SocialButtons providers={oauthProviders} />
           </div>
 
           <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">

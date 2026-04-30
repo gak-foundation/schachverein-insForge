@@ -24,6 +24,17 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const supabase = createClient();
 
+  // Extract subdomain slug for tenant binding (used by both email and OAuth signup)
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "schach.studio";
+  let slug = "";
+  if (hostname.endsWith(`.${rootDomain}`)) {
+    const parts = hostname.split(".");
+    if (parts.length > rootDomain.split(".").length) {
+      slug = parts.slice(0, -rootDomain.split(".").length).join(".");
+    }
+  }
+
   const passwordStrength = {
     length: password.length >= 8,
     capital: /[A-Z]/.test(password),
@@ -46,17 +57,6 @@ export default function SignupPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const name = formData.get("name") as string;
-
-    // Extract subdomain slug for tenant binding
-    const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "schach.studio";
-    let slug = "";
-    if (hostname.endsWith(`.${rootDomain}`)) {
-      const parts = hostname.split(".");
-      if (parts.length > rootDomain.split(".").length) {
-        slug = parts.slice(0, -rootDomain.split(".").length).join(".");
-      }
-    }
 
     try {
       const { data, error } = await authClient.signUp.email({
@@ -97,14 +97,20 @@ export default function SignupPage() {
     }
   }
 
-  async function handleGithubSignIn() {
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+  function buildOAuthProvider(provider: "github" | "google") {
+    return {
+      id: provider,
+      onClick: () => {
+        const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent("/dashboard")}&action=signup&slug=${encodeURIComponent(slug)}`;
+        void supabase.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo },
+        });
       },
-    });
+    };
   }
+
+  const oauthProviders = [buildOAuthProvider("google"), buildOAuthProvider("github")];
 
   return (
     <AuthLayout>
@@ -223,7 +229,7 @@ export default function SignupPage() {
           </div>
 
           <div className="mt-6">
-            <SocialButtons onGithubClick={handleGithubSignIn} />
+            <SocialButtons providers={oauthProviders} />
           </div>
 
           <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">

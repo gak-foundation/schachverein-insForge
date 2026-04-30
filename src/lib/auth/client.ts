@@ -34,16 +34,33 @@ export const authClient = {
       const supabase = getSupabaseClient();
 
       const fetchProfile = async () => {
-        const response = await fetch("/api/user/profile");
-        if (!response.ok) return null;
-        const { profile } = await response.json();
-        return profile;
+        try {
+          const response = await fetch("/api/user/profile");
+          if (response.status === 401) {
+            // User exists in Auth but not in our DB (or session is invalid)
+            // Clear local session to force re-login
+            await supabase.auth.signOut({ scope: "local" });
+            return null;
+          }
+          if (!response.ok) return null;
+          const { profile } = await response.json();
+          return profile;
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+          return null;
+        }
       };
 
       // Get initial session
       supabase.auth.getSession().then(async ({ data: { session: authSession }, error }) => {
         if (error) {
-          if (error.code !== "refresh_token_not_found") {
+          const isIgnorableError =
+            error.code === "refresh_token_not_found" ||
+            error.message?.toLowerCase().includes("sub claim in jwt does not exist");
+
+          if (isIgnorableError) {
+            await supabase.auth.signOut({ scope: "local" });
+          } else {
             console.error("Error getting session:", error.message);
           }
           setSession(null);
@@ -53,19 +70,25 @@ export const authClient = {
 
         if (authSession?.user) {
           const profile = await fetchProfile();
-          setSession({
-            user: {
-              id: authSession.user.id,
-              email: authSession.user.email,
-              name: profile?.name || authSession.user.user_metadata?.name,
-              image: profile?.image || authSession.user.user_metadata?.avatar_url,
-              role: profile?.role || "mitglied",
-              permissions: profile?.permissions || [],
-              memberId: profile?.memberId,
-              clubId: profile?.clubId,
-              isSuperAdmin: profile?.isSuperAdmin || false,
-            },
-          });
+          if (!profile) {
+            setSession(null);
+          } else {
+            setSession({
+              user: {
+                id: authSession.user.id,
+                email: authSession.user.email,
+                name: profile.name || authSession.user.user_metadata?.name,
+                image: profile.image || authSession.user.user_metadata?.avatar_url,
+                role: profile.role || "mitglied",
+                permissions: profile.permissions || [],
+                memberId: profile.memberId,
+                clubId: profile.clubId,
+                isSuperAdmin: profile.isSuperAdmin || false,
+              },
+            });
+          }
+        } else {
+          setSession(null);
         }
         setIsPending(false);
       });
@@ -74,19 +97,23 @@ export const authClient = {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, authSession) => {
         if (authSession?.user) {
           const profile = await fetchProfile();
-          setSession({
-            user: {
-              id: authSession.user.id,
-              email: authSession.user.email,
-              name: profile?.name || authSession.user.user_metadata?.name,
-              image: profile?.image || authSession.user.user_metadata?.avatar_url,
-              role: profile?.role || "mitglied",
-              permissions: profile?.permissions || [],
-              memberId: profile?.memberId,
-              clubId: profile?.clubId,
-              isSuperAdmin: profile?.isSuperAdmin || false,
-            },
-          });
+          if (!profile) {
+            setSession(null);
+          } else {
+            setSession({
+              user: {
+                id: authSession.user.id,
+                email: authSession.user.email,
+                name: profile.name || authSession.user.user_metadata?.name,
+                image: profile.image || authSession.user.user_metadata?.avatar_url,
+                role: profile.role || "mitglied",
+                permissions: profile.permissions || [],
+                memberId: profile.memberId,
+                clubId: profile.clubId,
+                isSuperAdmin: profile.isSuperAdmin || false,
+              },
+            });
+          }
         } else {
           setSession(null);
         }

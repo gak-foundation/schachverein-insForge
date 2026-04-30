@@ -12,6 +12,7 @@ import {
   Settings,
   Globe,
   ImageIcon,
+  Mail,
   type LucideIcon
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ export const navigation: NavGroup[] = [
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: PERMISSIONS.MEMBERS_READ },
       { name: "Mitglieder", href: "/dashboard/members", icon: Users, permission: PERMISSIONS.MEMBERS_READ },
+      { name: "Einladungen", href: "/dashboard/einladungen", icon: Mail, permission: PERMISSIONS.MEMBERS_WRITE },
       { name: "Kalender", href: "/dashboard/calendar", icon: Calendar, permission: PERMISSIONS.EVENTS_READ },
       { name: "Saisons", href: "/dashboard/seasons", icon: Layers, permission: PERMISSIONS.EVENTS_READ },
     ],

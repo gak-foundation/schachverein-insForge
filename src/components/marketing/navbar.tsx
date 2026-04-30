@@ -9,10 +9,9 @@ import { authClient } from "@/lib/auth/client";
 import { APP_URL } from "@/lib/urls";
 
 const navItems = [
-  { label: "Features", href: "/#features" },
-  { label: "Pilot-Programm", href: "/bewerbung?type=pilot", highlighted: true },
-  { label: "FAQ", href: "/faq" },
-  { label: "Kontakt", href: "/kontakt" },
+  { label: "Features", href: "/#features", highlighted: false },
+  { label: "FAQ", href: "/faq", highlighted: false },
+  { label: "Kontakt", href: "/kontakt", highlighted: false },
 ];
 
 export function MarketingNavbar() {

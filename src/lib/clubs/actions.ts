@@ -5,12 +5,14 @@ import { db } from "@/lib/db";
 import {
   clubs,
   clubMemberships,
+  clubInvitations,
   members,
   authUsers,
 } from "@/lib/db/schema";
 import { getAllAuthUsers, updateAuthUser } from "@/lib/db/queries/auth";
 import { requireAuth, requireClub } from "@/lib/auth/session";
 import { sendClubInvitationEmail } from "@/lib/auth/email";
+import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import {
   createClub,
@@ -22,15 +24,12 @@ import {
   updateUserClub,
   getClubById,
 } from "./queries";
+import { getInvitationUrl } from "@/lib/auth/invitations";
 
 // ─── Club CRUD ─────────────────────────────────────────────────
 
 export async function createClubAction(formData: FormData) {
   const session = await requireAuth();
-
-  if (!session.user.isSuperAdmin) {
-    throw new Error("Nicht autorisiert");
-  }
 
   const name = formData.get("name") as string;
   const contactEmail = formData.get("contactEmail") as string;
@@ -92,6 +91,20 @@ export async function createClubAction(formData: FormData) {
 
   revalidatePath("/dashboard");
   return { success: true, club };
+}
+
+export async function completeOnboardingAction(_formData?: FormData) {
+  const club = await requireClub();
+  
+  const settings = (club.settings as Record<string, any>) || {};
+  settings.onboardingCompleted = true;
+
+  await db
+    .update(clubs)
+    .set({ settings, updatedAt: new Date() })
+    .where(eq(clubs.id, club.id));
+
+  revalidatePath("/dashboard");
 }
 
 export async function createClubAsSuperAdminAction(formData: FormData) {
@@ -300,6 +313,83 @@ export async function updateMemberRoleAction(memberId: string, role: string) {
   return { success: true };
 }
 
+import { fetchClubMembersFromDsb } from "@/lib/dwz";
+
+export async function importFromDsbAction(zps: string) {
+  const session = await requireAuth();
+  const club = await requireClub();
+
+  const dsbMembers = await fetchClubMembersFromDsb(zps);
+  
+  // Note: DSB doesn't provide emails, so we create members with placeholder or empty emails
+  // For the invitation system to work, we need emails. 
+  // Strategy: We'll create the member records directly and they can be "claimed" later, 
+  // or we just return them for the UI to let the admin add emails.
+  
+  // For this "intelligent onboarding", we will return the list so the admin can 
+  // verify and potentially add emails for the most important members immediately.
+  return {
+    success: true,
+    members: dsbMembers.map(m => ({
+      firstName: m.firstName,
+      lastName: m.lastName,
+      dwz: m.dwz ?? undefined,
+      dwzId: m.dwzId,
+      email: "", // Admin must provide these
+    }))
+  };
+}
+
+export async function importMembersAction(membersToImport: { firstName: string; lastName: string; email: string; role: string; dwzId?: string; dwz?: number }[]) {
+  const session = await requireAuth();
+  const club = await requireClub();
+
+  const results = {
+    success: 0,
+    failed: 0,
+    errors: [] as string[],
+  };
+
+  for (const memberData of membersToImport) {
+    try {
+      if (!memberData.email) {
+        // Just create the member record if no email for invitation
+        await db.insert(members).values({
+          clubId: club.id,
+          firstName: memberData.firstName,
+          lastName: memberData.lastName,
+          email: `${memberData.dwzId || 'unknown'}@no-email.club`, // Placeholder
+          dwz: memberData.dwz,
+          dwzId: memberData.dwzId,
+          role: (memberData.role || "mitglied") as any,
+          status: "active",
+        });
+        results.success++;
+        continue;
+      }
+
+      // Reuse existing invitation logic
+      const formData = new FormData();
+      formData.append("email", memberData.email);
+      formData.append("role", memberData.role || "mitglied");
+      
+      await inviteMemberToClubAction(formData);
+      
+      // Update the newly created member (if any) with DWZ info
+      // inviteMemberToClubAction creates a member or invitation. 
+      // This part might need more surgical database updates if we want to store DWZ right away.
+      
+      results.success++;
+    } catch (error) {
+      results.failed++;
+      results.errors.push(`${memberData.email || memberData.lastName}: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`);
+    }
+  }
+
+  revalidatePath("/dashboard/club/members");
+  return results;
+}
+
 // ─── Invitation Handling ─────────────────────────────────────
 
 export async function acceptClubInvitationAction(token: string) {
@@ -349,6 +439,181 @@ export async function acceptClubInvitationAction(token: string) {
   };
 }
 
+// ─── Admin Invitation Management ─────────────────────────────
+
+export async function getAllInvitationsAction() {
+  const session = await requireAuth();
+
+  if (!session.user.isSuperAdmin) {
+    throw new Error("Nicht autorisiert");
+  }
+
+  return db
+    .select({
+      id: clubInvitations.id,
+      clubId: clubInvitations.clubId,
+      email: clubInvitations.email,
+      role: clubInvitations.role,
+      token: clubInvitations.token,
+      expiresAt: clubInvitations.expiresAt,
+      usedAt: clubInvitations.usedAt,
+      createdAt: clubInvitations.createdAt,
+      clubName: clubs.name,
+      invitedByName: sql<string>`COALESCE(${members.firstName} || ' ' || ${members.lastName}, 'Administration')`,
+    })
+    .from(clubInvitations)
+    .innerJoin(clubs, eq(clubInvitations.clubId, clubs.id))
+    .leftJoin(members, eq(clubInvitations.invitedBy, members.id))
+    .orderBy(sql`${clubInvitations.createdAt} DESC`);
+}
+
+export async function getClubInvitationsAction() {
+  const club = await requireClub();
+
+  return db
+    .select({
+      id: clubInvitations.id,
+      email: clubInvitations.email,
+      role: clubInvitations.role,
+      token: clubInvitations.token,
+      expiresAt: clubInvitations.expiresAt,
+      usedAt: clubInvitations.usedAt,
+      createdAt: clubInvitations.createdAt,
+      invitedByName: sql<string>`COALESCE(${members.firstName} || ' ' || ${members.lastName}, 'Administration')`,
+    })
+    .from(clubInvitations)
+    .leftJoin(members, eq(clubInvitations.invitedBy, members.id))
+    .where(eq(clubInvitations.clubId, club.id))
+    .orderBy(sql`${clubInvitations.createdAt} DESC`);
+}
+
+export async function adminCreateInvitationAction(formData: FormData) {
+  const session = await requireAuth();
+
+  const clubId = formData.get("clubId") as string;
+  const email = formData.get("email") as string;
+  const role = (formData.get("role") as string) || "mitglied";
+  const sendEmail = formData.get("sendEmail") === "true";
+
+  if (!clubId || !email) {
+    throw new Error("Verein und E-Mail sind erforderlich");
+  }
+
+  const club = await getClubById(clubId);
+  if (!club) {
+    throw new Error("Verein nicht gefunden");
+  }
+
+  // Super admin can specify any club; club admin uses clubCreateInvitationAction
+  if (!session.user.isSuperAdmin) {
+    throw new Error("Nicht autorisiert");
+  }
+
+  const [existing] = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(and(eq(members.email, email), eq(members.clubId, clubId)));
+
+  if (existing) {
+    throw new Error("Mitglied ist bereits im Verein");
+  }
+
+  const invitation = await createClubInvitation({
+    clubId,
+    email,
+    role,
+    invitedBy: session.user.memberId || "00000000-0000-0000-0000-000000000000",
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
+
+  const invitationUrl = getInvitationUrl(invitation.token);
+
+  if (sendEmail) {
+    await sendClubInvitationEmail({
+      email,
+      invitationUrl,
+      clubName: club.name,
+      invitedByName: session.user.name || "Administration",
+    });
+  }
+
+  revalidatePath("/admin/einladungen");
+  return { success: true, invitationId: invitation.id, invitationUrl };
+}
+
+export async function clubCreateInvitationAction(formData: FormData) {
+  const session = await requireAuth();
+  const club = await requireClub();
+
+  const email = formData.get("email") as string;
+  const role = (formData.get("role") as string) || "mitglied";
+  const sendEmail = formData.get("sendEmail") === "true";
+
+  if (!email) {
+    throw new Error("E-Mail ist erforderlich");
+  }
+
+  const [existing] = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(and(eq(members.email, email), eq(members.clubId, club.id)));
+
+  if (existing) {
+    throw new Error("Mitglied ist bereits im Verein");
+  }
+
+  const invitation = await createClubInvitation({
+    clubId: club.id,
+    email,
+    role,
+    invitedBy: session.user.memberId!,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
+
+  const invitationUrl = getInvitationUrl(invitation.token);
+
+  if (sendEmail) {
+    await sendClubInvitationEmail({
+      email,
+      invitationUrl,
+      clubName: club.name,
+      invitedByName: session.user.name,
+    });
+  }
+
+  revalidatePath("/dashboard/einladungen");
+  return { success: true, invitationId: invitation.id, invitationUrl };
+}
+
+export async function revokeInvitationAction(invitationId: string) {
+  const session = await requireAuth();
+
+  const [invitation] = await db
+    .select({ clubId: clubInvitations.clubId })
+    .from(clubInvitations)
+    .where(eq(clubInvitations.id, invitationId));
+
+  if (!invitation) {
+    throw new Error("Einladung nicht gefunden");
+  }
+
+  if (!session.user.isSuperAdmin) {
+    // Club admin can only revoke invitations from their club
+    const club = await requireClub();
+    if (invitation.clubId !== club.id) {
+      throw new Error("Nicht autorisiert");
+    }
+  }
+
+  await db
+    .delete(clubInvitations)
+    .where(eq(clubInvitations.id, invitationId));
+
+  revalidatePath("/admin/einladungen");
+  revalidatePath("/dashboard/einladungen");
+  return { success: true };
+}
+
 // ─── Super Admin ───────────────────────────────────────────────
 
 export async function getAllClubsAction() {
@@ -358,24 +623,69 @@ export async function getAllClubsAction() {
     throw new Error("Nicht autorisiert");
   }
 
-  const allClubs = await db
-    .select({
-      id: clubs.id,
-      name: clubs.name,
-      slug: clubs.slug,
-      isActive: clubs.isActive,
-      stripeCustomerId: clubs.stripeCustomerId,
-      stripeConnectAccountId: clubs.stripeConnectAccountId,
-      createdAt: clubs.createdAt,
-      memberCount: sql<number>`(
-        SELECT COUNT(*) FROM ${members}
-        WHERE ${members.clubId} = ${clubs.id}
-      )`,
-    })
-    .from(clubs)
-    .orderBy(clubs.createdAt);
+  try {
+    const allClubs = await db
+      .select({
+        id: clubs.id,
+        name: clubs.name,
+        slug: clubs.slug,
+        isActive: clubs.isActive,
+        stripeCustomerId: clubs.stripeCustomerId,
+        stripeConnectAccountId: clubs.stripeConnectAccountId,
+        createdAt: clubs.createdAt,
+        memberCount: sql<number>`(
+          SELECT COUNT(*) FROM ${members}
+          WHERE ${members.clubId} = ${clubs.id}
+        )`,
+      })
+      .from(clubs)
+      .orderBy(clubs.createdAt);
 
-  return allClubs;
+    return allClubs;
+  } catch (error: any) {
+    const errorMessage = error.message || "Unknown error";
+    const isPoolerError = errorMessage.includes("Tenant or user not found") || error.cause?.message?.includes("Tenant or user not found");
+    
+    console.error("Drizzle getAllClubs failed:", {
+      message: errorMessage,
+      cause: error.cause?.message,
+      code: error.code || error.cause?.code,
+      isPoolerError
+    });
+
+    if (isPoolerError) {
+      console.warn("⚠️ Supabase Pooler Error: Bitte prüfe ob das Projekt pausiert ist.");
+    }
+
+    console.info("🔄 Falling back to Supabase REST API (Service Role)...");
+
+    try {
+      const supabase = createServiceClient();
+      const { data, error: restError } = await supabase
+        .from('clubs')
+        .select('id, name, slug, is_active, stripe_customer_id, stripe_connect_account_id, created_at')
+        .order('created_at');
+
+      if (restError) {
+        console.error("REST API fallback for clubs also failed:", restError.message);
+        return [];
+      }
+
+      return (data || []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        isActive: c.is_active,
+        stripeCustomerId: c.stripe_customer_id,
+        stripeConnectAccountId: c.stripe_connect_account_id,
+        createdAt: c.created_at,
+        memberCount: 0,
+      }));
+    } catch (fallbackError: any) {
+      console.error("Failed to fetch clubs in getAllClubsAction fallback:", fallbackError.message);
+      return [];
+    }
+  }
 }
 
 export async function getAllUsersAction() {
@@ -385,7 +695,12 @@ export async function getAllUsersAction() {
     throw new Error("Nicht autorisiert");
   }
 
-  return getAllAuthUsers();
+  try {
+    return await getAllAuthUsers();
+  } catch (error: any) {
+    console.error("Failed to fetch users in getAllUsersAction:", error.message);
+    return [];
+  }
 }
 
 export async function toggleClubStatusAction(clubId: string, isActive: boolean) {

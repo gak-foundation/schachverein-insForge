@@ -1,0 +1,40 @@
+-- Migration to fix Supabase Linter errors (rls_disabled_in_public and sensitive_columns_exposed)
+-- Created on: 2026-04-27
+
+-- Enable Row Level Security on all public tables reported by the linter
+ALTER TABLE public.clubs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.club_memberships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.availability ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tournament_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.match_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting_protocols ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.club_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dwz_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.member_status_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.seasons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tournaments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.newsletters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contribution_rates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sepa_exports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.media_assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.media_consents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.page_blocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waitlist_applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.auth_user ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.page_revisions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.board_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_memberships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.games ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.club_addons ENABLE ROW LEVEL SECURITY;
+
+-- Note: Policies for these tables are already defined in previous migrations
+-- (e.g., 20260422223106_add_rls_policies.sql and 20260427100000_enable_rls_club_addons.sql)
+-- This migration ensures that RLS is actually ACTIVE for all of them.

@@ -1,25 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { Github, Loader2 } from "lucide-react";
+import { Github, Chrome, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+type ProviderId = "github" | "google";
+
+const PROVIDER_META: Record<ProviderId, { label: string; Icon: typeof Github }> = {
+  github: { label: "Weiter mit GitHub", Icon: Github },
+  google: { label: "Weiter mit Google", Icon: Chrome },
+};
+
+interface ProviderDef {
+  id: ProviderId;
+  onClick: () => void | Promise<void>;
+}
+
 interface SocialButtonsProps {
-  onGithubClick?: () => void | Promise<void>;
+  providers: ProviderDef[];
   disabled?: boolean;
 }
 
-export function SocialButtons({
-  onGithubClick,
-  disabled = false,
-}: SocialButtonsProps) {
+function ProviderButton({ provider, disabled }: { provider: ProviderDef; disabled: boolean }) {
   const [isLoading, setIsLoading] = useState(false);
+  const meta = PROVIDER_META[provider.id];
+  const Icon = meta.Icon;
 
-  const handleGithubClick = async () => {
-    if (!onGithubClick || isLoading || disabled) return;
+  const handleClick = async () => {
+    if (isLoading || disabled) return;
     setIsLoading(true);
     try {
-      await onGithubClick();
+      await provider.onClick();
     } finally {
       setIsLoading(false);
     }
@@ -29,16 +40,28 @@ export function SocialButtons({
     <Button
       type="button"
       variant="outline"
-      onClick={handleGithubClick}
+      onClick={handleClick}
       disabled={disabled || isLoading}
       className="w-full h-11"
     >
       {isLoading ? (
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       ) : (
-        <Github className="mr-2 h-4 w-4" />
+        <Icon className="mr-2 h-4 w-4" />
       )}
-      {isLoading ? "Wird verbunden..." : "Weiter mit GitHub"}
+      {isLoading ? "Wird verbunden..." : meta.label}
     </Button>
+  );
+}
+
+export function SocialButtons({ providers, disabled = false }: SocialButtonsProps) {
+  if (providers.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {providers.map((p) => (
+        <ProviderButton key={p.id} provider={p} disabled={disabled} />
+      ))}
+    </div>
   );
 }

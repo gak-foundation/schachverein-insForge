@@ -23,15 +23,30 @@ export default function DashboardError({
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10 mb-6">
           <AlertCircle className="h-10 w-10 text-destructive" />
         </div>
-        <h2 className="text-2xl font-bold tracking-tight mb-2">Ein Fehler ist aufgetreten</h2>
+        <h2 className="text-2xl font-bold tracking-tight mb-2">
+          {error.message === "SUPER_ADMIN_NO_CLUB_CONTEXT" 
+            ? "Kein Verein ausgewählt" 
+            : "Ein Fehler ist aufgetreten"}
+        </h2>
         <p className="text-sm text-muted-foreground mb-8">
-          {error.message || "Es gab ein Problem beim Laden dieser Seite. Bitte versuchen Sie es erneut oder navigieren Sie zurück."}
+          {error.message === "SUPER_ADMIN_NO_CLUB_CONTEXT"
+            ? "Als Super-Admin müssen Sie zuerst einen Verein auswählen, um diese Seite (Statistiken/Finanzen) anzeigen zu können."
+            : error.message || "Es gab ein Problem beim Laden dieser Seite."}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Button onClick={() => reset()} className="gap-2">
-            <RefreshCcw className="h-4 w-4" />
-            Erneut versuchen
-          </Button>
+          {error.message === "SUPER_ADMIN_NO_CLUB_CONTEXT" ? (
+            <Link href="/super-admin">
+              <Button className="w-full sm:w-auto gap-2">
+                <Home className="h-4 w-4" />
+                Zur Vereinsauswahl
+              </Button>
+            </Link>
+          ) : (
+            <Button onClick={() => reset()} className="gap-2">
+              <RefreshCcw className="h-4 w-4" />
+              Erneut versuchen
+            </Button>
+          )}
           <Link
             href="/dashboard"
             className="inline-flex items-center justify-center rounded-lg border border-border bg-background text-sm font-medium h-8 px-2.5 gap-2 hover:bg-muted transition-colors"

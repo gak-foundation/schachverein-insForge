@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { ArrowRight, Shield, Zap, Sparkles, Rocket, Lock } from "lucide-react";
+import { ArrowRight, Shield, Zap, Sparkles, Lock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -40,14 +39,12 @@ export function HeroSection() {
           className="max-w-4xl mx-auto text-center"
         >
           <motion.div variants={item}>
-            <Link
-              href="/bewerbung?type=pilot"
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-bold uppercase tracking-wider mb-6 border border-primary/20 hover:bg-primary/20 transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:scale-105"
+            <div
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-bold uppercase tracking-wider mb-6 border border-primary/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <Sparkles className="h-4 w-4 fill-current animate-pulse" aria-hidden="true" />
-              <span>Pilot-Programm: 1 Jahr kostenlos</span>
-              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
-            </Link>
+              <span>100% Kostenlos für alle Vereine</span>
+            </div>
           </motion.div>
 
           <motion.h1 
@@ -87,10 +84,10 @@ export function HeroSection() {
             className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left"
           >
             {[
-              { icon: Zap, title: "All-in-One", desc: "Mitglieder, Turniere, Finanzen und mehr — alles an einem Ort." },
-              { icon: Shield, title: "BFSG 2025", desc: "Barrierefrei nach WCAG 2.2 AA umgesetzt. Bereit für die BFSG." },
-              { icon: Lock, title: "Datenschutz", desc: "DSGVO-konform. Hosting in Deutschland, verschlüsselte Daten." },
-              { icon: Rocket, title: "Pilot-Aktion", desc: "1 Jahr kostenlos + lebenslang 50% Rabatt für Pilotvereine.", highlighted: true },
+              { icon: Zap, title: "All-in-One", desc: "Mitglieder, Turniere, Finanzen und mehr — alles an einem Ort.", highlighted: false },
+              { icon: Shield, title: "BFSG 2025", desc: "Barrierefrei nach WCAG 2.2 AA umgesetzt. Bereit für die BFSG.", highlighted: false },
+              { icon: Lock, title: "Datenschutz", desc: "DSGVO-konform. Hosting in Deutschland, verschlüsselte Daten.", highlighted: false },
+              { icon: Users, title: "Mitglieder", desc: "Einfache Verwaltung eurer Mitglieder und Beitragszahlungen.", highlighted: false },
             ].map((feature) => (
               <div
                 key={feature.title}

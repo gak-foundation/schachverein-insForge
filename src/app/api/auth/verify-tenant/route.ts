@@ -17,15 +17,13 @@ export async function GET(request: Request) {
   const isSubdomain = h.get("x-is-subdomain") === "true";
 
   if (!isSubdomain) {
-    // Root domain login is allowed for super-admins AND new users without a club (who need onboarding)
+    // Root domain login is allowed for super-admins
     const authUser = await getAuthUserById(user.id);
-    const needsOnboarding = !authUser?.isSuperAdmin && !authUser?.clubId;
     
     if (authUser?.isSuperAdmin || !authUser?.clubId) {
       return NextResponse.json({ 
         ok: true, 
-        isSuperAdmin: authUser?.isSuperAdmin || false,
-        needsOnboarding
+        isSuperAdmin: authUser?.isSuperAdmin || false
       });
     }
     return NextResponse.json({ error: "Nur auf Subdomain anmelden", ok: false }, { status: 400 });

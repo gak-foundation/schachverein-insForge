@@ -19,10 +19,9 @@ export default async function DashboardLayout({
     redirect("/auth/login");
   }
 
-  // If no active club, redirect to onboarding
-  if (!session.club && !session.user.isSuperAdmin) {
-    redirect("/onboarding");
-  }
+  // If authenticated but no club, allow rendering (DashboardPage will show creation UI)
+  const isSuperAdmin = session.user.isSuperAdmin;
+  const hasNoClub = !session.club && !isSuperAdmin;
 
   const user = session.user;
   const role = user?.role as string ?? "mitglied";

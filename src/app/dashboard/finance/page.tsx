@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import {
@@ -13,6 +14,7 @@ import {
   getMembersForFinance,
 } from "@/features/finance/actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { PaymentsOverview } from "@/features/finance/components/payments-overview";
 import { ContributionRatesList } from "@/features/finance/components/contribution-rates-list";
 import { SepaExport } from "@/features/finance/components/sepa-export";
@@ -32,6 +34,20 @@ export default async function FinancePage() {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Keine Berechtigung fuer die Finanzverwaltung.</p>
+      </div>
+    );
+  }
+
+  if (!session.user.clubId) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <h2 className="text-xl font-bold">Kein Verein ausgewählt</h2>
+        <p className="text-muted-foreground max-w-md">
+          Als Super-Admin müssen Sie zuerst einen Verein auswählen, um Finanzdaten einsehen zu können.
+        </p>
+        <Link href="/super-admin">
+          <Button>Zur Vereinsauswahl</Button>
+        </Link>
       </div>
     );
   }

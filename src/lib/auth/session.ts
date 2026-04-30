@@ -44,19 +44,68 @@ export const getSession = cache(async () => {
       return null;
     }
 
-    // Fetch additional user data from database using Drizzle
-    const userData = await getAuthUserWithClub(user.id);
+    // Check if user is a hard-coded super admin via ENV
+    const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
+    const isHardcodedAdmin = user.email ? superAdminEmails.includes(user.email) : false;
+
+    // Fetch additional user data from database using Drizzle.
+    // Degrade gracefully on DB errors to prevent redirect loops.
+    let userData = null;
+    try {
+      userData = await getAuthUserWithClub(user.id);
+    } catch (dbError: any) {
+      if (dbError?.digest === 'DYNAMIC_SERVER_USAGE' || dbError?.message?.includes('dynamic-server-error')) {
+        throw dbError;
+      }
+
+      const isPoolerError = dbError.message?.includes('Tenant or user not found') || dbError.code === 'XX000';
+      
+      // In development, we don't want to spam the console if the fallback works
+      if (process.env.NODE_ENV !== 'development' || !isPoolerError) {
+        console.error(
+          "DB fetch failed in getSession (degraded session returned):",
+          `code=${dbError.code || 'unknown'} severity=${dbError.severity || 'unknown'} message=${dbError.message}`
+        );
+      }
+
+      // Fallback: try Supabase REST API which properly passes JWT claims for RLS
+      try {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+          .from('auth_user')
+          .select('id, name, email, email_verified, image, role, permissions, member_id, club_id, is_super_admin')
+          .eq('id', user.id)
+          .single();
+
+        if (!error && data) {
+          userData = {
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            emailVerified: data.email_verified,
+            image: data.image,
+            role: data.role,
+            permissions: data.permissions || [],
+            memberId: data.member_id,
+            clubId: data.club_id,
+            isSuperAdmin: data.is_super_admin || false,
+          };
+        }
+      } catch {
+        // Both Drizzle and Supabase REST failed, session will be degraded
+      }
+    }
 
     return {
       user: {
         id: user.id,
         email: user.email,
         name: userData?.name || user.user_metadata?.name || user.email?.split("@")[0],
-        role: userData?.role || "mitglied",
+        role: userData?.role || (isHardcodedAdmin ? "admin" : "mitglied"),
         permissions: userData?.permissions || [],
         memberId: userData?.memberId,
         clubId: userData?.clubId,
-        isSuperAdmin: userData?.isSuperAdmin || false,
+        isSuperAdmin: userData?.isSuperAdmin || isHardcodedAdmin || false,
         emailVerified: userData?.emailVerified || false,
         image: userData?.image || user.user_metadata?.avatar_url,
       },

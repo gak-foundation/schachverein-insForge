@@ -23,6 +23,7 @@ import {
   Wallet, 
   Target, 
   CalendarDays, 
+  Building2,
   Plus,
   ChevronRight,
   TrendingUp,
@@ -30,11 +31,18 @@ import {
   ArrowUpRight,
   MapPin,
   AlertCircle,
-  CircleCheck
+  CircleCheck,
+  Sparkles,
+  Check,
+  Rocket
 } from "lucide-react";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { cn } from "@/lib/utils";
+import { getClubById } from "@/lib/clubs/queries";
+import { completeOnboardingAction } from "@/lib/clubs/actions";
+
+import { CreateClubWizard } from "@/features/clubs/components/create-club-wizard";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -51,18 +59,27 @@ export default async function DashboardPage() {
 
   const clubId = await getCurrentClubId();
   if (!clubId) {
+    if (isSuperAdmin) {
+      redirect("/super-admin");
+    }
     redirect("/onboarding");
   }
+
+  const club = await getClubById(clubId);
+  const onboardingCompleted = (club?.settings as any)?.onboardingCompleted === true;
 
   const [stats, availabilityMatches, memberAvailability] = await Promise.all([
     getDashboardStats(),
     getUpcomingMatchesForAvailability(),
     user.memberId ? getMemberAvailability() : Promise.resolve([]),
   ]);
+
+  const hasData = stats.memberCount > 0 || stats.upcomingEvents.length > 0;
   const firstName = user?.name?.split(" ")[0] ?? "Mitglied";
   const canWriteMembers = hasPermission(role, permissions, PERMISSIONS.MEMBERS_WRITE, isSuperAdmin);
   const canWriteTournaments = hasPermission(role, permissions, PERMISSIONS.TOURNAMENTS_WRITE, isSuperAdmin);
   const canWriteTeams = hasPermission(role, permissions, PERMISSIONS.TEAMS_WRITE, isSuperAdmin);
+
   const todayItems = [
     {
       label: "Offene Beiträge",
@@ -98,7 +115,11 @@ export default async function DashboardPage() {
             Willkommen, {firstName}!
           </h1>
           <p className="mt-2 text-muted-foreground text-lg">
-            Dein Überblick über den aktuellen Status des Schachvereins.
+            {!onboardingCompleted 
+              ? "Vervollständige die Einrichtung deines Vereins." 
+              : hasData 
+                ? "Dein Überblick über den aktuellen Status des Schachvereins."
+                : "Lass uns deinen Verein mit Leben füllen. Hier sind die ersten Schritte."}
           </p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-accent rounded-full text-accent-foreground text-sm font-bold shadow-sm border border-border/50">
@@ -106,6 +127,101 @@ export default async function DashboardPage() {
            <span className="uppercase tracking-widest text-[10px]">Dashboard Übersicht</span>
         </div>
       </div>
+
+      {!onboardingCompleted && (
+        <Card className="border-blue-200 bg-blue-50/30 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <Sparkles className="h-24 w-24 text-blue-600" />
+          </div>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <Rocket className="h-5 w-5 text-blue-600" />
+              Onboarding-Checkliste
+            </CardTitle>
+            <CardDescription className="text-blue-700/70">
+              Nur noch wenige Schritte, bis dein Verein vollständig einsatzbereit ist.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {[
+                { title: "Verein erstellt", done: true, icon: Building2 },
+                { title: "Erster Termin", done: stats.upcomingEvents.length > 0, icon: CalendarDays, href: "/dashboard/calendar/new" },
+                { title: "Mitglieder importieren", done: stats.memberCount > 0, icon: Users, href: "/dashboard/members" },
+                { title: "Profil vervollständigen", done: !!club?.logoUrl, icon: Plus, href: "/dashboard/profile" },
+              ].map((item, i) => (
+                <div key={i} className={cn(
+                  "flex items-center gap-3 p-4 rounded-xl border transition-all",
+                  item.done ? "bg-emerald-50 border-emerald-100 text-emerald-900" : "bg-white border-blue-100 text-blue-900 hover:border-blue-300"
+                )}>
+                  <div className={cn(
+                    "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
+                    item.done ? "bg-emerald-500 text-white" : "bg-blue-100 text-blue-600"
+                  )}>
+                    {item.done ? <Check className="h-4 w-4" /> : <item.icon className="h-4 w-4" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate">{item.title}</p>
+                    {!item.done && item.href && (
+                      <Link href={item.href} className="text-xs font-medium text-blue-600 hover:underline">
+                        Jetzt erledigen →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-8 p-4 bg-white/50 rounded-xl border border-blue-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-medium text-blue-900">Gesamtfortschritt</div>
+                <div className="h-2 w-32 bg-blue-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-600 transition-all" 
+                    style={{ width: `${([true, stats.upcomingEvents.length > 0, stats.memberCount > 0, !!club?.logoUrl].filter(Boolean).length / 4) * 100}%` }}
+                  />
+                </div>
+              </div>
+              <form action={completeOnboardingAction}>
+                <Button type="submit" variant="outline" size="sm" className="border-blue-200 text-blue-700 hover:bg-blue-100">
+                  Checkliste ausblenden
+                </Button>
+              </form>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!hasData && onboardingCompleted && (
+        <Card className="border-primary/20 bg-primary/5 shadow-inner">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Erste Schritte
+            </CardTitle>
+            <CardDescription>
+              Vervollständige dein Vereinsprofil, um alle Funktionen nutzen zu können.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-3">
+            <Link href="/dashboard/members/new">
+              <Button variant="outline" className="w-full justify-start gap-3 h-12">
+                <Users className="h-4 w-4" /> Mitglieder anlegen
+              </Button>
+            </Link>
+            <Link href="/dashboard/calendar/new">
+              <Button variant="outline" className="w-full justify-start gap-3 h-12">
+                <CalendarDays className="h-4 w-4" /> Termine planen
+              </Button>
+            </Link>
+            <Link href="/dashboard/profile">
+              <Button variant="outline" className="w-full justify-start gap-3 h-12">
+                <Plus className="h-4 w-4" /> Profil vervollständigen
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {[

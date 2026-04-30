@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const contactFormSchema = z.object({
-  type: z.enum(["waitlist", "contact", "pilot"], {
+  type: z.enum(["waitlist", "contact"], {
     message: "Bitte wählen Sie einen Anfragetyp",
   }),
   clubName: z

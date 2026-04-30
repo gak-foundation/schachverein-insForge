@@ -46,7 +46,7 @@ export async function submitWaitlistApplication(formData: FormData) {
     const website = formData.get("website") as string | null;
     const memberCount = formData.get("memberCount") as string | null;
     const notes = formData.get("notes") as string | null;
-    const type = (formData.get("type") as "waitlist" | "pilot") || "waitlist";
+    const type = "waitlist";
     const painPoints = formData.get("painPoints") as string | null;
 
     if (!clubName || clubName.length < waitlistSchema.clubName.minLength) {
@@ -129,10 +129,7 @@ export async function submitWaitlistApplication(formData: FormData) {
     return {
       success: true,
       slug,
-      message:
-        type === "pilot"
-          ? "Ihre Bewerbung für das Pilot-Programm wurde erfolgreich eingereicht! Wir melden uns in Kürze für ein persönliches Kennenlernen."
-          : "Ihre Bewerbung wurde erfolgreich eingereicht. Sie werden per E-Mail benachrichtigt, sobald wir Ihren Antrag geprüft haben.",
+      message: "Ihre Bewerbung wurde erfolgreich eingereicht. Sie werden per E-Mail benachrichtigt, sobald wir Ihren Antrag geprüft haben.",
     };
   } catch (error) {
     console.error("Error submitting waitlist application:", error);

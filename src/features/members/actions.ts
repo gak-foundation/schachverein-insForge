@@ -20,6 +20,7 @@ import { PERMISSIONS, getPermissionsForRole, hasPermission } from "@/lib/auth/pe
 import { fetchLichessProfile, getBestLichessRating } from "@/lib/lichess";
 import { requireClubId } from "@/lib/actions/utils";
 import { encrypt, decrypt } from "@/lib/crypto";
+import { createClient } from "@/lib/supabase/server";
 
 type ClubMemberRole = typeof clubMemberships.$inferSelect.role;
 type MemberRecordStatus = typeof members.$inferSelect.status;
@@ -144,25 +145,66 @@ export async function getMembersForForms() {
 export async function getMemberById(id: string) {
   const clubId = await requireClubId();
 
-  const [membership] = await db
-    .select()
-    .from(clubMemberships)
-    .where(and(
-      eq(clubMemberships.memberId, id),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  let member: any = null;
 
-  if (!membership) {
-    return null;
+  try {
+    const [membership] = await db
+      .select()
+      .from(clubMemberships)
+      .where(and(
+        eq(clubMemberships.memberId, id),
+        eq(clubMemberships.clubId, clubId)
+      ));
+
+    if (!membership) {
+      return null;
+    }
+
+    member = await db.query.members.findFirst({
+      where: eq(members.id, id),
+      with: {
+        membership: true,
+      }
+    });
+  } catch (error: any) {
+    console.error("❌ Drizzle getMemberById failed:", {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+    });
+
+    // Fallback auf Supabase REST API für kritische Read-Operation
+    const supabase = await createClient();
+    const { data: membership, error: membershipError } = await supabase
+      .from('club_memberships')
+      .select('*')
+      .eq('member_id', id)
+      .eq('club_id', clubId)
+      .maybeSingle();
+
+    if (membershipError) {
+      console.error("REST API fallback for club_memberships failed:", membershipError.message);
+      throw error;
+    }
+
+    if (!membership) return null;
+
+    const { data: memberData, error: memberError } = await supabase
+      .from('members')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (memberError) {
+      console.error("REST API fallback for members failed:", memberError.message);
+      throw error;
+    }
+
+    member = {
+      ...memberData,
+      membership,
+    };
   }
-
-  const member = await db.query.members.findFirst({
-    where: eq(members.id, id),
-    with: {
-      parent: true,
-      children: true,
-    },
-  });
 
   if (member) {
     if (member.sepaIban) member.sepaIban = decrypt(member.sepaIban);
@@ -176,25 +218,39 @@ export async function getMemberById(id: string) {
 export async function getMemberStatusHistory(memberId: string) {
   const clubId = await requireClubId();
 
-  // Check if member belongs to club
-  const [membership] = await db
-    .select()
-    .from(clubMemberships)
-    .where(and(
-      eq(clubMemberships.memberId, memberId),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  try {
+    // Check if member belongs to club
+    const [membership] = await db
+      .select()
+      .from(clubMemberships)
+      .where(and(
+        eq(clubMemberships.memberId, memberId),
+        eq(clubMemberships.clubId, clubId)
+      ));
 
-  if (!membership) {
-    throw new Error("Mitglied nicht gefunden");
+    if (!membership) {
+      throw new Error("Mitglied nicht gefunden");
+    }
+
+    return db
+      .select()
+      .from(memberStatusHistory)
+      .where(eq(memberStatusHistory.memberId, memberId))
+      .orderBy(desc(memberStatusHistory.createdAt));
+  } catch (error: any) {
+    console.error("❌ Drizzle getMemberStatusHistory failed, falling back to REST API");
+    const supabase = await createClient();
+    const { data, error: restError } = await supabase
+      .from('member_status_history')
+      .select('*')
+      .eq('member_id', memberId)
+      .order('created_at', { ascending: false });
+
+    if (restError) throw error;
+    return data || [];
   }
-
-  return db
-    .select()
-    .from(memberStatusHistory)
-    .where(eq(memberStatusHistory.memberId, memberId))
-    .orderBy(desc(memberStatusHistory.changedAt));
 }
+
 
 export async function getContributionRatesForMemberSelect() {
   const clubId = await requireClubId();
@@ -432,23 +488,36 @@ export async function updateMember(formData: FormData) {
 export async function getDWZHistory(memberId: string) {
   const clubId = await requireClubId();
 
-  const [membership] = await db
-    .select()
-    .from(clubMemberships)
-    .where(and(
-      eq(clubMemberships.memberId, memberId),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  try {
+    const [membership] = await db
+      .select()
+      .from(clubMemberships)
+      .where(and(
+        eq(clubMemberships.memberId, memberId),
+        eq(clubMemberships.clubId, clubId)
+      ));
 
-  if (!membership) {
-    throw new Error("Mitglied ist nicht im Verein");
+    if (!membership) {
+      throw new Error("Mitglied ist nicht im Verein");
+    }
+
+    return db
+      .select()
+      .from(dwzHistory)
+      .where(eq(dwzHistory.memberId, memberId))
+      .orderBy(desc(dwzHistory.recordedAt));
+  } catch (error: any) {
+    console.error("❌ Drizzle getDWZHistory failed, falling back to REST API");
+    const supabase = await createClient();
+    const { data, error: restError } = await supabase
+      .from('dwz_history')
+      .select('*')
+      .eq('member_id', memberId)
+      .order('recorded_at', { ascending: false });
+
+    if (restError) throw error;
+    return data || [];
   }
-
-  return db
-    .select()
-    .from(dwzHistory)
-    .where(eq(dwzHistory.memberId, memberId))
-    .orderBy(desc(dwzHistory.recordedAt));
 }
 
 export async function addDWZEntry(formData: FormData) {

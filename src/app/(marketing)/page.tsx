@@ -3,7 +3,6 @@ import { ArrowRight, Shield, Zap, Wallet } from "lucide-react";
 import { HeroSection } from "@/components/marketing/hero-section";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { ProblemSolutionSection } from "@/components/marketing/problem-solution-section";
-import { PilotProjectSection } from "@/components/marketing/pilot-project-section";
 import { FAQAccordion } from "@/components/marketing/faq-accordion";
 import { MiniManager } from "@/components/marketing/mini-manager";
 import { cn } from "@/lib/utils";
@@ -34,8 +33,6 @@ export default function HomePage() {
       </section>
 
       <ProblemSolutionSection />
-
-      <PilotProjectSection />
 
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">

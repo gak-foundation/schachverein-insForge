@@ -38,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -327,45 +328,47 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel>Aktionen für {club.name}</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => handleImpersonate(club.id)}
-                              disabled={impersonating === club.id}
-                              className="cursor-pointer"
-                            >
-                              <ExternalLink className="mr-2 h-4 w-4 text-blue-500" />
-                              Als Admin einloggen
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleToggleStatus(club.id, club.isActive)}
-                              disabled={isPending}
-                              className="cursor-pointer"
-                            >
-                              {club.isActive ? (
-                                  <>
-                                    <PowerOff className="mr-2 h-4 w-4 text-red-500" />
-                                    Verein deaktivieren
-                                  </>
-                              ) : (
-                                  <>
-                                    <Power className="mr-2 h-4 w-4 text-green-500" />
-                                    Verein aktivieren
-                                  </>
+                            <DropdownMenuGroup>
+                              <DropdownMenuLabel>Aktionen für {club.name}</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleImpersonate(club.id)}
+                                disabled={impersonating === club.id}
+                                className="cursor-pointer"
+                              >
+                                <ExternalLink className="mr-2 h-4 w-4 text-blue-500" />
+                                Als Admin einloggen
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(club.id, club.isActive)}
+                                disabled={isPending}
+                                className="cursor-pointer"
+                              >
+                                {club.isActive ? (
+                                    <>
+                                      <PowerOff className="mr-2 h-4 w-4 text-red-500" />
+                                      Verein deaktivieren
+                                    </>
+                                ) : (
+                                    <>
+                                      <Power className="mr-2 h-4 w-4 text-green-500" />
+                                      Verein aktivieren
+                                    </>
+                                )}
+                              </DropdownMenuItem>
+                              {club.stripeCustomerId && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => window.open(`https://dashboard.stripe.com/customers/${club.stripeCustomerId}`, "_blank")}
+                                    className="cursor-pointer"
+                                  >
+                                    <CreditCard className="mr-2 h-4 w-4 text-slate-500" />
+                                    Stripe Kundenkonto
+                                  </DropdownMenuItem>
+                                </>
                               )}
-                            </DropdownMenuItem>
-                            {club.stripeCustomerId && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => window.open(`https://dashboard.stripe.com/customers/${club.stripeCustomerId}`, "_blank")}
-                                  className="cursor-pointer"
-                                >
-                                  <CreditCard className="mr-2 h-4 w-4 text-slate-500" />
-                                  Stripe Kundenkonto
-                                </DropdownMenuItem>
-                              </>
-                            )}
+                            </DropdownMenuGroup>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

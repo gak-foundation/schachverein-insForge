@@ -141,26 +141,66 @@ export async function sendClubInvitationEmail({
   clubName: string;
   invitedByName?: string;
 }) {
-  const subject = `Einladung zum ${clubName}`;
+  const subject = `♟️ Einladung zum ${clubName} auf Schachverein.de`;
+  
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Einladung zum ${clubName}</h2>
-      <p>Hallo,</p>
-      <p>Sie wurden ${invitedByName ? `von ${invitedByName} ` : ""}zum <strong>${clubName}</strong> eingeladen.</p>
-      <p>Klicken Sie auf den folgenden Link, um die Einladung anzunehmen:</p>
-      <p>
-        <a href="${invitationUrl}" style="display: inline-block; padding: 12px 24px; background-color: #17a2b8; color: white; text-decoration: none; border-radius: 4px;">
-          Einladung annehmen
-        </a>
-      </p>
-      <p>Der Link ist 7 Tage gültig.</p>
-      <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;" />
-      <p style="color: #666; font-size: 12px;">
-        Diese E-Mail wurde automatisch gesendet. Bitte antworten Sie nicht auf diese E-Mail.
-      </p>
-    </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        .body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f7; padding: 40px 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { background: #1a1a1a; padding: 40px; text-align: center; color: white; }
+        .content { padding: 40px; line-height: 1.6; }
+        .footer { padding: 20px 40px; font-size: 12px; color: #666; text-align: center; border-top: 1px solid #eee; }
+        .button { display: inline-block; padding: 14px 28px; background-color: #3b82f6; color: white !important; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 24px 0; }
+        .badge { background: #f0f7ff; color: #3b82f6; padding: 4px 12px; border-radius: 99px; font-size: 14px; font-weight: 500; display: inline-block; margin-bottom: 16px; }
+        h1 { margin: 0; font-size: 24px; letter-spacing: -0.5px; }
+        .chess-icon { font-size: 40px; margin-bottom: 16px; display: block; }
+      </style>
+    </head>
+    <body class="body">
+      <div class="container">
+        <div class="header">
+          <span class="chess-icon">♔</span>
+          <h1>Willkommen bei ${clubName}</h1>
+        </div>
+        <div class="content">
+          <span class="badge">Einladung erhalten</span>
+          <p>Hallo,</p>
+          <p>Schluss mit Zettelwirtschaft! <strong>${invitedByName || "Dein Verein"}</strong> hat dich eingeladen, Teil des neuen digitalen Vereinsheims auf <strong>Schachverein.de</strong> zu werden.</p>
+          
+          <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 20px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+            <p style="margin: 0; font-weight: 500;">Was dich erwartet:</p>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #475569;">
+              <li>Einfache Terminzusage für Vereinsabende</li>
+              <li>Einblick in DWZ & Elo-Statistiken</li>
+              <li>Interaktive Turniere & Mannschaftsplanung</li>
+            </ul>
+          </div>
+
+          <p>Klicke auf den Button, um dein Profil zu aktivieren und dem Verein beizutreten:</p>
+          
+          <div style="text-align: center;">
+            <a href="${invitationUrl}" class="button">Einladung annehmen</a>
+          </div>
+          
+          <p style="font-size: 14px; color: #666; margin-top: 24px;">
+            Der Link ist 7 Tage gültig. Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser: <br>
+            <span style="color: #3b82f6; word-break: break-all;">${invitationUrl}</span>
+          </p>
+        </div>
+        <div class="footer">
+          <p>Diese Einladung wurde automatisch gesendet. Bei Fragen wende dich bitte direkt an deinen Vereinsvorstand.</p>
+          <p>&copy; ${new Date().getFullYear()} Schachverein.de - Die Plattform für Vereine</p>
+        </div>
+      </div>
+    </body>
+    </html>
   `;
-  const text = `Einladung zum ${clubName}\n\nHallo,\n\nSie wurden ${invitedByName ? `von ${invitedByName} ` : ""}zum ${clubName} eingeladen.\n\nBesuchen Sie folgenden Link:\n${invitationUrl}\n\nDer Link ist 7 Tage gültig.`;
+  
+  const text = `Einladung zum ${clubName}\n\nHallo,\n\n${invitedByName || "Dein Verein"} hat dich eingeladen, dem neuen digitalen Vereinsheim auf Schachverein.de beizutreten.\n\nWas dich erwartet:\n- Terminzusagen\n- DWZ/Elo Statistiken\n- Turnierplanung\n\nNimm die Einladung hier an:\n${invitationUrl}\n\nDer Link ist 7 Tage gültig.`;
 
   return sendEmail({ to: email, subject, html, text });
 }

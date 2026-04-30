@@ -204,8 +204,8 @@ export async function getCalendarEvents(start: Date, end: Date): Promise<Calenda
   return unifiedEvents;
 }
 
-export async function createEvent(formData: FormData) {
-  const clubId = await requireClubId();
+export async function createEvent(formData: FormData, explicitClubId?: string) {
+  const clubId = explicitClubId || await requireClubId();
 
   const title = formData.get("title") as string;
   const eventType = formData.get("eventType") as string;

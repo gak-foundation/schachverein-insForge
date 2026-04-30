@@ -9,7 +9,6 @@ import type { NextRequest } from "next/server";
 const tenantAppRoutes = [
   "/dashboard",
   "/auth",
-  "/onboarding",
 ];
 
 const marketingRoutes = [
@@ -244,13 +243,9 @@ export default async function proxy(request: NextRequest) {
   // ---------------------------------------------------------------------------
   // Update session via Supabase (with subdomain-scoped cookies if on subdomain)
   // ---------------------------------------------------------------------------
-  let cookieOptions = {};
-  if (isSubdomain) {
-    // Scope cookies to the exact subdomain only
-    cookieOptions = { domain: hostname };
-  }
+  const cookieOptions = isSubdomain ? { domain: hostname } : undefined;
 
-  const { supabaseResponse, user } = await updateSession(request);
+  const { supabaseResponse, user } = await updateSession(request, cookieOptions);
 
   // ---------------------------------------------------------------------------
   // Auth guards

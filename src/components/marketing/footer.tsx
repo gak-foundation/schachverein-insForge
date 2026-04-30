@@ -20,8 +20,6 @@ export function MarketingFooter() {
             <h3 className="text-sm font-semibold mb-4">Produkt</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/" className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md inline-block">Features</Link></li>
-              <li><Link href="/bewerbung?type=pilot" className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md inline-block">Pilot-Programm</Link></li>
-
             </ul>
           </div>
           <div>

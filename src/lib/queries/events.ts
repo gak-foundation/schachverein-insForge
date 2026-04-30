@@ -42,7 +42,7 @@ export function useCreateEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createEvent,
+    mutationFn: (formData: FormData) => createEvent(formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: eventKeys.all });
     },
@@ -56,7 +56,7 @@ export function useCreateSeason() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createSeason,
+    mutationFn: (formData: FormData) => createSeason(formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: eventKeys.seasons() });
     },
