@@ -6,8 +6,8 @@ import { createServerClient, createServiceClient } from "@/lib/insforge";
 export async function getAuthUserById(id: string) {
     try {
         // Priority: Use InsForge REST API with Service Role to avoid RLS/Pooler issues
-        const supabase = createServiceClient();
-        const { data, error } = await supabase
+        const client = createServiceClient();
+        const { data, error } = await client
             .from('auth_user')
             .select('*')
             .eq('id', id)
@@ -30,8 +30,8 @@ export async function getAuthUserWithClub(id: string) {
     // 1. Try InsForge REST API (Service Role) - fast and bypasses RLS/Pooler issues
     // This is the recommended path for auth_user to avoid "Tenant or user not found"
     try {
-        const supabase = createServiceClient();
-        const { data, error: restError } = await supabase
+        const client = createServiceClient();
+        const { data, error: restError } = await client
             .from('auth_user')
             .select('id, name, email, email_verified, image, role, permissions, member_id, club_id, is_super_admin')
             .eq('id', id)
@@ -91,8 +91,8 @@ export async function getAuthUserWithClub(id: string) {
 export async function getAllAuthUsers() {
     // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
     try {
-        const supabase = createServiceClient();
-        const { data, error: restError } = await supabase
+        const client = createServiceClient();
+        const { data, error: restError } = await client
             .from('auth_user')
             .select('id, name, email, role, is_super_admin, created_at, updated_at')
             .order('created_at', { ascending: false });
@@ -139,7 +139,7 @@ export async function updateAuthUser(
 ) {
     try {
         // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
-        const supabase = createServiceClient();
+        const client = createServiceClient();
         
         // Convert camelCase keys to snake_case for InsForge REST
         const updateData: any = {
@@ -155,7 +155,7 @@ export async function updateAuthUser(
         if (data.clubId !== undefined) updateData.club_id = data.clubId;
         if (data.isSuperAdmin !== undefined) updateData.is_super_admin = data.isSuperAdmin;
 
-        const { data: updated, error } = await supabase
+        const { data: updated, error } = await client
             .from('auth_user')
             .update(updateData)
             .eq('id', id)
@@ -202,8 +202,8 @@ export async function ensureAuthUser(userData: {
 }) {
     try {
         // Try InsForge REST API first
-        const supabase = createServiceClient();
-        const { data: existing, error: lookupError } = await supabase
+        const client = createServiceClient();
+        const { data: existing, error: lookupError } = await client
             .from('auth_user')
             .select('id')
             .eq('id', userData.id)
@@ -218,7 +218,7 @@ export async function ensureAuthUser(userData: {
             if (userData.emailVerified !== undefined) updateData.email_verified = userData.emailVerified;
             if (userData.clubId) updateData.club_id = userData.clubId;
 
-            const { data: updated, error: updateError } = await supabase
+            const { data: updated, error: updateError } = await client
                 .from('auth_user')
                 .update(updateData)
                 .eq('id', userData.id)
@@ -228,7 +228,7 @@ export async function ensureAuthUser(userData: {
             if (updated && !updateError) return updated;
         } else if (!lookupError) {
             // Insert new record
-            const { data: created, error: insertError } = await supabase
+            const { data: created, error: insertError } = await client
                 .from('auth_user')
                 .insert([{
                     id: userData.id,

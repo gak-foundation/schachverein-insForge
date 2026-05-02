@@ -56,15 +56,58 @@ function createClient() {
   });
 }
 
-if (!globalForDb._dbClient) {
-  globalForDb._dbClient = createClient();
+function getClient() {
+  if (!globalForDb._dbClient) {
+    globalForDb._dbClient = createClient();
+  }
+  return globalForDb._dbClient;
 }
 
-const client = globalForDb._dbClient;
-
-if (!globalForDb._db) {
-  globalForDb._db = drizzle(client, { schema });
+function getDb() {
+  if (!globalForDb._db) {
+    try {
+      globalForDb._db = drizzle(getClient(), { schema });
+    } catch (e) {
+      console.warn("Failed to initialize Drizzle:", (e as Error).message);
+      return null as any;
+    }
+  }
+  return globalForDb._db;
 }
 
-export const db = globalForDb._db;
+function createBuildTimeProxy(): any {
+  const chainable: Record<string, unknown> = {};
+
+  const chainHandler: ProxyHandler<any> = {
+    get(_, prop) {
+      if (prop === 'then') {
+        return (resolve: (v: any) => void) => resolve([]);
+      }
+      return new Proxy(chainable, chainHandler);
+    },
+    apply() {
+      return new Proxy(chainable, chainHandler);
+    },
+  };
+
+  return new Proxy(chainable, chainHandler);
+}
+
+const isBuildTime = process.env.NEXT_PHASE === "phase-production-build" || process.env.NEXT_PHASE === "phase-development-build";
+
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  get(_, prop) {
+    if ((isBuildTime || !connectionString) && typeof prop === 'string') {
+      return createBuildTimeProxy();
+    }
+    try {
+      const instance = getDb();
+      if (!instance) return createBuildTimeProxy();
+      return (instance as any)[prop];
+    } catch (e) {
+      return createBuildTimeProxy();
+    }
+  },
+}) as unknown as ReturnType<typeof drizzle<typeof schema>>;
+
 export type Database = typeof db;

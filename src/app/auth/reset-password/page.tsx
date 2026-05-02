@@ -46,7 +46,7 @@ function ResetPasswordContent() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const supabase = createClient();
+  const client = createClient();
 
   const strength = calculateStrength(password);
 

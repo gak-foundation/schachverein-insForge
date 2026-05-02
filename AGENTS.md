@@ -130,4 +130,8 @@ Available languages:
 - Serverless functions have single endpoint (no subpaths)
 - Storage: Upload files to buckets, store URLs in database
 - AI operations are OpenAI-compatible
-- **EXTRA IMPORTANT**: Use Tailwind CSS 3.4 (do not upgrade to v4). Lock these dependencies in `package.json`
+- **EXTRA IMPORTANT**: Use the latest Tailwind CSS (currently v4.2+). Lock these dependencies in `package.json`
+- **CRITICAL**: ONLY use InsForge SDK for all database operations. Drizzle ORM and direct PostgreSQL connections are FORBIDDEN. All CRUD must go through `client.database.from('table')`.
+- **CRITICAL**: ONLY use InsForge Auth. No custom auth_user tables, no JWT wrappers, no session cookies. Use `client.auth.*` methods exclusively.
+- When fetching related data, use `client.database.from('table').select('*, related(*)')` for joins.
+- All database schema changes must be done via InsForge MCP tools (`run-raw-sql`, `get-table-schema`).

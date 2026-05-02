@@ -31,7 +31,7 @@ export const authClient = {
     const [isPending, setIsPending] = useState(true);
 
     useEffect(() => {
-      const supabase = createClient();
+      const client = createClient();
 
       const fetchProfile = async () => {
         try {
@@ -39,7 +39,7 @@ export const authClient = {
           if (response.status === 401) {
             // User exists in Auth but not in our DB (or session is invalid)
             // Clear local session to force re-login
-            await supabase.auth.signOut();
+            await client.auth.signOut();
             return null;
           }
           if (!response.ok) return null;
@@ -52,14 +52,16 @@ export const authClient = {
       };
 
       // Get initial session
-      supabase.auth.getCurrentUser().then(async ({ data, error }: any) => {
+      client.auth.getCurrentUser().then(async ({ data, error }: any) => {
         if (error) {
           const isIgnorableError =
             error.code === "refresh_token_not_found" ||
-            error.message?.toLowerCase().includes("sub claim in jwt does not exist");
+            error.message?.toLowerCase().includes("sub claim in jwt does not exist") ||
+            error.message?.toLowerCase().includes("no refresh token") ||
+            error.message?.toLowerCase().includes("invalid csrf token");
 
           if (isIgnorableError) {
-            await supabase.auth.signOut();
+            await client.auth.signOut();
           } else {
             console.error("Error getting session:", error.message);
           }
@@ -96,7 +98,7 @@ export const authClient = {
       // Check for changes periodically (InsForge doesn't have onAuthStateChange)
       const interval = setInterval(async () => {
         try {
-          const { data } = await supabase.auth.getCurrentUser();
+          const { data } = await client.auth.getCurrentUser();
           if (!data?.user) {
             setSession(null);
           }
@@ -113,8 +115,8 @@ export const authClient = {
 
   signIn: {
     email: async ({ email, password }: { email: string; password: string }) => {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const client = createClient();
+      const { data, error } = await client.auth.signInWithPassword({
         email,
         password,
       });
@@ -124,8 +126,8 @@ export const authClient = {
 
   signUp: {
     email: async ({ email, password, name, slug, invitationToken }: { email: string; password: string; name?: string; slug?: string; invitationToken?: string }) => {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signUp({
+      const client = createClient();
+      const { data, error } = await client.auth.signUp({
         email,
         password,
         name: name || email.split('@')[0],
@@ -135,12 +137,12 @@ export const authClient = {
   },
 
   signOut: async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    const client = createClient();
+    await client.auth.signOut();
   },
 
   forgetPassword: async ({ email }: { email: string }) => {
-    const supabase = createClient();
+    const client = createClient();
     const { data, error } = await insforge.auth.sendResetPasswordEmail({
       email,
       redirectTo: `${getAppUrl()}/auth/reset-password`,

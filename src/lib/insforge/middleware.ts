@@ -21,7 +21,7 @@ export async function updateSession(
   request: NextRequest,
   opts?: SessionOptions,
 ) {
-  let supabaseResponse = NextResponse.next({
+  let authResponse = NextResponse.next({
     request: {
       headers: request.headers,
     },
@@ -32,20 +32,26 @@ export async function updateSession(
 
   if (token) {
     try {
-      const supabase = createServerClient()
-      const { data, error } = await supabase.auth.getCurrentUser()
-      
-      if (error) {
-        clearSessionCookies(request, supabaseResponse, opts)
+      const client = createServerClient()
+      // In server mode we must explicitly refresh with the cookie token
+      const { data: refreshed } = await client.auth.refreshSession({ refreshToken: token })
+      if (!refreshed?.accessToken) {
+        clearSessionCookies(request, authResponse, opts)
         user = null
       } else {
-        user = data?.user || null
+        const { data, error } = await client.auth.getCurrentUser()
+        if (error) {
+          clearSessionCookies(request, authResponse, opts)
+          user = null
+        } else {
+          user = data?.user || null
+        }
       }
     } catch (error) {
-      clearSessionCookies(request, supabaseResponse, opts)
+      clearSessionCookies(request, authResponse, opts)
       user = null
     }
   }
 
-  return { supabaseResponse, user }
+  return { authResponse, user }
 }

@@ -54,7 +54,7 @@ function LoginPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const supabase = createClient();
+  const client = createClient();
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -66,7 +66,7 @@ function LoginPageContent() {
     const password = formData.get("password") as string;
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await client.auth.signInWithPassword({
         email,
         password,
       });
@@ -89,7 +89,7 @@ function LoginPageContent() {
 
       if (!verifyData.ok) {
         // Tenant mismatch or other issue: sign out and show error
-        await supabase.auth.signOut();
+        await client.auth.signOut();
         setError(verifyData.error || "Tenant-Verifikation fehlgeschlagen");
         return;
       }
@@ -107,8 +107,8 @@ function LoginPageContent() {
     return {
       id: provider,
       onClick: () => {
-        const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(callbackURL)}`;
-        void supabase.auth.signInWithOAuth({
+        const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
+        void client.auth.signInWithOAuth({
           provider,
           redirectTo,
         });

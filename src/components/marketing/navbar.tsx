@@ -6,7 +6,6 @@ import { Menu, X, LayoutDashboard, ArrowRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
-import { APP_URL } from "@/lib/urls";
 
 const navItems = [
   { label: "Features", href: "/#features", highlighted: false },
@@ -60,7 +59,7 @@ export function MarketingNavbar() {
               <>
                 {session ? (
                   <a
-                    href={`${APP_URL}/dashboard`}
+                    href={"/dashboard"}
                     className={cn(buttonVariants({ variant: "default", size: "sm" }), "gap-2")}
                   >
                     <LayoutDashboard className="h-4 w-4" />
@@ -69,13 +68,13 @@ export function MarketingNavbar() {
                 ) : (
                   <>
                     <a
-                      href={`${APP_URL}/auth/login`}
+                      href={"/auth/login"}
                       className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
                     >
                       Login
                     </a>
                     <a
-                      href={`${APP_URL}/auth/signup`}
+                      href={"/auth/signup"}
                       className={cn(buttonVariants({ size: "sm" }), "gap-2")}
                     >
                       Jetzt starten
@@ -133,7 +132,7 @@ export function MarketingNavbar() {
             <div className="px-4 pt-4 border-t mt-2 flex flex-col gap-2">
               {session ? (
                 <a
-                  href={`${APP_URL}/dashboard`}
+                  href={"/dashboard"}
                   className={cn(buttonVariants({ variant: "default" }), "w-full gap-2 justify-center")}
                 >
                   <LayoutDashboard className="h-4 w-4" />
@@ -142,13 +141,13 @@ export function MarketingNavbar() {
               ) : (
                 <>
                   <a
-                    href={`${APP_URL}/auth/login`}
+                    href={"/auth/login"}
                     className={cn(buttonVariants({ variant: "outline" }), "w-full justify-center")}
                   >
                     Login
                   </a>
                   <a
-                    href={`${APP_URL}/auth/signup`}
+                    href={"/auth/signup"}
                     className={cn(buttonVariants({ variant: "default" }), "w-full justify-center")}
                   >
                     Jetzt starten

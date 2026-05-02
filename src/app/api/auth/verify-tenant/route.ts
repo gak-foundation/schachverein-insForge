@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/insforge";
+import { createServerAuthClient } from "@/lib/insforge";
 import { getAuthUserById } from "@/lib/db/queries/auth";
 import { getClubBySlug } from "@/lib/clubs/queries";
 import { headers } from "next/headers";
 
 export async function GET(request: Request) {
-  const supabase = createServerClient();
-  const { data, error } = await supabase.auth.getCurrentUser();
+  const client = await createServerAuthClient();
+  const { data, error } = await client.auth.getCurrentUser();
 
   if (error || !data?.user) {
     return NextResponse.json({ error: "Unauthorized", ok: false }, { status: 401 });

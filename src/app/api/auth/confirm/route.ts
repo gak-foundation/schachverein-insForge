@@ -8,8 +8,8 @@ export async function GET(request: Request) {
   const next = searchParams.get("next") ?? "/dashboard";
 
   if (token && email) {
-    const supabase = createServerClient();
-    const { data, error } = await supabase.auth.verifyEmail({
+    const client = createServerClient();
+    const { data, error } = await client.auth.verifyEmail({
       email,
       otp: token,
     });

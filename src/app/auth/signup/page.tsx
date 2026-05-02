@@ -22,11 +22,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
-  const supabase = createClient();
+  const client = createClient();
 
   // Extract subdomain slug for tenant binding (used by both email and OAuth signup)
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "schach.studio";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || hostname;
   let slug = "";
   if (hostname.endsWith(`.${rootDomain}`)) {
     const parts = hostname.split(".");
@@ -101,8 +101,8 @@ export default function SignupPage() {
     return {
       id: provider,
       onClick: () => {
-        const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent("/dashboard")}&action=signup&slug=${encodeURIComponent(slug)}`;
-        void supabase.auth.signInWithOAuth({
+        const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/dashboard")}&action=signup&slug=${encodeURIComponent(slug)}`;
+        void client.auth.signInWithOAuth({
           provider,
           redirectTo,
         });

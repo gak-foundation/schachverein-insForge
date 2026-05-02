@@ -1,4 +1,4 @@
-import { createServerClient, createServiceClient } from "@/lib/insforge";
+import { createServerAuthClient, createServiceClient } from "@/lib/insforge";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { ROLE_PERMISSIONS, Permission } from "./permissions";
@@ -13,11 +13,11 @@ import { getClubById, getClubBySlug } from "@/lib/clubs/queries";
 // Cached session getter for server components
 export const getSession = cache(async () => {
   try {
-    const supabase = createServerClient();
+    const client = await createServerAuthClient();
     let user = null;
 
     try {
-      const { data, error } = await supabase.auth.getCurrentUser();
+      const { data, error } = await client.auth.getCurrentUser();
       if (error) {
         const errorMessage = (error as any).message?.toLowerCase() || '';
         const errorCode = (error as any).code;

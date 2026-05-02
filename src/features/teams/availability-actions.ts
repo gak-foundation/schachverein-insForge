@@ -31,10 +31,10 @@ export async function getUpcomingMatchesForAvailability() {
       .orderBy(matches.matchDate);
   } catch (error) {
     // 2. Fallback to REST API (Service Role)
-    const supabase = createServiceClient();
+    const client = createServiceClient();
     
     // Complex join via REST is hard, so we fetch teams first then matches
-    const { data: clubTeams, error: teamsError } = await supabase
+    const { data: clubTeams, error: teamsError } = await client
       .from('teams')
       .select('id, name')
       .eq('club_id', clubId);
@@ -43,7 +43,7 @@ export async function getUpcomingMatchesForAvailability() {
     
     const teamIds = clubTeams.map((t: any) => t.id);
     
-    const { data: upcomingMatches, error: matchesError } = await supabase
+    const { data: upcomingMatches, error: matchesError } = await client
       .from('matches')
       .select('*')
       .or(`home_team_id.in.(${teamIds.join(',')}),away_team_id.in.(${teamIds.join(',')})`)

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { generateCodeVerifier, generateCodeChallenge } from "@/lib/auth/lichess";
-import { createServerClient } from "@/lib/insforge";
+import { createServerAuthClient } from "@/lib/insforge";
 
 export async function GET() {
-  const supabase = createServerClient();
-  const { data, error } = await supabase.auth.getCurrentUser();
+  const client = await createServerAuthClient();
+  const { data, error } = await client.auth.getCurrentUser();
 
   if (error || !data?.user) {
     return NextResponse.json(

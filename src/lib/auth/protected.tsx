@@ -9,8 +9,8 @@ interface ProtectedPageProps {
  * Server Component Wrapper für geschützte Seiten
  */
 export async function ProtectedPage({ children }: ProtectedPageProps) {
-  const supabase = createServerClient();
-  const { data: { user } } = await supabase.auth.getCurrentUser();
+  const client = createServerClient();
+  const { data: { user } } = await client.auth.getCurrentUser();
 
   if (!user) {
     redirect("/auth/login");
@@ -24,22 +24,22 @@ export async function ProtectedPage({ children }: ProtectedPageProps) {
  * Gibt den User zurück oder redirected zum Login
  */
 export async function requireAuth() {
-  const supabase = createServerClient();
-  const { data: { user }, error } = await supabase.auth.getCurrentUser();
+  const client = createServerClient();
+  const { data: { user }, error } = await client.auth.getCurrentUser();
 
   if (error || !user) {
     redirect("/auth/login");
   }
 
-  return { user, supabase };
+  return { user, client };
 }
 
 /**
  * Optional Auth - gibt User zurück wenn eingeloggt, sonst null
  */
 export async function optionalAuth() {
-  const supabase = createServerClient();
-  const { data: { user } } = await supabase.auth.getCurrentUser();
+  const client = createServerClient();
+  const { data: { user } } = await client.auth.getCurrentUser();
   
-  return { user, supabase };
+  return { user, client };
 }

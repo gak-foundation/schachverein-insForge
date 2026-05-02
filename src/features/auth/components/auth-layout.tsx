@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
 
+const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "schach.studio";
+
 interface AuthLayoutProps {
   children: ReactNode;
 }
@@ -23,7 +25,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       </div>
       
       <div className="mt-8 text-center text-xs text-muted-foreground relative z-10">
-        © {new Date().getFullYear()} schach.studio. Alle Rechte vorbehalten.
+        © {new Date().getFullYear()} {domain}. Alle Rechte vorbehalten.
       </div>
     </div>
   );
