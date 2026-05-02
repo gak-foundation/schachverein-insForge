@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/insforge";
 import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ export default function SignupPage() {
       if (error) {
         setError(error.message || "Ein Fehler ist aufgetreten");
       } else if (data?.user) {
-        // Bind user to tenant immediately after Supabase signup
+        // Bind user to tenant immediately after signup
         if (slug) {
           try {
             await fetch("/api/auth/bind-tenant", {

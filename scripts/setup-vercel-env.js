@@ -26,18 +26,18 @@ function generateEncryptionKey() {
 }
 
 async function main() {
-  console.log('🚀 Vercel + Supabase Deployment Setup\n');
+  console.log('🚀 Vercel + InsForge Deployment Setup\n');
   console.log('====================================\n');
   
-  console.log('📋 Schritt 1: Supabase Projekt erstellen');
-  console.log('   → https://supabase.com');
-  console.log('   → Region: EU (Frankfurt) für DSGVO\n');
+  console.log('📋 Schritt 1: InsForge Projekt konfigurieren');
+  console.log('   → Erstelle Projekt auf: https://insforge.ai');
+  console.log('   → Region: EU (Central) für DSGVO\n');
   
   console.log('📋 Schritt 2: ENV-Variablen sammeln\n');
   
-  const supabaseUrl = await question('Supabase URL (NEXT_PUBLIC_SUPABASE_URL): ');
-  const anonKey = await question('Anon Key (NEXT_PUBLIC_SUPABASE_ANON_KEY): ');
-  const serviceKey = await question('Service Role Key (SUPABASE_SERVICE_ROLE_KEY): ');
+  const insforgeUrl = await question('InsForge URL (NEXT_PUBLIC_INSFORGE_URL): ');
+  const anonKey = await question('Anon Key (NEXT_PUBLIC_INSFORGE_ANON_KEY): ');
+  const serviceKey = await question('Service Role Key (INSFORGE_SERVICE_ROLE_KEY): ');
   const dbUrl = await question('Database URL (Port 6543, mit Pooling): ');
   const directUrl = await question('Direct URL (Port 5432, ohne Pooling): ');
   const vercelUrl = await question('Vercel URL (z.B. https://xyz.vercel.app): ');
@@ -50,9 +50,9 @@ async function main() {
   console.log('✅ Generierte ENV-Variablen:\n');
   
   const envVars = {
-    'NEXT_PUBLIC_SUPABASE_URL': supabaseUrl,
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY': anonKey,
-    'SUPABASE_SERVICE_ROLE_KEY': serviceKey,
+    'NEXT_PUBLIC_INSFORGE_URL': insforgeUrl,
+    'NEXT_PUBLIC_INSFORGE_ANON_KEY': anonKey,
+    'INSFORGE_SERVICE_ROLE_KEY': serviceKey,
     'DATABASE_URL': dbUrl,
     'DIRECT_URL': directUrl,
     'NEXT_PUBLIC_APP_URL': vercelUrl,
@@ -82,7 +82,7 @@ async function main() {
     console.log(`SMTP_PORT=${smtpPort}`);
     console.log(`SMTP_USER=${smtpUser}`);
     console.log(`SMTP_PASS=${smtpPass}`);
-    console.log(`EMAIL_FROM=${emailFrom}`);
+    console.log(`SMTP_FROM=${emailFrom}`);
     console.log(`CONTACT_NOTIFICATION_EMAIL=${emailFrom}`);
   }
   
@@ -92,7 +92,7 @@ async function main() {
   console.log('   → https://vercel.com/dashboard → [Projekt] → Settings → Environment Variables\n');
   console.log('2. Führe Migrationen aus:');
   console.log('   npm run db:push\n');
-  console.log('3. Konfiguriere Supabase Auth URLs:');
+  console.log('3. Konfiguriere InsForge Auth URLs:');
   console.log(`   Site URL: ${vercelUrl}`);
   console.log(`   Redirect: ${vercelUrl}/api/auth/callback\n`);
   console.log('4. Deploye:');

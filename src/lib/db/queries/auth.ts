@@ -5,7 +5,7 @@ import { createServerClient, createServiceClient } from "@/lib/insforge";
 
 export async function getAuthUserById(id: string) {
     try {
-        // Priority: Use Supabase REST API with Service Role to avoid RLS/Pooler issues
+        // Priority: Use InsForge REST API with Service Role to avoid RLS/Pooler issues
         const supabase = createServiceClient();
         const { data, error } = await supabase
             .from('auth_user')
@@ -27,7 +27,7 @@ export async function getAuthUserById(id: string) {
 }
 
 export async function getAuthUserWithClub(id: string) {
-    // 1. Try Supabase REST API (Service Role) - fast and bypasses RLS/Pooler issues
+    // 1. Try InsForge REST API (Service Role) - fast and bypasses RLS/Pooler issues
     // This is the recommended path for auth_user to avoid "Tenant or user not found"
     try {
         const supabase = createServiceClient();
@@ -89,7 +89,7 @@ export async function getAuthUserWithClub(id: string) {
 }
 
 export async function getAllAuthUsers() {
-    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
     try {
         const supabase = createServiceClient();
         const { data, error: restError } = await supabase
@@ -138,10 +138,10 @@ export async function updateAuthUser(
     data: Partial<typeof authUsers.$inferInsert>
 ) {
     try {
-        // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+        // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
         const supabase = createServiceClient();
         
-        // Convert camelCase keys to snake_case for Supabase REST
+        // Convert camelCase keys to snake_case for InsForge REST
         const updateData: any = {
             updated_at: new Date().toISOString(),
         };
@@ -185,4 +185,107 @@ export async function updateAuthUser(
         .returning();
 
     return updated ?? null;
+}
+
+/**
+ * Programmatic user sync — replaces the DB trigger.
+ * Creates or updates a record in public.auth_user whenever a user authenticates.
+ * Called from signup, OAuth callback, and tenant verification.
+ */
+export async function ensureAuthUser(userData: {
+    id: string;
+    email?: string;
+    name?: string;
+    avatarUrl?: string;
+    emailVerified?: boolean;
+    clubId?: string;
+}) {
+    try {
+        // Try InsForge REST API first
+        const supabase = createServiceClient();
+        const { data: existing, error: lookupError } = await supabase
+            .from('auth_user')
+            .select('id')
+            .eq('id', userData.id)
+            .maybeSingle();
+
+        if (!lookupError && existing) {
+            // Update existing record
+            const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+            if (userData.email) updateData.email = userData.email;
+            if (userData.name) updateData.name = userData.name;
+            if (userData.avatarUrl) updateData.image = userData.avatarUrl;
+            if (userData.emailVerified !== undefined) updateData.email_verified = userData.emailVerified;
+            if (userData.clubId) updateData.club_id = userData.clubId;
+
+            const { data: updated, error: updateError } = await supabase
+                .from('auth_user')
+                .update(updateData)
+                .eq('id', userData.id)
+                .select()
+                .single();
+
+            if (updated && !updateError) return updated;
+        } else if (!lookupError) {
+            // Insert new record
+            const { data: created, error: insertError } = await supabase
+                .from('auth_user')
+                .insert([{
+                    id: userData.id,
+                    email: userData.email,
+                    name: userData.name || userData.email?.split('@')[0],
+                    image: userData.avatarUrl,
+                    email_verified: userData.emailVerified ?? false,
+                    role: 'mitglied',
+                    club_id: userData.clubId,
+                }])
+                .select()
+                .single();
+
+            if (created && !insertError) return created;
+        }
+    } catch {
+        // Fall through to Drizzle
+    }
+
+    // Drizzle fallback
+    try {
+        const existing = await db.select({ id: authUsers.id })
+            .from(authUsers)
+            .where(eq(authUsers.id, userData.id))
+            .limit(1);
+
+        if (existing.length > 0) {
+            const [updated] = await db
+                .update(authUsers)
+                .set({
+                    email: userData.email,
+                    name: userData.name,
+                    image: userData.avatarUrl,
+                    emailVerified: userData.emailVerified,
+                    clubId: userData.clubId,
+                    updatedAt: new Date(),
+                })
+                .where(eq(authUsers.id, userData.id))
+                .returning();
+            return updated;
+        }
+
+        const [created] = await db
+            .insert(authUsers)
+            .values({
+                id: userData.id,
+                email: userData.email ?? '',
+                name: userData.name || userData.email?.split('@')[0],
+                image: userData.avatarUrl,
+                emailVerified: userData.emailVerified ?? false,
+                role: 'mitglied' as any,
+                clubId: userData.clubId ?? null as any,
+            })
+            .returning();
+        return created;
+    } catch (e) {
+        console.error('ensureAuthUser Drizzle fallback failed:', e);
+        return null;
+    }
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowLeft, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/insforge";
 
 export default function AuthErrorPage() {
   return (

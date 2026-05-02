@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/insforge";
 import { NextResponse } from "next/server";
-import { getAuthUserById } from "@/lib/db/queries/auth";
+import { getAuthUserById, ensureAuthUser } from "@/lib/db/queries/auth";
 import { bindUserToTenant } from "@/lib/auth/tenant-binding";
 
 function sanitizeNext(next: string | null): string {
@@ -28,6 +28,15 @@ export async function GET(request: Request) {
       const { data, error } = await supabase.auth.getCurrentUser();
 
       if (!error && data?.user) {
+        // Sync user to public.auth_user (replaces DB trigger)
+        await ensureAuthUser({
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.profile?.name || data.user.email?.split('@')[0],
+          avatarUrl: data.user.profile?.avatar_url,
+          emailVerified: data.user.emailVerified ?? false,
+        });
+
         if (action === "signup" && slug) {
           try {
             const existingUser = await getAuthUserById(data.user.id);

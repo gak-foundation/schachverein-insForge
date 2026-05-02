@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { insforge } from '@/lib/insforge/client';
+import { insforge } from '@/lib/insforge';
 
 export async function POST(request: Request) {
   try {

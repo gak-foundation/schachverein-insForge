@@ -1,24 +1,24 @@
-﻿
-# Authentifizierung & RBAC
+﻿# Authentifizierung & RBAC
 
 ## Authentifizierung
 
-Die Anwendung nutzt **Supabase Auth** (managed service) für die Authentifizierung:
+Die Anwendung nutzt **InsForge Auth** (managed service) für die Authentifizierung:
 
-- E-Mail & Passwort (via Supabase Auth)
-- OAuth-Provider (GitHub, etc.)
-- Session-Management via Supabase
+- E-Mail & Passwort (via InsForge Auth)
+- OAuth-Provider (GitHub, Google, etc.)
+- Session-Management via InsForge
 - Passwort-Zurücksetzen via E-Mail
 
 ### Key Files
 
 | Datei | Beschreibung |
 |-------|--------------|
-| `src/lib/supabase/client.ts` | Client-side Supabase Client |
-| `src/lib/supabase/server.ts` | Server-side Supabase Client |
+| `src/lib/insforge/index.ts` | InsForge Client-Factory (Browser + Server) |
+| `src/lib/insforge/middleware.ts` | Session-Management Middleware |
 | `src/lib/auth/session.ts` | Session-Helper für Server Components |
 | `src/lib/auth/client.ts` | React Hooks für Auth-State |
 | `src/lib/auth/protected.tsx` | Geschützte Page Wrapper |
+| `src/lib/db/queries/auth.ts` | Auth-User DB-Queries (inkl. User-Sync) |
 
 ## Rollenbasiertes Rechtesystem (RBAC)
 
@@ -59,7 +59,3 @@ if (!hasPermission(session.user.role, session.user.permissions, PERMISSIONS.MEMB
   throw new Error('Nicht autorisiert');
 }
 ```
-
-## Migration von Better Auth
-
-Das Projekt wurde von Better Auth auf Supabase Auth migriert. Details siehe `docs/migration/SUPABASE-MIGRATION.md`.

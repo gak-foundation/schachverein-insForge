@@ -225,7 +225,7 @@ export async function getMemberById(id: string) {
     });
 
     // Fallback auf Supabase REST API für kritische Read-Operation
-    const supabase = await createClient();
+    const supabase = createServerClient();
     const { data: membership, error: membershipError } = await supabase
       .from('club_memberships')
       .select('*')
@@ -290,7 +290,7 @@ export async function getMemberStatusHistory(memberId: string) {
       .orderBy(desc(memberStatusHistory.changedAt));
   } catch (error: any) {
     console.error("❌ Drizzle getMemberStatusHistory failed, falling back to REST API");
-    const supabase = await createClient();
+    const supabase = createServerClient();
     const { data, error: restError } = await supabase
       .from('member_status_history')
       .select('*')
@@ -559,7 +559,7 @@ export async function getDWZHistory(memberId: string) {
       .orderBy(desc(dwzHistory.recordedAt));
   } catch (error: any) {
     console.error("❌ Drizzle getDWZHistory failed, falling back to REST API");
-    const supabase = await createClient();
+    const supabase = createServerClient();
     const { data, error: restError } = await supabase
       .from('dwz_history')
       .select('*')

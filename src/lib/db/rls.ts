@@ -3,7 +3,7 @@ import { db } from "./index";
 
 /**
  * A wrapper to execute a Drizzle query while respecting Row Level Security (RLS).
- * It sets the local session variables based on the Supabase JWT token or a given User ID/Role.
+ * It sets the local session variables based on the InsForge JWT token or a given User ID/Role.
  * 
  * Why? By default, Drizzle connects as the superuser/postgres role via DATABASE_URL,
  * bypassing all RLS policies in the database. To enforce RLS, we must temporarily
@@ -23,7 +23,7 @@ export async function withRLS<T>(
 ): Promise<T> {
   return await db.transaction(async (tx) => {
     // Inject the user's context into the current Postgres transaction session
-    // These variables can be read by Supabase RLS policies via auth.uid() or auth.role()
+    // These variables can be read by InsForge RLS policies via auth.uid() or auth.role()
     await tx.execute(
       sql`
         SELECT set_config('request.jwt.claims', json_build_object('sub', ${userId}, 'role', ${role})::text, true);

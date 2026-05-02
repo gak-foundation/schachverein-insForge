@@ -34,7 +34,7 @@ export async function getClubById(id: string) {
 
 export async function getClubBySlug(slug: string) {
   try {
-    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
     const supabase = createServiceClient();
     const { data, error } = await supabase.database
       .from('clubs')
@@ -254,7 +254,7 @@ export async function createClub(data: {
   };
 }) {
   try {
-    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
     const supabase = createServiceClient();
     const { data: club, error } = await supabase
       .from('clubs')
@@ -307,10 +307,10 @@ export async function updateClub(
   }>
 ) {
   try {
-    // 1. Try Supabase REST API (Service Role)
+    // 1. Try InsForge REST API (Service Role)
     const supabase = createServiceClient();
     
-    // Convert camelCase keys to snake_case for Supabase REST
+    // Convert camelCase keys to snake_case for InsForge REST
     const updateData: any = {
       updated_at: new Date().toISOString(),
     };
@@ -351,7 +351,7 @@ export async function updateClub(
 
 export async function updateUserClub(userId: string, clubId: string | null) {
   try {
-    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
     const supabase = createServiceClient();
     const { error } = await supabase
       .from('auth_user')
@@ -385,7 +385,7 @@ export async function createMember(data: {
   clubId?: string;
 }) {
   try {
-    // 1. Try Supabase REST API (Service Role)
+    // 1. Try InsForge REST API (Service Role)
     const supabase = createServiceClient();
     const { data: member, error } = await supabase
       .from('members')
@@ -438,7 +438,7 @@ export async function addMemberToClub(
   isPrimary: boolean = false
 ) {
   try {
-    // 1. Try Supabase REST API (Service Role)
+    // 1. Try InsForge REST API (Service Role)
     const supabase = createServiceClient();
     
     // Update member's club
@@ -575,7 +575,7 @@ export function generateClubSlug(name: string): string {
 
 export async function isSlugAvailable(slug: string): Promise<boolean> {
   try {
-    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
+    // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from('clubs')

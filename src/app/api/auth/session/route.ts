@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { insforge } from '@/lib/insforge/client';
+import { insforge } from '@/lib/insforge';
 
 export async function GET() {
   const cookieStore = await cookies();

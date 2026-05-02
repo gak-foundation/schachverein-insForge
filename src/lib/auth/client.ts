@@ -1,7 +1,6 @@
 "use client";
 
-import { getSupabaseClient } from "@/lib/supabase/client";
-import { insforge } from "@/lib/insforge/client";
+import { createClient, insforge } from "@/lib/insforge";
 import { useEffect, useState } from "react";
 
 // Get the app base URL for auth redirects
@@ -32,7 +31,7 @@ export const authClient = {
     const [isPending, setIsPending] = useState(true);
 
     useEffect(() => {
-      const supabase = getSupabaseClient();
+      const supabase = createClient();
 
       const fetchProfile = async () => {
         try {
@@ -114,7 +113,7 @@ export const authClient = {
 
   signIn: {
     email: async ({ email, password }: { email: string; password: string }) => {
-      const supabase = getSupabaseClient();
+      const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -125,7 +124,7 @@ export const authClient = {
 
   signUp: {
     email: async ({ email, password, name, slug, invitationToken }: { email: string; password: string; name?: string; slug?: string; invitationToken?: string }) => {
-      const supabase = getSupabaseClient();
+      const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -136,12 +135,12 @@ export const authClient = {
   },
 
   signOut: async () => {
-    const supabase = getSupabaseClient();
+    const supabase = createClient();
     await supabase.auth.signOut();
   },
 
   forgetPassword: async ({ email }: { email: string }) => {
-    const supabase = getSupabaseClient();
+    const supabase = createClient();
     const { data, error } = await insforge.auth.sendResetPasswordEmail({
       email,
       redirectTo: `${getAppUrl()}/auth/reset-password`,

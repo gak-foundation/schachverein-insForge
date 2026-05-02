@@ -647,10 +647,10 @@ export async function getAllClubsAction() {
     });
 
     if (isPoolerError) {
-      console.warn("⚠️ Supabase Pooler Error: Bitte prüfe ob das Projekt pausiert ist.");
+      console.warn("⚠️ InsForge Pooler Error: Bitte prüfe ob das Projekt pausiert ist.");
     }
 
-    console.info("🔄 Falling back to Supabase REST API (Service Role)...");
+    console.info("🔄 Falling back to InsForge REST API (Service Role)...");
 
     try {
       const supabase = createServiceClient();

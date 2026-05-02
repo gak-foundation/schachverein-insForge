@@ -1,4 +1,4 @@
-import { updateSession } from "@/lib/supabase/middleware";
+import { updateSession } from "@/lib/insforge/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -241,7 +241,7 @@ export default async function proxy(request: NextRequest) {
     (isSubdomain && pathname === "/"); // Allow subdomain root if desired
 
   // ---------------------------------------------------------------------------
-  // Update session via Supabase (with subdomain-scoped cookies if on subdomain)
+  // Update session via InsForge (with subdomain-scoped cookies if on subdomain)
   // ---------------------------------------------------------------------------
   const cookieOptions = isSubdomain ? { domain: hostname } : undefined;
 

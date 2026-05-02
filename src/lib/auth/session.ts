@@ -19,10 +19,12 @@ export const getSession = cache(async () => {
     try {
       const { data, error } = await supabase.auth.getCurrentUser();
       if (error) {
+        const errorMessage = (error as any).message?.toLowerCase() || '';
+        const errorCode = (error as any).code;
         const isMissingSession =
-          error.code === 'refresh_token_not_found' ||
-          error.code === 'session_not_found' ||
-          error.message?.toLowerCase().includes('session missing');
+          errorCode === 'refresh_token_not_found' ||
+          errorCode === 'session_not_found' ||
+          errorMessage.includes('session missing');
 
         if (!isMissingSession) {
           console.error("Auth error in getSession:", error.message);
@@ -62,14 +64,14 @@ export const getSession = cache(async () => {
       user: {
         id: user.id,
         email: user.email,
-        name: userData?.name || user.user_metadata?.name || user.email?.split("@")[0],
+        name: userData?.name || user.profile?.name || user.email?.split("@")[0],
         role: userData?.role || (isHardcodedAdmin ? "admin" : "mitglied"),
         permissions: userData?.permissions || [],
         memberId: userData?.memberId,
         clubId: userData?.clubId,
         isSuperAdmin: userData?.isSuperAdmin || isHardcodedAdmin || false,
         emailVerified: userData?.emailVerified || false,
-        image: userData?.image || user.user_metadata?.avatar_url,
+        image: userData?.image || user.profile?.avatar_url,
       },
       session: {
         user,

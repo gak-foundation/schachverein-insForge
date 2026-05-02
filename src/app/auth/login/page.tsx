@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,7 +83,7 @@ function LoginPageContent() {
         return;
       }
 
-      // Tenant verification after successful Supabase login
+      // Tenant verification after successful login
       const verifyRes = await fetch("/api/auth/verify-tenant");
       const verifyData = await verifyRes.json();
 

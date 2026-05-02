@@ -1,6 +1,6 @@
 "use server";
 
-import { insforge } from "@/lib/insforge/client";
+import { insforge } from "@/lib/insforge";
 
 export async function resetPassword(formData: FormData) {
   const password = formData.get("password") as string;

@@ -13,7 +13,7 @@ import { AuthCard } from "@/features/auth/components/auth-card";
 import { AuthHeader } from "@/features/auth/components/auth-header";
 import { ErrorMessage } from "@/features/auth/components/error-message";
 
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/insforge";
 
 const PASSWORD_REQUIREMENTS = [
   { test: (p: string) => p.length >= 8, label: "Mindestens 8 Zeichen" },
@@ -51,7 +51,7 @@ function ResetPasswordContent() {
   const strength = calculateStrength(password);
 
   useEffect(() => {
-    // Supabase handled die Session automatisch via URL params
+    // The session is handled automatically via URL params
     // Wir müssen hier nichts weiter tun
   }, [searchParams]);
 

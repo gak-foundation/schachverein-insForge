@@ -1,5 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { insforge } from '@/lib/insforge';
 
 // Bucket-Namen
 export const BUCKETS = {
@@ -60,7 +59,7 @@ export class StorageValidationError extends Error {
 function validateUpload(
   bucket: string,
   path: string,
-  file: File | Buffer | Uint8Array,
+  file: File | Blob | Buffer | Uint8Array,
   contentType?: string
 ): void {
   const bucketLower = bucket.toLowerCase();
@@ -68,7 +67,8 @@ function validateUpload(
   // 1. Dateigröße prüfen
   const maxSize = MAX_FILE_SIZES[bucketLower];
   if (maxSize) {
-    const size = file instanceof File ? file.size : ('length' in file ? file.length : (file as any).byteLength);
+    const size = file instanceof File || file instanceof Blob ? file.size : 
+                 ('length' in file ? file.length : (file as any).byteLength);
     if (size > maxSize) {
       throw new StorageValidationError(
         `Datei zu groß. Maximal ${maxSize / (1024 * 1024)} MB erlaubt.`,
@@ -78,7 +78,7 @@ function validateUpload(
   }
 
   // 2. MIME-Type prüfen
-  const mime = contentType || (file instanceof File ? file.type : undefined);
+  const mime = contentType || (file instanceof File || file instanceof Blob ? file.type : undefined);
   const allowedMimes = ALLOWED_MIME_TYPES[bucketLower];
   if (allowedMimes && mime && !allowedMimes.includes(mime)) {
     throw new StorageValidationError(
@@ -106,66 +106,41 @@ function validateUpload(
   }
 }
 
-const s3Client = new S3Client({
-  endpoint: process.env.S3_ENDPOINT,
-  region: process.env.S3_REGION || "eu-central-1",
-  credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY || "",
-    secretAccessKey: process.env.S3_SECRET_KEY || "",
-  },
-  forcePathStyle: true,
-});
-
-const defaultBucket = process.env.S3_BUCKET || "schachverein";
-
-function getS3Key(bucket: string, path: string) {
-  // Für kompatibles Verhalten packen wir den Ordner (z.B. "avatars") und den Pfad zusammen.
-  return `${bucket}/${path}`;
-}
-
 export async function uploadFile(
   bucket: string,
   path: string,
-  file: File | Buffer | Uint8Array,
+  file: File | Blob | Buffer | Uint8Array,
   options?: { upsert?: boolean; contentType?: string }
 ) {
   validateUpload(bucket, path, file, options?.contentType);
 
-  let body: Buffer | Uint8Array;
-  if (file instanceof File) {
-    body = new Uint8Array(await file.arrayBuffer());
-  } else {
-    body = file;
-  }
+  const uploadFile: Blob = file instanceof Blob
+    ? file
+    : new Blob([file as any], { type: options?.contentType });
 
-  const command = new PutObjectCommand({
-    Bucket: defaultBucket,
-    Key: getS3Key(bucket, path),
-    Body: body,
-    ContentType: options?.contentType || (file instanceof File ? file.type : undefined),
-  });
+  const { data, error } = await insforge.storage
+    .from(bucket)
+    .upload(path, uploadFile);
 
-  await s3Client.send(command);
-  return { path };
+  if (error) throw error;
+  return { path: data!.key, url: data!.url, key: data!.key };
 }
 
 export async function downloadFile(bucket: string, path: string) {
-  const command = new GetObjectCommand({
-    Bucket: defaultBucket,
-    Key: getS3Key(bucket, path),
-  });
+  const { data, error } = await insforge.storage
+    .from(bucket)
+    .download(path);
 
-  const response = await s3Client.send(command);
-  if (!response.Body) {
-    throw new Error("File not found");
-  }
-  const byteArray = await response.Body.transformToByteArray();
-  return Buffer.from(byteArray);
+  if (error) throw error;
+  if (!data) throw new Error("File not found");
+
+  const buffer = await data.arrayBuffer();
+  return Buffer.from(buffer);
 }
 
 export function getPublicUrl(bucket: string, path: string) {
-  const baseUrl = process.env.S3_ENDPOINT;
-  return `${baseUrl}/${defaultBucket}/${getS3Key(bucket, path)}`;
+  const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL ?? 'https://4d3rbpyx.eu-central.insforge.app';
+  return `${baseUrl}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(path)}`;
 }
 
 export async function createSignedUrl(
@@ -173,21 +148,17 @@ export async function createSignedUrl(
   path: string,
   expiresIn: number = 3600
 ) {
-  const command = new GetObjectCommand({
-    Bucket: defaultBucket,
-    Key: getS3Key(bucket, path),
-  });
-
-  return getSignedUrl(s3Client, command, { expiresIn });
+  // InsForge Storage URLs are directly accessible for public buckets.
+  // For private buckets, return the direct URL (access controlled by auth).
+  return getPublicUrl(bucket, path);
 }
 
 export async function deleteFile(bucket: string, path: string) {
-  const command = new DeleteObjectCommand({
-    Bucket: defaultBucket,
-    Key: getS3Key(bucket, path),
-  });
+  const { error } = await insforge.storage
+    .from(bucket)
+    .remove(path);
 
-  await s3Client.send(command);
+  if (error) throw error;
 }
 
 export async function listFiles(
@@ -195,24 +166,29 @@ export async function listFiles(
   prefix?: string,
   options?: { limit?: number }
 ) {
-  const folderPrefix = prefix ? `${bucket}/${prefix}` : `${bucket}/`;
-  
-  const command = new ListObjectsV2Command({
-    Bucket: defaultBucket,
-    Prefix: folderPrefix,
-    MaxKeys: options?.limit,
-  });
+  // Fetch file listing via InsForge REST API
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_URL ?? 'https://4d3rbpyx.eu-central.insforge.app';
+    const url = new URL(`${baseUrl}/api/storage/buckets/${bucket}/objects`);
+    if (prefix) url.searchParams.set('prefix', prefix);
+    if (options?.limit) url.searchParams.set('limit', String(options.limit));
 
-  const response = await s3Client.send(command);
-  
-  return response.Contents?.map(item => ({
-    name: item.Key?.replace(`${bucket}/`, ''),
-    id: item.ETag,
-    updated_at: item.LastModified?.toISOString(),
-    created_at: item.LastModified?.toISOString(),
-    last_accessed_at: item.LastModified?.toISOString(),
-    metadata: {
-      size: item.Size,
-    }
-  })) || [];
+    const anonKey = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+    const headers: Record<string, string> = {};
+    if (anonKey) headers['Authorization'] = `Bearer ${anonKey}`;
+
+    const response = await fetch(url.toString(), { headers });
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    return (data.objects || data || []).map((item: any) => ({
+      name: item.key || item.name,
+      id: item.id || item.key,
+      updated_at: item.updatedAt || item.updated_at,
+      created_at: item.createdAt || item.created_at,
+      metadata: { size: item.size },
+    }));
+  } catch {
+    return [];
+  }
 }
