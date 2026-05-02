@@ -72,17 +72,28 @@ function ResetPasswordContent() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
+      const token = searchParams.get('token');
+      
+      if (!token) {
+        setError('Invalid reset token');
+        return;
+      }
+
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword: password }),
       });
 
-      if (error) {
-        setError(error.message || "Passwort-Zurücksetzen fehlgeschlagen");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Password reset failed');
       } else {
         setSuccess(true);
       }
     } catch {
-      setError("Ein Fehler ist aufgetreten");
+      setError('An error occurred');
     } finally {
       setLoading(false);
     }

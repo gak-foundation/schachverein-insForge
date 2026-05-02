@@ -104,7 +104,7 @@ export default function SignupPage() {
         const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent("/dashboard")}&action=signup&slug=${encodeURIComponent(slug)}`;
         void supabase.auth.signInWithOAuth({
           provider,
-          options: { redirectTo },
+          redirectTo,
         });
       },
     };

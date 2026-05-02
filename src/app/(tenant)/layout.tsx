@@ -19,7 +19,7 @@ export default async function TenantLayout({
   }
 
   const club = await getClubBySlug(slug);
-  if (!club || !club.isActive) {
+  if (!club || !(club as any).isActive) {
     redirect("/404");
   }
 
@@ -28,13 +28,13 @@ export default async function TenantLayout({
     redirect(`/auth/login`);
   }
 
-  // Tenant isolation: user.clubId must match resolved club
-  if (!session.user.isSuperAdmin && session.user.clubId !== club.id) {
+  const clubAny = club as any;
+  if (!session.user.isSuperAdmin && session.user.clubId !== clubAny.id) {
     redirect(`/auth/error?reason=wrong_tenant`);
   }
 
   return (
-    <div data-tenant={club.slug} data-club-id={club.id}>
+    <div data-tenant={clubAny.slug} data-club-id={clubAny.id}>
       {children}
     </div>
   );

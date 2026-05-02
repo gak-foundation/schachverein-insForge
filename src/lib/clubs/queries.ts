@@ -1,6 +1,6 @@
 import { eq, and, or, like, sql, SQL, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/insforge";
 import {
   clubs,
   clubMemberships,
@@ -14,9 +14,8 @@ import {
 
 export async function getClubById(id: string) {
   try {
-    // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
     const supabase = createServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await supabase.database
       .from('clubs')
       .select('*')
       .eq('id', id)
@@ -29,7 +28,6 @@ export async function getClubById(id: string) {
     // Silent fail, try Drizzle
   }
 
-  // 2. Fallback to Drizzle
   const [club] = await db.select().from(clubs).where(eq(clubs.id, id));
   return club ?? null;
 }
@@ -38,7 +36,7 @@ export async function getClubBySlug(slug: string) {
   try {
     // 1. Try Supabase REST API (Service Role) - avoids RLS/Pooler issues
     const supabase = createServiceClient();
-    const { data, error } = await supabase
+    const { data, error } = await supabase.database
       .from('clubs')
       .select('*')
       .eq('slug', slug)

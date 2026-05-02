@@ -12,7 +12,7 @@ import {
 import { getAllAuthUsers, updateAuthUser } from "@/lib/db/queries/auth";
 import { requireAuth, requireClub } from "@/lib/auth/session";
 import { sendClubInvitationEmail } from "@/lib/auth/email";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServerClient, createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
 import {
   createClub,

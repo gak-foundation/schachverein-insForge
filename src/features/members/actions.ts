@@ -20,7 +20,7 @@ import { PERMISSIONS, getPermissionsForRole, hasPermission } from "@/lib/auth/pe
 import { fetchLichessProfile, getBestLichessRating } from "@/lib/lichess";
 import { requireClubId } from "@/lib/actions/utils";
 import { encrypt, decrypt } from "@/lib/crypto";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServerClient, createServiceClient } from "@/lib/insforge";
 
 type ClubMemberRole = typeof clubMemberships.$inferSelect.role;
 type MemberRecordStatus = typeof members.$inferSelect.status;

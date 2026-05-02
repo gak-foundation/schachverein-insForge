@@ -60,7 +60,7 @@ export default async function NewTeamPage() {
                   className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                   required
                 >
-                  {allSeasons.map((season) => (
+                  {allSeasons.map((season: any) => (
                     <option key={season.id} value={season.id}>
                       {season.name}
                     </option>
@@ -79,7 +79,7 @@ export default async function NewTeamPage() {
                   className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 >
                   <option value="">Kein Kapitaen</option>
-                  {allMembers.map((member) => (
+                  {allMembers.map((member: any) => (
                     <option key={member.id} value={member.id}>
                       {member.firstName} {member.lastName}
                     </option>

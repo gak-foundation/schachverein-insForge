@@ -1,6 +1,7 @@
 "use client";
 
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { insforge } from "@/lib/insforge/client";
 import { useEffect, useState } from "react";
 
 // Get the app base URL for auth redirects
@@ -39,7 +40,7 @@ export const authClient = {
           if (response.status === 401) {
             // User exists in Auth but not in our DB (or session is invalid)
             // Clear local session to force re-login
-            await supabase.auth.signOut({ scope: "local" });
+            await supabase.auth.signOut();
             return null;
           }
           if (!response.ok) return null;
@@ -52,14 +53,14 @@ export const authClient = {
       };
 
       // Get initial session
-      supabase.auth.getSession().then(async ({ data: { session: authSession }, error }) => {
+      supabase.auth.getCurrentUser().then(async ({ data, error }: any) => {
         if (error) {
           const isIgnorableError =
             error.code === "refresh_token_not_found" ||
             error.message?.toLowerCase().includes("sub claim in jwt does not exist");
 
           if (isIgnorableError) {
-            await supabase.auth.signOut({ scope: "local" });
+            await supabase.auth.signOut();
           } else {
             console.error("Error getting session:", error.message);
           }
@@ -68,17 +69,17 @@ export const authClient = {
           return;
         }
 
-        if (authSession?.user) {
+        if (data?.user) {
           const profile = await fetchProfile();
           if (!profile) {
             setSession(null);
           } else {
             setSession({
               user: {
-                id: authSession.user.id,
-                email: authSession.user.email,
-                name: profile.name || authSession.user.user_metadata?.name,
-                image: profile.image || authSession.user.user_metadata?.avatar_url,
+                id: data.user.id,
+                email: data.user.email,
+                name: profile.name || data.user.profile?.name,
+                image: profile.image || data.user.profile?.avatar_url,
                 role: profile.role || "mitglied",
                 permissions: profile.permissions || [],
                 memberId: profile.memberId,
@@ -93,33 +94,19 @@ export const authClient = {
         setIsPending(false);
       });
 
-      // Listen for auth changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, authSession) => {
-        if (authSession?.user) {
-          const profile = await fetchProfile();
-          if (!profile) {
+      // Check for changes periodically (InsForge doesn't have onAuthStateChange)
+      const interval = setInterval(async () => {
+        try {
+          const { data } = await supabase.auth.getCurrentUser();
+          if (!data?.user) {
             setSession(null);
-          } else {
-            setSession({
-              user: {
-                id: authSession.user.id,
-                email: authSession.user.email,
-                name: profile.name || authSession.user.user_metadata?.name,
-                image: profile.image || authSession.user.user_metadata?.avatar_url,
-                role: profile.role || "mitglied",
-                permissions: profile.permissions || [],
-                memberId: profile.memberId,
-                clubId: profile.clubId,
-                isSuperAdmin: profile.isSuperAdmin || false,
-              },
-            });
           }
-        } else {
-          setSession(null);
+        } catch {
+          // Ignore errors
         }
-      });
+      }, 60000);
 
-      return () => subscription.unsubscribe();
+      return () => clearInterval(interval);
     }, []);
 
     return { data: session, isPending };
@@ -142,10 +129,7 @@ export const authClient = {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${getAppUrl()}/auth/callback`,
-          data: { name, slug, invitation_token: invitationToken },
-        },
+        name: name || email.split('@')[0],
       });
       return { data, error };
     },
@@ -158,22 +142,14 @@ export const authClient = {
 
   forgetPassword: async ({ email }: { email: string }) => {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { data, error } = await insforge.auth.sendResetPasswordEmail({
+      email,
       redirectTo: `${getAppUrl()}/auth/reset-password`,
     });
     return { data, error };
-  },
-
-  changePassword: async ({ newPassword }: { newPassword: string }) => {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-    return { data, error };
-  },
+},
 };
 
-// Export commonly used hooks
 export const { useSession } = authClient;
 
 // Helper to check if user is authenticated

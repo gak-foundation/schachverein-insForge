@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { getAuthUserWithClub } from "@/lib/db/queries/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@/lib/insforge";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = createServerClient();
+    const { data, error } = await supabase.auth.getCurrentUser();
 
-    if (!user) {
+    if (error || !data?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const profile = await getAuthUserWithClub(user.id);
+    const profile = await getAuthUserWithClub(data.user.id);
     return NextResponse.json({ profile });
   } catch (error) {
     console.error("Failed to fetch user profile:", error);

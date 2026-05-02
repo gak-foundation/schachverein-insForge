@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@/lib/insforge";
 import { NextResponse } from "next/server";
 import { getAuthUserById } from "@/lib/db/queries/auth";
 import { bindUserToTenant } from "@/lib/auth/tenant-binding";
@@ -22,35 +22,35 @@ export async function GET(request: Request) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
 
   if (code) {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    const supabase = createServerClient();
+    
+    try {
+      const { data, error } = await supabase.auth.getCurrentUser();
 
-    if (!error && data.user) {
-      // Tenant binding for OAuth signups
-      if (action === "signup" && slug) {
-        try {
-          const existingUser = await getAuthUserById(data.user.id);
-          if (!existingUser?.clubId) {
-            const name =
-              data.user.user_metadata?.full_name ||
-              data.user.user_metadata?.name ||
-              data.user.email;
-            await bindUserToTenant({
-              userId: data.user.id,
-              email: data.user.email!,
-              name,
-              slug,
-            });
+      if (!error && data?.user) {
+        if (action === "signup" && slug) {
+          try {
+            const existingUser = await getAuthUserById(data.user.id);
+            if (!existingUser?.clubId) {
+              const name = data.user.profile?.name || data.user.email;
+              await bindUserToTenant({
+                userId: data.user.id,
+                email: data.user.email,
+                name,
+                slug,
+              });
+            }
+          } catch (err) {
+            const errMsg = err instanceof Error ? err.message : "Tenant binding failed";
+            const errorUrl = new URL(`/auth/error?reason=${encodeURIComponent(errMsg)}`, baseUrl);
+            return NextResponse.redirect(errorUrl);
           }
-        } catch (err) {
-          // Tenant binding failed — redirect to error page
-          const errMsg = err instanceof Error ? err.message : "Tenant binding failed";
-          const errorUrl = new URL(`/auth/error?reason=${encodeURIComponent(errMsg)}`, baseUrl);
-          return NextResponse.redirect(errorUrl);
         }
-      }
 
-      return NextResponse.redirect(new URL(next, baseUrl));
+        return NextResponse.redirect(new URL(next, baseUrl));
+      }
+    } catch (err) {
+      console.error("OAuth callback error:", err);
     }
   }
 

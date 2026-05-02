@@ -1,25 +1,7 @@
-import { createBrowserClient } from '@supabase/ssr'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { insforge } from '@/lib/insforge/client';
 
-// Browser Client für Client Components
-export const createClient = (): SupabaseClient => {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
+export const createClient = () => {
+  return { auth: insforge.auth };
+};
 
-// Singleton für Client Components
-let clientInstance: SupabaseClient | null = null
-
-export const getSupabaseClient = (): SupabaseClient => {
-  if (typeof window === 'undefined') {
-    throw new Error('getSupabaseClient should only be called in browser environment')
-  }
-  
-  if (!clientInstance) {
-    clientInstance = createClient()
-  }
-  
-  return clientInstance
-}
+export const getSupabaseClient = createClient;

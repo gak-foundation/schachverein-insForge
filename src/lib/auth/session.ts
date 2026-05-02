@@ -1,4 +1,4 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServerClient, createServiceClient } from "@/lib/insforge";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { ROLE_PERMISSIONS, Permission } from "./permissions";
@@ -13,11 +13,11 @@ import { getClubById, getClubBySlug } from "@/lib/clubs/queries";
 // Cached session getter for server components
 export const getSession = cache(async () => {
   try {
-    const supabase = await createClient();
+    const supabase = createServerClient();
     let user = null;
 
     try {
-      const { data, error } = await supabase.auth.getUser();
+      const { data, error } = await supabase.auth.getCurrentUser();
       if (error) {
         const isMissingSession =
           error.code === 'refresh_token_not_found' ||
@@ -29,8 +29,11 @@ export const getSession = cache(async () => {
         }
         return null;
       }
-      user = data.user;
+      user = data?.user;
     } catch (error: any) {
+      if (error?.digest === 'DYNAMIC_SERVER_USAGE' || error?.message?.includes('dynamic-server-error')) {
+        throw error;
+      }
       const isMissingSession =
         error?.code === 'refresh_token_not_found' ||
         error?.code === 'session_not_found' ||

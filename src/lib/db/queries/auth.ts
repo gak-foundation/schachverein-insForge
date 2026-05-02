@@ -1,7 +1,7 @@
 import { eq, desc } from "drizzle-orm";
 import { authUsers } from "@/lib/db/schema";
 import { db } from "@/lib/db";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServerClient, createServiceClient } from "@/lib/insforge";
 
 export async function getAuthUserById(id: string) {
     try {

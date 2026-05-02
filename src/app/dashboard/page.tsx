@@ -250,15 +250,15 @@ export default async function DashboardPage() {
       {user.memberId && availabilityMatches.length > 0 && (
         <div className="grid gap-6">
           <AvailabilityForm 
-            matches={availabilityMatches.map(m => ({
+            matches={availabilityMatches.map((m: any) => ({
               id: m.id,
               date: m.date,
               opponent: m.opponent,
               isHome: m.homeTeamId === user.memberId, // simplified check
             }))} 
             initialAvailability={memberAvailability
-              .filter(a => a.matchId !== null)
-              .map(a => ({
+              .filter((a: any) => a.matchId !== null)
+              .map((a: any) => ({
                 matchId: a.matchId!,
                 status: a.status as "available" | "unavailable" | "maybe"
               }))} 
@@ -401,7 +401,7 @@ export default async function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {stats.upcomingMatches.map((match) => (
+                  {stats.upcomingMatches.map((match: any) => (
                     <div key={match.id} className="flex items-center justify-between rounded-xl border p-4 hover:bg-accent transition-all group">
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-lg bg-card border flex flex-col items-center justify-center font-bold">
@@ -448,7 +448,7 @@ export default async function DashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  stats.upcomingEvents.map((event) => (
+                  stats.upcomingEvents.map((event: any) => (
                     <div key={event.id} className="flex items-start gap-4 p-3 rounded-lg hover:bg-accent transition-colors">
                       <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
                       <div>

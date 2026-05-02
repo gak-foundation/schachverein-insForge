@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { generateCodeVerifier, generateCodeChallenge } from "@/lib/auth/lichess";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@/lib/insforge";
 
 export async function GET() {
-  // Nur angemeldete Benutzer dürfen Lichess verbinden
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const supabase = createServerClient();
+  const { data, error } = await supabase.auth.getCurrentUser();
 
-  if (error || !user) {
+  if (error || !data?.user) {
     return NextResponse.json(
       { error: "Nicht autorisiert. Bitte melden Sie sich an." },
       { status: 401 }

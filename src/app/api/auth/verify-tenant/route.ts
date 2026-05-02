@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@/lib/insforge";
 import { getAuthUserById } from "@/lib/db/queries/auth";
 import { getClubBySlug } from "@/lib/clubs/queries";
 import { headers } from "next/headers";
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const supabase = createServerClient();
+  const { data, error } = await supabase.auth.getCurrentUser();
 
-  if (error || !user) {
+  if (error || !data?.user) {
     return NextResponse.json({ error: "Unauthorized", ok: false }, { status: 401 });
   }
 
+  const user = data.user;
   const h = await headers();
   const slug = h.get("x-club-slug");
   const isSubdomain = h.get("x-is-subdomain") === "true";

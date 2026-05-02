@@ -16,9 +16,9 @@ export default async function AddonsPage({
 }: {
   searchParams: Promise<{ clubId?: string; success?: string; canceled?: string }>;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/signin");
+  const supabase = createClient();
+  const { data, error } = await supabase.auth.getCurrentUser();
+  if (error || !data?.user) redirect("/auth/signin");
 
   const params = await searchParams;
   const clubId = params.clubId;

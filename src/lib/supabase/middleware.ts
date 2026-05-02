@@ -1,11 +1,11 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@/lib/insforge'
 
 interface SessionOptions {
   domain?: string
 }
 
-function clearSupabaseCookies(
+function clearSessionCookies(
   request: NextRequest,
   response: NextResponse,
   opts?: SessionOptions,
@@ -14,24 +14,7 @@ function clearSupabaseCookies(
     ? { domain: opts.domain, path: '/' }
     : { path: '/' }
 
-  for (const cookie of request.cookies.getAll()) {
-    if (cookie.name.startsWith('sb-')) {
-      response.cookies.delete({ name: cookie.name, ...deleteOpts })
-    }
-  }
-}
-
-function isIgnorableAuthError(error: any): boolean {
-  if (!error) return false
-  const code = error?.code
-  const msg = error?.message?.toLowerCase() || ''
-  return (
-    code === 'refresh_token_not_found' ||
-    code === 'session_not_found' ||
-    msg.includes('session missing') ||
-    msg.includes('sub claim in jwt does not exist') ||
-    msg.includes('invalid refresh token')
-  )
+  response.cookies.delete({ name: 'insforge_session', ...deleteOpts })
 }
 
 export async function updateSession(
@@ -44,50 +27,24 @@ export async function updateSession(
     },
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet, headers) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          )
-          Object.entries(headers).forEach(([key, value]) =>
-            supabaseResponse.headers.set(key, value),
-          )
-        },
-      },
-      cookieOptions: opts?.domain
-        ? { domain: opts.domain, path: '/', sameSite: 'lax', secure: true }
-        : undefined,
-    },
-  )
-
   let user = null
-  try {
-    const { data, error } = await supabase.auth.getUser()
-    if (error) {
-      if (isIgnorableAuthError(error)) {
-        clearSupabaseCookies(request, supabaseResponse, opts)
+  const token = request.cookies.get('insforge_session')?.value
+
+  if (token) {
+    try {
+      const supabase = createServerClient()
+      const { data, error } = await supabase.auth.getCurrentUser()
+      
+      if (error) {
+        clearSessionCookies(request, supabaseResponse, opts)
+        user = null
       } else {
-        console.error('Auth error in middleware:', error.message)
+        user = data?.user || null
       }
-    } else {
-      user = data.user
+    } catch (error) {
+      clearSessionCookies(request, supabaseResponse, opts)
+      user = null
     }
-  } catch (error: any) {
-    if (isIgnorableAuthError(error)) {
-      clearSupabaseCookies(request, supabaseResponse, opts)
-    } else {
-      console.error('Unexpected auth error in middleware:', error)
-    }
-    user = null
   }
 
   return { supabaseResponse, user }

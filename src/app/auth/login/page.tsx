@@ -110,7 +110,7 @@ function LoginPageContent() {
         const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(callbackURL)}`;
         void supabase.auth.signInWithOAuth({
           provider,
-          options: { redirectTo },
+          redirectTo,
         });
       },
     };

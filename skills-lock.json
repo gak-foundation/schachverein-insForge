@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "insforge": {
+      "source": "insforge/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/insforge/SKILL.md",
+      "computedHash": "514d0ca749fc4cad87b0933e04fcfb38b56f1e0186e46fe52d5482e0c2949f68"
+    },
+    "insforge-cli": {
+      "source": "insforge/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/insforge-cli/SKILL.md",
+      "computedHash": "3f8126807fd320778c81e0812dc426dba477fc40898696685c85b84394199efc"
+    },
     "supabase": {
       "source": "supabase/agent-skills",
       "sourceType": "github",

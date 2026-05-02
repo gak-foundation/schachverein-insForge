@@ -53,7 +53,7 @@ export default async function NewGamePage() {
                 required
               >
                 <option value="">Turnier auswaehlen...</option>
-                {allTournaments.map((t) => (
+                {allTournaments.map((t: any) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
@@ -78,7 +78,7 @@ export default async function NewGamePage() {
                   required
                 >
                   <option value="">Spieler auswaehlen...</option>
-                  {allMembers.map((m) => (
+                  {allMembers.map((m: any) => (
                     <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>
                   ))}
                 </select>
@@ -92,7 +92,7 @@ export default async function NewGamePage() {
                   required
                 >
                   <option value="">Spieler auswaehlen...</option>
-                  {allMembers.map((m) => (
+                  {allMembers.map((m: any) => (
                     <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>
                   ))}
                 </select>

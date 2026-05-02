@@ -24,7 +24,7 @@ Die Software deckt die spezifischen Bedürfnisse von Schachvereinen ab, die übe
 - **Mannschaftsbetrieb**: Saisons, Ligen, Brettreihenfolgen und Ergebnismeldung.
 - **Partiedatenbank**: Lichess-Integration, Verlinkung von Partien, Analyse-Links.
 - **Infrastruktur & Background**:
-    - **Supabase**: Backend-as-a-Service für Auth, Database, Storage (S3) und Realtime.
+    - **InsForge**: Backend-as-a-Service für Auth, Database, Storage (S3) und Realtime.
     - **Asynchrone Funktionen**: Hintergrundverarbeitung ohne dediziertes Queue-System.
 
 ---
@@ -34,7 +34,7 @@ Die Software deckt die spezifischen Bedürfnisse von Schachvereinen ab, die übe
 Das System implementiert eine mehrschichtige Sicherheitsstrategie:
 
 1. **Authentifizierung**:
-   - **Supabase Auth**: JWT-basiert mit E-Mail/Passwort und OAuth-Optionen.
+   - **InsForge Auth**: JWT-basiert mit E-Mail/Passwort und OAuth-Optionen.
    - RBAC-Logik in Next.js Server Actions und Datenbank-Policies (RLS).
 2. **Autorisierung (RBAC)**:
    - Rollen: `admin`, `vorstand`, `sportwart`, `jugendwart`, `kassenwart`, `trainer`, `mitglied`, `eltern`.
@@ -51,7 +51,7 @@ Das System implementiert eine mehrschichtige Sicherheitsstrategie:
 
 Das Datenmodell ist hochgradig relational und in der `src/lib/db/schema/` Verzeichnisstruktur organisiert:
 
-- **Auth**: Supabase Auth Schema (intern) + `users` Profiltabelle.
+- **Auth**: InsForge Auth Schema (intern) + `users` Profiltabelle.
 - **Organisation**: `clubs`, `clubMemberships`, `clubInvitations`.
 - **Mitglieder**: `members`, `dwzHistory`, `availability`.
 - **Sportbetrieb**: `seasons`, `teams`, `boardOrders`, `matches`, `matchResults`.
@@ -69,7 +69,7 @@ Das Datenmodell ist hochgradig relational und in der `src/lib/db/schema/` Verzei
 - `npm run test:e2e` - End-to-End Tests (Playwright)
 
 ### Deployment & Infrastruktur
-- **Hosting**: Supabase Cloud + Vercel.
+- **Hosting**: InsForge Cloud + Vercel.
 - **CDN & Edge**: Vercel Edge Network mit globalen PoPs.
 - **CI/CD**: GitHub Actions + Vercel Git Integration.
 - **Monitoring**: Vercel Analytics + Sentry.

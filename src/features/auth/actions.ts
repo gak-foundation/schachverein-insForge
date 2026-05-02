@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { insforge } from "@/lib/insforge/client";
 
 export async function resetPassword(formData: FormData) {
   const password = formData.get("password") as string;
@@ -19,9 +19,9 @@ export async function resetPassword(formData: FormData) {
   }
 
   try {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.updateUser({
-      password: password,
+    const { error } = await insforge.auth.resetPassword({
+      newPassword: password,
+      otp: formData.get("token") as string || "",
     });
 
     if (error) {
