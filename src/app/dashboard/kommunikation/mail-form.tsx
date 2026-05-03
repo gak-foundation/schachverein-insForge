@@ -199,6 +199,20 @@ export function MailForm({ lists, templates }: MailFormProps) {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="attachments">Anhaenge (optional, max 10 MB)</Label>
+            <Input
+              id="attachments"
+              name="attachments"
+              type="file"
+              multiple
+              accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx"
+            />
+            <p className="text-xs text-muted-foreground">
+              Maximale Dateigroesse: 10 MB pro Datei. Erlaubte Formate: PDF, Bilder, Word.
+            </p>
+          </div>
+
           {hasPlaceholders() && (
             <div className="rounded-md bg-muted p-3 text-sm text-amber-600">
               Platzhalter wie {"{{Vorname}}"} werden beim Senden durch die tatsächlichen Werte ersetzt.

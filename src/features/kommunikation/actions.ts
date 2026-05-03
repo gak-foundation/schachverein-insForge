@@ -86,16 +86,57 @@ export async function sendRundmailAction(formData: FormData) {
       // For BCC we can't personalize per recipient, so we replace with generic values
       // The template already contains the placeholder hints
     }
-    
+
+    // Handle file attachments
+    const attachmentUrls: string[] = [];
+    const attachmentFiles = formData.getAll("attachments") as File[];
+
+    for (const file of attachmentFiles) {
+      if (file instanceof File && file.size > 0) {
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`Datei "${file.name}" ist zu gross. Maximal 10 MB erlaubt.`);
+        }
+        const timestamp = Date.now();
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `mail-attachments/${clubId}/${timestamp}_${safeName}`;
+
+        const { data: uploadResult, error: uploadError } = await client
+          .storage
+          .from("attachments")
+          .upload(path, file);
+
+        if (uploadError) {
+          throw new Error(`Fehler beim Hochladen von "${file.name}": ${uploadError.message}`);
+        }
+
+        const { data: publicUrl } = client
+          .storage
+          .from("attachments")
+          .getPublicUrl(path);
+
+        attachmentUrls.push(publicUrl?.publicUrl || "");
+      }
+    }
+
+    let finalBody = bodyHtml;
+    if (attachmentUrls.length > 0) {
+      finalBody += "\n\n---\nAnhaenge:\n" + attachmentUrls
+        .map((url, i) => {
+          const originalName = attachmentFiles[i]?.name || `Datei ${i + 1}`;
+          return `<a href="${url}">${originalName}</a>`;
+        })
+        .join("<br>\n");
+    }
+
     if (emails.length === 0) {
         throw new Error("Keine Empfänger gefunden (Möglicherweise haben die ausgewählten Mitglieder keine E-Mail-Adresse hinterlegt).");
     }
-    
+
     try {
         await sendEmailDirect(
             undefined, // no "to"
             subject,
-            bodyHtml,
+            finalBody,
             "Bitte HTML-fähigen Email-Client verwenden.",
             emails // BCC all users
         );
