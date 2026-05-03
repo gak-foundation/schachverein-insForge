@@ -1,18 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { 
-  members, 
-  clubMemberships, 
-  payments, 
-  tournaments, 
-  teams, 
-  events, 
-  clubs,
-  contributionRates,
-  seasons
-} from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { requireClubId } from "@/lib/auth/session";
 import { decrypt } from "@/lib/crypto";
 import { exportMembersToCSV } from "@/lib/csv/members";
@@ -23,44 +11,53 @@ import { exportMembersToCSV } from "@/lib/csv/members";
  */
 export async function exportClubDataBundle() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   // 1. Fetch Club Metadata
-  const [club] = await db.select().from(clubs).where(eq(clubs.id, clubId));
-  if (!club) throw new Error("Verein nicht gefunden");
+  const { data: club, error: clubError } = await client
+    .from('clubs')
+    .select('*')
+    .eq('id', clubId)
+    .single();
+
+  if (clubError || !club) throw new Error("Verein nicht gefunden");
 
   // 2. Fetch Members (with Decryption)
-  const membersList = await db
-    .select({
-      id: members.id,
-      firstName: members.firstName,
-      lastName: members.lastName,
-      email: members.email,
-      phone: members.phone,
-      dateOfBirth: members.dateOfBirth,
-      gender: members.gender,
-      dwz: members.dwz,
-      elo: members.elo,
-      dwzId: members.dwzId,
-      lichessUsername: members.lichessUsername,
-      chesscomUsername: members.chesscomUsername,
-      status: members.status,
-      role: clubMemberships.role,
-      joinedAt: clubMemberships.joinedAt,
-      photoConsent: members.photoConsent,
-      newsletterConsent: members.newsletterConsent,
-      notes: members.notes,
-      medicalNotes: members.medicalNotes,
-      emergencyContactName: members.emergencyContactName,
-      emergencyContactPhone: members.emergencyContactPhone,
-      sepaIban: members.sepaIban,
-      sepaBic: members.sepaBic,
-      sepaMandateReference: members.sepaMandateReference,
-    })
-    .from(clubMemberships)
-    .innerJoin(members, eq(clubMemberships.memberId, members.id))
-    .where(eq(clubMemberships.clubId, clubId));
+  const { data: membersList, error: membersError } = await client
+    .from('club_memberships')
+    .select('*, members!member_id(*)')
+    .eq('club_id', clubId);
 
-  const decryptedMembers = membersList.map(m => ({
+  if (membersError) throw new Error("Fehler beim Laden der Mitglieder");
+
+  const decryptedMembers = (membersList || []).map((m: any) => ({
+    id: m.members.id,
+    firstName: m.members.first_name,
+    lastName: m.members.last_name,
+    email: m.members.email,
+    phone: m.members.phone,
+    dateOfBirth: m.members.date_of_birth,
+    gender: m.members.gender,
+    dwz: m.members.dwz,
+    elo: m.members.elo,
+    dwzId: m.members.dwz_id,
+    lichessUsername: m.members.lichess_username,
+    chesscomUsername: m.members.chesscom_username,
+    status: m.members.status,
+    role: m.role,
+    joinedAt: m.joined_at,
+    photoConsent: m.members.photo_consent,
+    newsletterConsent: m.members.newsletter_consent,
+    notes: m.members.notes,
+    medicalNotes: m.members.medical_notes,
+    emergencyContactName: m.members.emergency_contact_name,
+    emergencyContactPhone: m.members.emergency_contact_phone,
+    sepaIban: m.members.sepa_iban,
+    sepaBic: m.members.sepa_bic,
+    sepaMandateReference: m.members.sepa_mandate_reference,
+  }));
+
+  const decryptedMembersFinal = decryptedMembers.map(m => ({
     ...m,
     sepaIban: m.sepaIban ? decrypt(m.sepaIban) : null,
     sepaBic: m.sepaBic ? decrypt(m.sepaBic) : null,
@@ -68,37 +65,49 @@ export async function exportClubDataBundle() {
   }));
 
   // 3. Fetch Financial Data
-  const paymentRecords = await db
-    .select()
-    .from(payments)
-    .where(eq(payments.clubId, clubId));
+  const { data: paymentRecords, error: paymentsError } = await client
+    .from('payments')
+    .select('*')
+    .eq('club_id', clubId);
 
-  const rates = await db
-    .select()
-    .from(contributionRates)
-    .where(eq(contributionRates.clubId, clubId));
+  if (paymentsError) throw new Error("Fehler beim Laden der Zahlungen");
+
+  const { data: rates, error: ratesError } = await client
+    .from('contribution_rates')
+    .select('*')
+    .eq('club_id', clubId);
+
+  if (ratesError) throw new Error("Fehler beim Laden der Beitragssaetze");
 
   // 4. Fetch Sport Data
-  const tournamentList = await db
-    .select()
-    .from(tournaments)
-    .where(eq(tournaments.clubId, clubId));
+  const { data: tournamentList, error: tournamentsError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('club_id', clubId);
 
-  const seasonList = await db
-    .select()
-    .from(seasons)
-    .where(eq(seasons.clubId, clubId));
+  if (tournamentsError) throw new Error("Fehler beim Laden der Turniere");
 
-  const teamList = await db
-    .select()
-    .from(teams)
-    .where(eq(teams.clubId, clubId));
+  const { data: seasonList, error: seasonsError } = await client
+    .from('seasons')
+    .select('*')
+    .eq('club_id', clubId);
+
+  if (seasonsError) throw new Error("Fehler beim Laden der Saisons");
+
+  const { data: teamList, error: teamsError } = await client
+    .from('teams')
+    .select('*')
+    .eq('club_id', clubId);
+
+  if (teamsError) throw new Error("Fehler beim Laden der Mannschaften");
 
   // 5. Fetch Calendar
-  const eventList = await db
-    .select()
-    .from(events)
-    .where(eq(events.clubId, clubId));
+  const { data: eventList, error: eventsError } = await client
+    .from('events')
+    .select('*')
+    .eq('club_id', clubId);
+
+  if (eventsError) throw new Error("Fehler beim Laden der Termine");
 
   // Assemble Bundle
   const bundle = {
@@ -108,22 +117,22 @@ export async function exportClubDataBundle() {
       exportedAt: new Date().toISOString(),
       version: "1.0.0",
     },
-    members: decryptedMembers,
+    members: decryptedMembersFinal,
     finance: {
-      payments: paymentRecords,
-      contributionRates: rates,
+      payments: paymentRecords || [],
+      contributionRates: rates || [],
     },
     sport: {
-      seasons: seasonList,
-      teams: teamList,
-      tournaments: tournamentList,
+      seasons: seasonList || [],
+      teams: teamList || [],
+      tournaments: tournamentList || [],
     },
     calendar: {
-      events: eventList,
+      events: eventList || [],
     },
     // Include a CSV version of members for easy reading
     csvExports: {
-      members: exportMembersToCSV(decryptedMembers as any),
+      members: exportMembersToCSV(decryptedMembersFinal as any),
     }
   };
 

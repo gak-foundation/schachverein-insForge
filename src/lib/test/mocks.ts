@@ -2,7 +2,6 @@ import { vi } from "vitest";
 
 /**
  * Erstellt einen chainable Mock für Drizzle ORM Queries.
- * Unterstützt: select().from().where().orderBy().limit().offset()
  */
 export function createDbMock() {
   const createChainable = (returnValue: unknown = []) => {
@@ -41,7 +40,6 @@ export function createDbMock() {
     insertWithReturning: insertMockWithReturning,
     update: updateMock,
     delete: deleteMock,
-    // Exposed für manuelles Mocking
     _from: fromMock,
     _insertValues: insertValuesMock,
     _insertReturning: insertReturningMock,
@@ -50,6 +48,155 @@ export function createDbMock() {
     _updateWhere: updateWhereMock,
     _deleteWhere: deleteWhereMock,
   };
+}
+
+// ===== InsForge Client Mock =====
+
+interface InsForgeResult<T = unknown> {
+  data: T | null;
+  error: Record<string, unknown> | null;
+  count?: number | null;
+}
+
+function createInsForgeThenable<T = unknown>(result: InsForgeResult<T>) {
+  const thenFn = <R>(resolve: (value: InsForgeResult<T>) => R | PromiseLike<R>) => Promise.resolve(result).then(resolve);
+  return { then: thenFn, catch: (fn: (e: unknown) => unknown) => Promise.resolve(result).catch(fn) };
+}
+
+export type MockInsForgeQueryChain = Record<string, unknown> & { then: typeof Promise.prototype.then };
+
+function createChain(returnData: unknown = [], returnCount?: number): MockInsForgeQueryChain {
+  const result: InsForgeResult = {
+    data: returnData,
+    error: null,
+    count: returnCount ?? null,
+  };
+
+  const thenable = createInsForgeThenable(result);
+
+  const chain: Record<string, unknown> = {
+    eq: vi.fn(() => chain),
+    or: vi.fn(() => chain),
+    not: vi.fn(() => chain),
+    gte: vi.fn(() => chain),
+    lte: vi.fn(() => chain),
+    like: vi.fn(() => chain),
+    ilike: vi.fn(() => chain),
+    is: vi.fn(() => chain),
+    in: vi.fn(() => chain),
+    contains: vi.fn(() => chain),
+    order: vi.fn(() => chain),
+    limit: vi.fn(() => chain),
+    offset: vi.fn(() => chain),
+    range: vi.fn(() => chain),
+    select: vi.fn(() => chain),
+    single: vi.fn(() => createInsForgeThenable({ data: Array.isArray(returnData) ? returnData[0] ?? null : returnData, error: null })),
+    maybeSingle: vi.fn(() => createInsForgeThenable({ data: Array.isArray(returnData) ? returnData[0] ?? null : returnData, error: null })),
+    insert: vi.fn(() => createInsForgeThenable({ data: null, error: null })),
+    update: vi.fn(() => chain),
+    delete: vi.fn(() => chain),
+    then: thenable.then,
+  };
+
+  return chain as MockInsForgeQueryChain;
+}
+
+export interface MockInsForgeClient {
+  from: ReturnType<typeof vi.fn>;
+  auth: { signUp: ReturnType<typeof vi.fn>; signIn: ReturnType<typeof vi.fn>; signOut: ReturnType<typeof vi.fn>; refreshSession: ReturnType<typeof vi.fn> };
+  database: { from: ReturnType<typeof vi.fn> };
+  _tableMocks: Map<string, MockInsForgeQueryChain>;
+}
+
+function createChainWithDefaults() {
+  return createChain([]);
+}
+
+/**
+ * Erstellt einen vollständigen Mock für den InsForge Client.
+ * Jeder `.from("table")`-Aufruf erzeugt einen neuen chainable Query-Builder.
+ * Tabelle-spezifische Rückgabedaten können via `_tableMocks` konfiguriert werden.
+ */
+export function createMockInsForgeClient(): MockInsForgeClient {
+  const tableMocks = new Map<string, MockInsForgeQueryChain>();
+  let currentTable: string | null = null;
+
+  const fromMock = vi.fn((table: string) => {
+    currentTable = table;
+    let chain = tableMocks.get(table);
+    if (!chain) {
+      chain = createChainWithDefaults();
+      tableMocks.set(table, chain);
+    }
+    return chain;
+  });
+
+  const client = {
+    from: fromMock,
+    auth: {
+      signUp: vi.fn(() => Promise.resolve({ data: { user: { id: "user-1" }, session: null }, error: null })),
+      signIn: vi.fn(() => Promise.resolve({ data: { user: { id: "user-1" }, session: { access_token: "test-token" } }, error: null })),
+      signOut: vi.fn(() => Promise.resolve({ error: null })),
+      refreshSession: vi.fn(() => Promise.resolve({ data: { accessToken: "refreshed-token" }, error: null })),
+    },
+    database: { from: fromMock },
+    _tableMocks: tableMocks,
+  };
+
+  return client;
+}
+
+/**
+ * Konfiguriert einen Mock für eine bestimmte Tabelle im InsForge Client.
+ */
+export function mockInsForgeTable(
+  mockClient: MockInsForgeClient,
+  table: string,
+  returnData: unknown = [],
+  returnCount?: number,
+): MockInsForgeQueryChain {
+  const chain = createChain(returnData, returnCount);
+  mockClient._tableMocks.set(table, chain);
+  return chain;
+}
+
+/**
+ * Erstellt einen Error-Mock für eine Tabelle.
+ */
+export function mockInsForgeTableError(
+  mockClient: MockInsForgeClient,
+  table: string,
+  errorMessage = "Mock error",
+): MockInsForgeQueryChain {
+  const error = { message: errorMessage, code: "MOCK_ERROR" };
+  const thenable = createInsForgeThenable({ data: null, error });
+
+  const chain: Record<string, unknown> = {
+    eq: vi.fn(() => chain),
+    or: vi.fn(() => chain),
+    not: vi.fn(() => chain),
+    gte: vi.fn(() => chain),
+    lte: vi.fn(() => chain),
+    like: vi.fn(() => chain),
+    ilike: vi.fn(() => chain),
+    is: vi.fn(() => chain),
+    in: vi.fn(() => chain),
+    contains: vi.fn(() => chain),
+    order: vi.fn(() => chain),
+    limit: vi.fn(() => chain),
+    offset: vi.fn(() => chain),
+    range: vi.fn(() => chain),
+    select: vi.fn(() => chain),
+    single: vi.fn(() => createInsForgeThenable({ data: null, error })),
+    maybeSingle: vi.fn(() => createInsForgeThenable({ data: null, error })),
+    insert: vi.fn(() => createInsForgeThenable({ data: null, error })),
+    update: vi.fn(() => chain),
+    delete: vi.fn(() => chain),
+    then: thenable.then,
+  };
+
+  mockClient._tableMocks.set(table, chain as unknown as MockInsForgeQueryChain);
+  return chain as unknown as MockInsForgeQueryChain;
 }
 
 /**

@@ -38,7 +38,7 @@ export default async function TournamentsPage() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  const allTournaments = await getTournaments();
+  const allTournaments: { id: string; name: string; type: string; startDate: string; location?: string; isCompleted: boolean }[] = await getTournaments();
 
   return (
     <div className="space-y-6">

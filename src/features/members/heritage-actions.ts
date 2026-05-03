@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { members, games } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 
@@ -13,38 +11,50 @@ export async function setHeritageGame(gameId: string) {
   }
 
   const memberId = session.user.memberId;
+  const client = createServiceClient();
 
   // Verify game exists and belongs to member (optionally)
-  const [game] = await db
-    .select()
-    .from(games)
-    .where(eq(games.id, gameId));
+  const { data: game, error } = await client
+    .from('games')
+    .select('*')
+    .eq('id', gameId)
+    .maybeSingle();
 
+  if (error) throw error;
   if (!game) {
     throw new Error("Partie nicht gefunden");
   }
 
-  await db
-    .update(members)
-    .set({ heritageGameId: gameId })
-    .where(eq(members.id, memberId));
+  const { error: uError } = await client
+    .from('members')
+    .update({ heritage_game_id: gameId })
+    .eq('id', memberId);
+
+  if (uError) throw uError;
 
   revalidatePath("/dashboard/profile");
   return { success: true };
 }
 
 export async function getHeritageGame(memberId: string) {
-  const [member] = await db
-    .select({ heritageGameId: members.heritageGameId })
-    .from(members)
-    .where(eq(members.id, memberId));
+  const client = createServiceClient();
 
-  if (!member?.heritageGameId) return null;
+  const { data: member, error } = await client
+    .from('members')
+    .select('heritage_game_id')
+    .eq('id', memberId)
+    .maybeSingle();
 
-  const [game] = await db
-    .select()
-    .from(games)
-    .where(eq(games.id, member.heritageGameId));
+  if (error) throw error;
+  if (!member?.heritage_game_id) return null;
+
+  const { data: game, error: gError } = await client
+    .from('games')
+    .select('*')
+    .eq('id', member.heritage_game_id)
+    .maybeSingle();
+
+  if (gError) throw gError;
 
   return game || null;
 }

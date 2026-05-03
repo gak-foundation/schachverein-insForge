@@ -1,10 +1,49 @@
 import { z } from "zod";
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { members } from "@/lib/db/schema/members";
 
-export const memberSchema = createSelectSchema(members);
+export const memberSchema = z.object({
+  id: z.string(),
+  clubId: z.string().nullable(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  phone: z.string().nullable(),
+  dateOfBirth: z.string().nullable(),
+  gender: z.string().nullable(),
+  dwz: z.number().nullable(),
+  elo: z.number().nullable(),
+  dwzId: z.string().nullable(),
+  lichessUsername: z.string().nullable(),
+  lichessId: z.string().nullable(),
+  isLichessVerified: z.boolean().nullable(),
+  lichessAccessToken: z.string().nullable(),
+  chesscomUsername: z.string().nullable(),
+  fideId: z.string().nullable(),
+  status: z.enum(["active", "inactive", "resigned", "honorary"]),
+  role: z.enum(["user", "admin", "vorstand", "sportwart", "jugendwart", "kassenwart", "trainer", "mitglied", "eltern"]),
+  joinedAt: z.string().nullable(),
+  parentId: z.string().nullable(),
+  permissions: z.array(z.string()),
+  sepaMandateReference: z.string().nullable(),
+  sepaIban: z.string().nullable(),
+  sepaBic: z.string().nullable(),
+  mandateSignedAt: z.string().nullable(),
+  mandateUrl: z.string().nullable(),
+  contributionRateId: z.string().nullable(),
+  notes: z.string().nullable(),
+  medicalNotes: z.string().nullable(),
+  emergencyContactName: z.string().nullable(),
+  emergencyContactPhone: z.string().nullable(),
+  photoConsent: z.boolean().nullable(),
+  newsletterConsent: z.boolean().nullable(),
+  resultPublicationConsent: z.boolean().nullable(),
+  deletionRequestedAt: z.string().nullable(),
+  anonymizedAt: z.string().nullable(),
+  heritageGameId: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
 
-export const createMemberSchema = createInsertSchema(members, {
+export const createMemberSchema = z.object({
   firstName: z.string().min(1, "Vorname ist erforderlich").max(100),
   lastName: z.string().min(1, "Nachname ist erforderlich").max(100),
   email: z.string().email("Ungueltige E-Mail-Adresse"),
@@ -16,6 +55,8 @@ export const createMemberSchema = createInsertSchema(members, {
   dwzId: z.string().max(50).optional().nullable(),
   lichessUsername: z.string().max(100).optional().nullable(),
   chesscomUsername: z.string().max(100).optional().nullable(),
+  parentId: z.string().optional().nullable(),
+  contributionRateId: z.string().optional().nullable(),
   sepaMandateReference: z.string().max(35).optional().nullable(),
   sepaIban: z.string().max(1024).optional().nullable(),
   sepaBic: z.string().max(1024).optional().nullable(),
@@ -25,14 +66,6 @@ export const createMemberSchema = createInsertSchema(members, {
   medicalNotes: z.string().optional().nullable(),
   emergencyContactName: z.string().max(200).optional().nullable(),
   emergencyContactPhone: z.string().max(100).optional().nullable(),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  deletionRequestedAt: true,
-  anonymizedAt: true,
-  heritageGameId: true,
-}).extend({
   role: z.enum([
     "admin",
     "vorstand",
@@ -44,6 +77,10 @@ export const createMemberSchema = createInsertSchema(members, {
     "eltern",
     "user",
   ]).default("mitglied"),
+  status: z.enum(["active", "inactive", "resigned", "honorary"]).default("active"),
+  photoConsent: z.boolean().optional().nullable(),
+  newsletterConsent: z.boolean().optional().nullable(),
+  resultPublicationConsent: z.boolean().optional().nullable(),
 });
 
 export const updateMemberSchema = createMemberSchema.partial();

@@ -6,7 +6,7 @@ Diese Anleitung beschreibt das Deployment der Schachverein-Plattform auf Vercel 
 
 - **Frontend**: Vercel (Next.js 16)
 - **Backend/Database**: InsForge (PostgreSQL + Auth + Storage)
-- **Migrationen**: Drizzle ORM mit `DIRECT_URL`
+- **Schema**: InsForge MCP Tools (`run-raw-sql`, `get-table-schema`)
 
 ---
 
@@ -36,19 +36,6 @@ INSFORGE_SERVICE_ROLE_KEY=[service-role-key-hier-einfuegen]
 ```
 
 ⚠️ **WICHTIG**: `INSFORGE_SERVICE_ROLE_KEY` ist geheim und hat Admin-Rechte!
-
-### 2.2 Database Connection URLs
-
-1. Gehe zu **Project Settings** → **Database**
-2. Kopiere die URLs:
-
-```
-# Connection Pooling (Port 6543) - für App/Next.js
-DATABASE_URL=postgresql://postgres:[password]@pooler.insforge.dev:6543/postgres
-
-# Direct Connection (Port 5432) - für Migrations
-DIRECT_URL=postgresql://postgres:[password]@db.insforge.dev:5432/postgres
-```
 
 ---
 
@@ -87,8 +74,6 @@ Gehe zu **Settings** → **Environment Variables** und füge alle Variablen hinz
 | `NEXT_PUBLIC_INSFORGE_URL` | `https://[projekt].insforge.app` | Production, Preview, Development |
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` | `[anon-key]` | Production, Preview, Development |
 | `INSFORGE_SERVICE_ROLE_KEY` | `[service-role-key]` | Production, Preview, Development |
-| `DATABASE_URL` | `postgresql://...:6543/...` | Production, Preview, Development |
-| `DIRECT_URL` | `postgresql://...:5432/...` | Production, Preview, Development |
 | `ENCRYPTION_KEY` | `[32-byte-hex]` | Production, Preview, Development |
 | `NEXT_PUBLIC_APP_URL` | `https://[dein-projekt].vercel.app` | Production |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Development |
@@ -115,22 +100,19 @@ Gehe zu **Settings** → **Environment Variables** und füge alle Variablen hinz
 
 ---
 
-## Schritt 6: Datenbank-Migrationen ausführen
+## Schritt 6: Datenbank-Schema verwalten
 
-Lokal ausführen (verbindet sich mit InsForge DB):
+Das Schema wird über InsForge MCP Tools verwaltet:
 
 ```bash
-# ENV-Variablen prüfen
-cat .env.local
-
-# Migrationen ausführen
-npm run db:push
+# Schema-Änderungen via InsForge CLI
+insforge run-raw-sql "CREATE TABLE ..."
 ```
 
-Oder über Vercel CLI:
+Seed-Daten lokal einspielen:
 
 ```bash
-vercel --prod
+npm run db:seed
 ```
 
 ---
@@ -160,7 +142,7 @@ Oder pushe auf den `main` Branch für automatisches Deploy.
 
 ### Build Error: "Failed to collect page data"
 
-→ Stelle sicher, dass `DATABASE_URL` und `DIRECT_URL` korrekt sind
+→ Stelle sicher, dass `NEXT_PUBLIC_INSFORGE_URL` und `NEXT_PUBLIC_INSFORGE_ANON_KEY` korrekt sind
 
 ### "DYNAMIC_SERVER_USAGE" Error
 
@@ -170,9 +152,9 @@ Oder pushe auf den `main` Branch für automatisches Deploy.
 
 → Prüfe ob die IP erlaubt ist in InsForge → Database → Network Restrictions
 
-### Migrationen schlagen fehl
+### Schema-Änderungen schlagen fehl
 
-→ Nutze `DIRECT_URL` (Port 5432), nicht `DATABASE_URL` (Port 6543)
+→ Nutze das InsForge MCP Tool `run-raw-sql` für Schema-Änderungen
 
 ---
 
@@ -183,10 +165,6 @@ Oder pushe auf den `main` Branch für automatisches Deploy.
 NEXT_PUBLIC_INSFORGE_URL=https://XXXX.insforge.app
 NEXT_PUBLIC_INSFORGE_ANON_KEY=XXXX
 INSFORGE_SERVICE_ROLE_KEY=XXXX
-
-# Database
-DATABASE_URL=postgresql://XXXX:XXXX@pooler.insforge.dev:6543/postgres
-DIRECT_URL=postgresql://XXXX:XXXX@db.insforge.dev:5432/postgres
 
 # App
 NEXT_PUBLIC_APP_URL=https://dein-projekt.vercel.app

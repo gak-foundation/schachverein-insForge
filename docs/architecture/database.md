@@ -1,14 +1,14 @@
 ﻿
 # Datenbank-Schema
 
-Die Datenbank nutzt **PostgreSQL 17** und wird über **Drizzle ORM** verwaltet.
+Die Datenbank nutzt **PostgreSQL 17** und wird über das **InsForge SDK** verwaltet.
 
 ## Tabellen-Struktur
 
-Das Schema ist modular in \src/lib/db/schema.ts\ definiert und umfasst folgende Kernbereiche:
+Das Schema ist modular in `src/lib/db/schema/` definiert und umfasst folgende Kernbereiche:
 
 ### 1. Authentifizierung & Organisation
-- `auth_user`: Profiltabelle (wird via Supabase Auth Trigger synchronisiert).
+- `users`: Profiltabelle (wird via InsForge Auth synchronisiert).
 - `clubs`: Mandanten (Vereine).
 - `clubMemberships`: Verknüpfung von Benutzern zu Vereinen mit Rollen.
 
@@ -26,11 +26,10 @@ Das Schema ist modular in \src/lib/db/schema.ts\ definiert und umfasst folgende 
 - \payments\: Beitragszahlungen und Status.
 - \uditLog\: Protokollierung aller sicherheitsrelevanten Aktionen.
 
-## Migrationen
+## Schema-Management
 
-Migrationen werden mit \drizzle-kit\ verwaltet:
-- Generieren: \
-pm run db:generate\
-- Anwenden: \
-pm run db:push\
+Das Datenbank-Schema wird über InsForge MCP Tools verwaltet:
+- `run-raw-sql` für Schema-Änderungen
+- `get-table-schema` zum Abrufen der Tabellenstruktur
+- Seed-Daten: `npm run db:seed`
 

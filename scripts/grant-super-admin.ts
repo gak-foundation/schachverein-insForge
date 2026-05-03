@@ -5,9 +5,7 @@ import path from "path";
 // Load .env.local if it exists
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
-import { db } from "../src/lib/db";
-import { authUsers } from "../src/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 
 /**
  * Script zum Vergeben von Super-Admin-Rechten an einen existierenden Nutzer.
@@ -15,6 +13,7 @@ import { eq } from "drizzle-orm";
  */
 
 async function grantSuperAdmin() {
+  const client = createServiceClient();
   const args = process.argv.slice(2);
   const email = args[0];
 
@@ -32,9 +31,16 @@ async function grantSuperAdmin() {
 
   console.log(`🔍 Suche Nutzer mit E-Mail: ${email} ...`);
 
-  const user = await db.query.authUsers.findFirst({
-    where: eq(authUsers.email, email),
-  });
+  const { data: user, error } = await client
+    .from("auth_user")
+    .select("*")
+    .eq("email", email)
+    .single();
+
+  if (error) {
+    console.error(`❌ Fehler beim Suchen des Nutzers:`, error);
+    process.exit(1);
+  }
 
   if (!user) {
     console.error(`❌ Kein registrierter Nutzer mit E-Mail ${email} gefunden.`);
@@ -42,21 +48,26 @@ async function grantSuperAdmin() {
     process.exit(1);
   }
 
-  if (user.isSuperAdmin && user.role === "admin") {
+  if (user.is_super_admin && user.role === "admin") {
     console.log(`ℹ️  Nutzer ${email} hat bereits Super-Admin-Rechte.`);
     process.exit(0);
   }
 
   console.log(`🔄 Aktualisiere Nutzer ${email} ...`);
 
-  await db
-    .update(authUsers)
-    .set({
+  const { error: updateError } = await client
+    .from("auth_user")
+    .update({
       role: "admin",
-      isSuperAdmin: true,
-      updatedAt: new Date(),
+      is_super_admin: true,
+      updated_at: new Date().toISOString(),
     })
-    .where(eq(authUsers.id, user.id));
+    .eq("id", user.id);
+
+  if (updateError) {
+    console.error("❌ Fehler beim Aktualisieren des Nutzers:", updateError);
+    process.exit(1);
+  }
 
   console.log("\n✨ Super-Admin-Rechte erfolgreich vergeben!");
   console.log(`📧 E-Mail:     ${email}`);

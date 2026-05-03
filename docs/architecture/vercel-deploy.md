@@ -1,13 +1,13 @@
-# 🏗️ Technische Architektur: Vercel + Supabase
+# 🏗️ Technische Architektur: Vercel + InsForge
 
-Diese Architektur nutzt **Vercel** für das Hosting der Next.js Anwendung mit globalem CDN und automatischem Edge-Caching. Datenbank, Authentifizierung und Storage werden über **Supabase (EU-Region Frankfurt)** verwaltet.
+Diese Architektur nutzt **Vercel** für das Hosting der Next.js Anwendung mit globalem CDN und automatischem Edge-Caching. Datenbank, Authentifizierung und Storage werden über **InsForge (EU-Region Central)** verwaltet.
 
 ## Komponenten im Vercel-Setup
 
 | Komponente | Technologie | Aufgabe |
 |------------|-------------|---------|
 | **Frontend & API** | Next.js auf Vercel | Server-Side Rendering, API-Routen, UI, Edge Functions |
-| **Backend-as-a-Service** | Supabase | Auth, PostgreSQL Datenbank, S3 Storage (EU-Frankfurt) |
+| **Backend-as-a-Service** | InsForge | Auth, PostgreSQL Datenbank, S3 Storage (EU-Central) |
 | **Turnier-Engine** | bbpPairings | FIDE-konforme Schweizer-System Auslosungen via TRF |
 | **CDN** | Vercel Edge Network | Globales Caching und optimale Latenz |
 
@@ -17,7 +17,7 @@ Diese Architektur nutzt **Vercel** für das Hosting der Next.js Anwendung mit gl
 2. **Automatisches Skalieren:** Keine Server-Verwaltung, automatische Skalierung bei Lastspitzen.
 3. **Zero-Config Deployments:** Git-basiertes Deployment ohne manuelle Server-Konfiguration.
 4. **Vereinfachte Infrastruktur:** Durch den Wegfall von Server-Management und Docker.
-5. **DSGVO-Konformität:** Supabase EU-Region (Frankfurt) mit Vercel's DSGVO-Compliance.
+5. **DSGVO-Konformität:** InsForge EU-Region (Central) mit Vercel's DSGVO-Compliance.
 
 ## Deployment-Ablauf
 
@@ -44,4 +44,4 @@ Das Projekt enthält bereits eine `vercel.json` für:
 
 **Siehe auch:**
 - [Vercel Deployment Guide](../../README.md#deployment)
-- [Supabase Integration](../features/platform-overview.md)
+- [Plattform-Übersicht](../features/platform-overview.md)

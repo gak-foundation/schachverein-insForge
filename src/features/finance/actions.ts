@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { payments, clubMemberships, contributionRates, members, clubs, sepaExports } from "@/lib/db/schema";
-import { eq, desc, and, sql, inArray } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "@/lib/actions/utils";
 import { generateSepaXML, SepaConfig, SepaPayment, generateEndToEndId } from "@/lib/sepa/generator";
@@ -12,60 +10,63 @@ import { decrypt, encrypt } from "@/lib/crypto";
 
 export async function getPayments() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  return db
-    .select({
-      id: payments.id,
-      memberId: payments.memberId,
-      amount: payments.amount,
-      description: payments.description,
-      status: payments.status,
-      dueDate: payments.dueDate,
-      year: payments.year,
-      sepaMandateReference: payments.sepaMandateReference,
-      invoiceNumber: payments.invoiceNumber,
-      dunningLevel: payments.dunningLevel,
-    })
-    .from(payments)
-    .where(eq(payments.clubId, clubId))
-    .orderBy(desc(payments.createdAt));
+  const { data, error } = await client
+    .from('payments')
+    .select('id, member_id, amount, description, status, due_date, year, sepa_mandate_reference, invoice_number, dunning_level')
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map((p: any) => ({
+    id: p.id,
+    memberId: p.member_id,
+    amount: p.amount,
+    description: p.description,
+    status: p.status,
+    dueDate: p.due_date,
+    year: p.year,
+    sepaMandateReference: p.sepa_mandate_reference,
+    invoiceNumber: p.invoice_number,
+    dunningLevel: p.dunning_level,
+  }));
 }
 
 export async function getPaymentWithMemberDetails() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const results = await db
-    .select({
-      id: payments.id,
-      memberId: payments.memberId,
-      amount: payments.amount,
-      description: payments.description,
-      status: payments.status,
-      dueDate: payments.dueDate,
-      year: payments.year,
-      sepaMandateReference: payments.sepaMandateReference,
-      invoiceNumber: payments.invoiceNumber,
-      memberFirstName: members.firstName,
-      memberLastName: members.lastName,
-      memberIban: members.sepaIban,
-      memberBic: members.sepaBic,
-      memberMandateRef: members.sepaMandateReference,
-      mandateSignedAt: members.mandateSignedAt,
-    })
-    .from(payments)
-    .innerJoin(members, eq(payments.memberId, members.id))
-    .where(eq(payments.clubId, clubId))
-    .orderBy(desc(payments.createdAt));
+  const { data: results, error } = await client
+    .from('payments')
+    .select('*, members!member_id(*)')
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false });
 
-  return results.map(p => ({
-    ...p,
-    memberIban: p.memberIban ? decrypt(p.memberIban) : null,
-    memberBic: p.memberBic ? decrypt(p.memberBic) : null,
+  if (error) throw error;
+
+  return (results || []).map((p: any) => ({
+    id: p.id,
+    memberId: p.member_id,
+    amount: p.amount,
+    description: p.description,
+    status: p.status,
+    dueDate: p.due_date,
+    year: p.year,
+    sepaMandateReference: p.sepa_mandate_reference,
+    invoiceNumber: p.invoice_number,
+    memberFirstName: p.members.first_name,
+    memberLastName: p.members.last_name,
+    memberIban: p.members.sepa_iban ? decrypt(p.members.sepa_iban) : null,
+    memberBic: p.members.sepa_bic ? decrypt(p.members.sepa_bic) : null,
+    memberMandateRef: p.members.sepa_mandate_reference,
+    mandateSignedAt: p.members.mandate_signed_at,
   }));
 }
 
 export async function createPayment(formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   const memberId = formData.get("memberId") as string;
   const amount = Number(formData.get("amount"));
@@ -73,38 +74,52 @@ export async function createPayment(formData: FormData) {
   const year = Number(formData.get("year"));
   const dueDate = (formData.get("dueDate") as string) || null;
 
-  const [membership] = await db
-    .select()
-    .from(clubMemberships)
-    .where(and(
-      eq(clubMemberships.memberId, memberId),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  const { data: membership, error: mError } = await client
+    .from('club_memberships')
+    .select('*')
+    .eq('member_id', memberId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!membership) {
+  if (mError || !membership) {
     throw new Error("Mitglied ist nicht im Verein");
   }
 
   // Generate a simple invoice number
   const invoiceNumber = `RE-${year}-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
 
-  const [newPayment] = await db.insert(payments).values({
-    clubId,
-    memberId,
-    amount: amount.toString(),
-    description,
-    year,
-    dueDate,
-    invoiceNumber,
-  }).returning();
+  const { data: newPayment, error: pError } = await client
+    .from('payments')
+    .insert([{
+      club_id: clubId,
+      member_id: memberId,
+      amount: amount.toString(),
+      description,
+      year,
+      due_date: dueDate,
+      invoice_number: invoiceNumber,
+    }])
+    .select()
+    .single();
+
+  if (pError) throw pError;
 
   // Send invoice email
-  const [member] = await db.select().from(members).where(eq(members.id, memberId));
-  const [club] = await db.select().from(clubs).where(eq(clubs.id, clubId));
-  
-  if (member?.email) {
+  const { data: member, error: memError } = await client
+    .from('members')
+    .select('*')
+    .eq('id', memberId)
+    .single();
+
+  const { data: club, error: clubError } = await client
+    .from('clubs')
+    .select('name')
+    .eq('id', clubId)
+    .single();
+
+  if (member?.email && club) {
     const { subject, html, text } = invoiceEmailTemplate({
-      memberName: `${member.firstName} ${member.lastName}`,
+      memberName: `${member.first_name} ${member.last_name}`,
       clubName: club.name,
       amount: amount.toString(),
       description,
@@ -120,82 +135,85 @@ export async function createPayment(formData: FormData) {
 
 export async function getPaymentStats() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const total = await db
-    .select({ count: sql<number>`COUNT(*)`, total: sql<string>`SUM(${payments.amount})` })
-    .from(payments)
-    .where(eq(payments.clubId, clubId));
+  const { data: allPayments, error } = await client
+    .from('payments')
+    .select('amount, status')
+    .eq('club_id', clubId);
 
-  const pending = await db
-    .select({ count: sql<number>`COUNT(*)`, total: sql<string>`SUM(${payments.amount})` })
-    .from(payments)
-    .where(and(
-      eq(payments.clubId, clubId),
-      eq(payments.status, "pending")
-    ));
+  if (error) throw error;
 
-  const paid = await db
-    .select({ count: sql<number>`COUNT(*)`, total: sql<string>`SUM(${payments.amount})` })
-    .from(payments)
-    .where(and(
-      eq(payments.clubId, clubId),
-      eq(payments.status, "paid")
-    ));
+  const paymentsArr = allPayments || [];
 
-  const overdue = await db
-    .select({ count: sql<number>`COUNT(*)`, total: sql<string>`SUM(${payments.amount})` })
-    .from(payments)
-    .where(and(
-      eq(payments.clubId, clubId),
-      eq(payments.status, "overdue")
-    ));
+  const totalCount = paymentsArr.length;
+  const totalSum = paymentsArr.reduce((sum, p) => sum + Number(p.amount), 0).toString();
+
+  const pendingArr = paymentsArr.filter(p => p.status === "pending");
+  const pendingCount = pendingArr.length;
+  const pendingSum = pendingArr.reduce((sum, p) => sum + Number(p.amount), 0).toString();
+
+  const paidArr = paymentsArr.filter(p => p.status === "paid");
+  const paidCount = paidArr.length;
+  const paidSum = paidArr.reduce((sum, p) => sum + Number(p.amount), 0).toString();
+
+  const overdueArr = paymentsArr.filter(p => p.status === "overdue");
+  const overdueCount = overdueArr.length;
+  const overdueSum = overdueArr.reduce((sum, p) => sum + Number(p.amount), 0).toString();
 
   return {
-    total: { count: Number(total[0]?.count ?? 0), total: total[0]?.total ?? "0" },
-    pending: { count: Number(pending[0]?.count ?? 0), total: pending[0]?.total ?? "0" },
-    paid: { count: Number(paid[0]?.count ?? 0), total: paid[0]?.total ?? "0" },
-    overdue: { count: Number(overdue[0]?.count ?? 0), total: overdue[0]?.total ?? "0" },
+    total: { count: totalCount, total: totalSum },
+    pending: { count: pendingCount, total: pendingSum },
+    paid: { count: paidCount, total: paidSum },
+    overdue: { count: overdueCount, total: overdueSum },
   };
 }
 
 export async function updatePaymentStatus(paymentId: string, status: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [payment] = await db
-    .select()
-    .from(payments)
-    .where(and(
-      eq(payments.id, paymentId),
-      eq(payments.clubId, clubId)
-    ));
+  const { data: payment, error } = await client
+    .from('payments')
+    .select('*')
+    .eq('id', paymentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!payment) {
+  if (error || !payment) {
     throw new Error("Zahlung nicht gefunden");
   }
 
-  await db
-    .update(payments)
-    .set({ 
-      status: status as typeof payments.$inferInsert.status,
-      paidAt: status === "paid" ? new Date() : null,
+  const { error: uError } = await client
+    .from('payments')
+    .update({ 
+      status,
+      paid_at: status === "paid" ? new Date().toISOString() : null,
     })
-    .where(eq(payments.id, paymentId));
+    .eq('id', paymentId);
+
+  if (uError) throw uError;
 
   revalidatePath("/dashboard/finance");
 }
 
 export async function getContributionRates() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  return db
-    .select()
-    .from(contributionRates)
-    .where(eq(contributionRates.clubId, clubId))
-    .orderBy(desc(contributionRates.createdAt));
+  const { data, error } = await client
+    .from('contribution_rates')
+    .select('*')
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function upsertContributionRate(formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   const id = formData.get("id") as string | null;
   const name = formData.get("name") as string;
@@ -206,34 +224,35 @@ export async function upsertContributionRate(formData: FormData) {
   const validUntil = (formData.get("validUntil") as string) || null;
 
   const values = {
-    clubId,
+    club_id: clubId,
     name,
     amount,
     frequency: frequency as "yearly" | "quarterly" | "monthly",
     description,
-    validFrom,
-    validUntil,
+    valid_from: validFrom,
+    valid_until: validUntil,
   };
 
   if (id) {
-    const [existing] = await db
-      .select()
-      .from(contributionRates)
-      .where(and(
-        eq(contributionRates.id, id),
-        eq(contributionRates.clubId, clubId)
-      ));
+    const { data: existing, error } = await client
+      .from('contribution_rates')
+      .select('*')
+      .eq('id', id)
+      .eq('club_id', clubId)
+      .single();
 
-    if (!existing) {
+    if (error || !existing) {
       throw new Error("Beitragssatz nicht gefunden");
     }
 
-    await db
-      .update(contributionRates)
-      .set(values)
-      .where(eq(contributionRates.id, id));
+    const { error: uError } = await client
+      .from('contribution_rates')
+      .update(values)
+      .eq('id', id);
+    if (uError) throw uError;
   } else {
-    await db.insert(contributionRates).values(values);
+    const { error } = await client.from('contribution_rates').insert([values]);
+    if (error) throw error;
   }
 
   revalidatePath("/dashboard/finance");
@@ -241,70 +260,74 @@ export async function upsertContributionRate(formData: FormData) {
 
 export async function deleteContributionRate(id: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [existing] = await db
-    .select()
-    .from(contributionRates)
-    .where(and(
-      eq(contributionRates.id, id),
-      eq(contributionRates.clubId, clubId)
-    ));
+  const { data: existing, error } = await client
+    .from('contribution_rates')
+    .select('*')
+    .eq('id', id)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!existing) {
+  if (error || !existing) {
     throw new Error("Beitragssatz nicht gefunden");
   }
 
-  await db
-    .delete(contributionRates)
-    .where(eq(contributionRates.id, id));
+  const { error: dError } = await client
+    .from('contribution_rates')
+    .delete()
+    .eq('id', id);
+  if (dError) throw dError;
 
   revalidatePath("/dashboard/finance");
 }
 
 export async function generateDuePayments(year: number) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const activeMembersWithRate = await db
-    .select({
-      memberId: members.id,
-      contributionRateId: members.contributionRateId,
-      sepaMandateReference: members.sepaMandateReference,
-    })
-    .from(members)
-    .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
-    .where(and(
-      eq(clubMemberships.clubId, clubId),
-      eq(clubMemberships.status, "active"),
-      eq(members.status, "active"),
-      sql`${members.contributionRateId} IS NOT NULL`
-    ));
+  const { data: activeMembersWithRate, error: amError } = await client
+    .from('members')
+    .select('id, contribution_rate_id, sepa_mandate_reference, club_memberships!inner(*)')
+    .eq('club_memberships.club_id', clubId)
+    .eq('club_memberships.status', "active")
+    .eq('status', "active")
+    .not('contribution_rate_id', 'is', null);
 
-  const existingPayments = await db
-    .select({ memberId: payments.memberId })
-    .from(payments)
-    .where(and(
-      eq(payments.clubId, clubId),
-      eq(payments.year, year)
-    ));
+  if (amError) throw amError;
 
-  const existingMemberIds = new Set(existingPayments.map(p => p.memberId));
+  const { data: existingPayments, error: epError } = await client
+    .from('payments')
+    .select('member_id')
+    .eq('club_id', clubId)
+    .eq('year', year);
 
-  const rateIds = [...new Set(activeMembersWithRate.map(m => m.contributionRateId).filter(Boolean))];
-  
-  const rates = rateIds.length > 0
-    ? await db
-        .select()
-        .from(contributionRates)
-        .where(and(
-          eq(contributionRates.clubId, clubId),
-          inArray(contributionRates.id, rateIds as string[]),
-        ))
-    : [];
+  if (epError) throw epError;
 
-  const rateMap = new Map(rates.map(r => [r.id, r]));
+  const existingMemberIds = new Set((existingPayments || []).map(p => p.member_id));
+
+  const activeMembersMapped = (activeMembersWithRate || []).map(m => ({
+    memberId: m.id,
+    contributionRateId: m.contribution_rate_id,
+    sepaMandateReference: m.sepa_mandate_reference,
+  }));
+
+  const rateIds = [...new Set(activeMembersMapped.map(m => m.contributionRateId).filter(Boolean))];
+
+  const { data: rates, error: rError } = rateIds.length > 0
+    ? await client
+        .from('contribution_rates')
+        .select('*')
+        .eq('club_id', clubId)
+        .in('id', rateIds as string[])
+    : { data: [], error: null };
+
+  if (rError) throw rError;
+
+  const rateMap = new Map((rates || []).map(r => [r.id, r]));
 
   const paymentsToCreate = [];
-  for (const member of activeMembersWithRate) {
+  for (const member of activeMembersMapped) {
     if (existingMemberIds.has(member.memberId)) continue;
 
     const rate = rateMap.get(member.contributionRateId!);
@@ -313,18 +336,19 @@ export async function generateDuePayments(year: number) {
     const invoiceNumber = `RE-${year}-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
 
     paymentsToCreate.push({
-      clubId,
-      memberId: member.memberId,
+      club_id: clubId,
+      member_id: member.memberId,
       amount: rate.amount,
       description: `${rate.name} ${year}`,
       year,
-      sepaMandateReference: member.sepaMandateReference,
-      invoiceNumber,
+      sepa_mandate_reference: member.sepaMandateReference,
+      invoice_number: invoiceNumber,
     });
   }
 
   if (paymentsToCreate.length > 0) {
-    await db.insert(payments).values(paymentsToCreate);
+    const { error } = await client.from('payments').insert(paymentsToCreate);
+    if (error) throw error;
   }
 
   revalidatePath("/dashboard/finance");
@@ -333,71 +357,60 @@ export async function generateDuePayments(year: number) {
 
 export async function exportSepaXml(paymentIds: string[]) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   if (paymentIds.length === 0) {
     throw new Error("Keine Zahlungen ausgewaehlt");
   }
 
-  const [club] = await db
-    .select({
-      creditorId: clubs.creditorId,
-      sepaIban: clubs.sepaIban,
-      sepaBic: clubs.sepaBic,
-      name: clubs.name,
-    })
-    .from(clubs)
-    .where(eq(clubs.id, clubId));
+  const { data: club, error: clubError } = await client
+    .from('clubs')
+    .select('creditor_id, sepa_iban, sepa_bic, name')
+    .eq('id', clubId)
+    .single();
 
-  if (!club?.creditorId || !club?.sepaIban) {
+  if (clubError || !club) {
+    throw new Error("Verein nicht gefunden");
+  }
+
+  if (!club.creditor_id || !club.sepa_iban) {
     throw new Error("Vereinsdaten unvollstaendig. Bitte Creditor ID und IBAN in den Einstellungen hinterlegen.");
   }
 
-  const paymentsData = await db
-    .select({
-      id: payments.id,
-      amount: payments.amount,
-      description: payments.description,
-      sepaMandateReference: payments.sepaMandateReference,
-      memberFirstName: members.firstName,
-      memberLastName: members.lastName,
-      memberIban: members.sepaIban,
-      memberBic: members.sepaBic,
-      memberMandateRef: members.sepaMandateReference,
-      mandateSignedAt: members.mandateSignedAt,
-    })
-    .from(payments)
-    .innerJoin(members, eq(payments.memberId, members.id))
-    .where(and(
-      eq(payments.clubId, clubId),
-      inArray(payments.id, paymentIds),
-    ));
+  const { data: paymentsData, error: pError } = await client
+    .from('payments')
+    .select('*, members!member_id(first_name, last_name, sepa_iban, sepa_bic, sepa_mandate_reference, mandate_signed_at)')
+    .eq('club_id', clubId)
+    .in('id', paymentIds);
 
-  const validPayments = paymentsData.filter(p => 
-    p.memberIban && 
-    (p.sepaMandateReference || p.memberMandateRef) &&
-    p.mandateSignedAt
+  if (pError) throw pError;
+
+  const validPayments = (paymentsData || []).filter((p: any) => 
+    p.members.sepa_iban && 
+    (p.sepa_mandate_reference || p.members.sepa_mandate_reference) &&
+    p.members.mandate_signed_at
   );
 
   if (validPayments.length === 0) {
     throw new Error("Keine gueltigen Zahlungen fuer SEPA-Export gefunden");
   }
 
-  const sepaPayments: SepaPayment[] = validPayments.map(p => ({
-    mandateId: (p.sepaMandateReference || p.memberMandateRef)!,
-    mandateDateOfSignature: p.mandateSignedAt!,
+  const sepaPayments: SepaPayment[] = validPayments.map((p: any) => ({
+    mandateId: (p.sepa_mandate_reference || p.members.sepa_mandate_reference)!,
+    mandateDateOfSignature: p.members.mandate_signed_at!,
     amount: Number(p.amount),
-    debtorName: `${p.memberFirstName} ${p.memberLastName}`,
-    debtorIban: p.memberIban ? decrypt(p.memberIban) : "",
-    debtorBic: p.memberBic ? decrypt(p.memberBic) : undefined,
+    debtorName: `${p.members.first_name} ${p.members.last_name}`,
+    debtorIban: p.members.sepa_iban ? decrypt(p.members.sepa_iban) : "",
+    debtorBic: p.members.sepa_bic ? decrypt(p.members.sepa_bic) : undefined,
     purpose: p.description,
     endToEndId: generateEndToEndId("CLUB", p.id, new Date()),
   }));
 
   const config: SepaConfig = {
     creditorName: club.name,
-    creditorIban: club.sepaIban ? decrypt(club.sepaIban) : "",
-    creditorBic: (club.sepaBic ? decrypt(club.sepaBic) : "") || "",
-    creditorId: club.creditorId,
+    creditorIban: club.sepa_iban ? decrypt(club.sepa_iban) : "",
+    creditorBic: (club.sepa_bic ? decrypt(club.sepa_bic) : "") || "",
+    creditorId: club.creditor_id,
     requestedCollectionDate: new Date().toISOString().slice(0, 10),
     sequenceType: "RCUR",
     localInstrumentCode: "CORE",
@@ -408,27 +421,30 @@ export async function exportSepaXml(paymentIds: string[]) {
   const totalAmount = validPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
   // Save to history
-  const [exportRecord] = await db.insert(sepaExports).values({
-    clubId,
-    xmlContent: xml,
-    filename,
-    totalAmount: totalAmount.toString(),
-    paymentCount: validPayments.length,
-  }).returning();
+  const { data: exportRecord, error: exError } = await client
+    .from('sepa_exports')
+    .insert([{
+      club_id: clubId,
+      xml_content: xml,
+      filename,
+      total_amount: totalAmount.toString(),
+      payment_count: validPayments.length,
+    }])
+    .select()
+    .single();
 
-  await db
-    .update(payments)
-    .set({ 
+  if (exError) throw exError;
+
+  const { error: uError } = await client
+    .from('payments')
+    .update({ 
       status: "collected",
-      sepaExportId: exportRecord.id,
+      sepa_export_id: exportRecord.id,
     })
-    .where(and(
-      eq(payments.clubId, clubId),
-      inArray(
-        payments.id,
-        validPayments.map((p) => p.id),
-      ),
-    ));
+    .eq('club_id', clubId)
+    .in('id', validPayments.map((p: any) => p.id));
+
+  if (uError) throw uError;
 
   revalidatePath("/dashboard/finance");
 
@@ -437,57 +453,65 @@ export async function exportSepaXml(paymentIds: string[]) {
 
 export async function getSepaExports() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  return db
-    .select()
-    .from(sepaExports)
-    .where(eq(sepaExports.clubId, clubId))
-    .orderBy(desc(sepaExports.createdAt));
+  const { data, error } = await client
+    .from('sepa_exports')
+    .select('*')
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function generateAnnualPayments(year: number) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   // 1. Get all active members with an assigned contribution rate
-  const activeMembers = await db
-    .select({
-      id: members.id,
-      firstName: members.firstName,
-      lastName: members.lastName,
-      contributionRateId: members.contributionRateId,
-      sepaMandateReference: members.sepaMandateReference,
-    })
-    .from(members)
-    .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
-    .where(and(
-      eq(clubMemberships.clubId, clubId),
-      eq(clubMemberships.status, "active"),
-      eq(members.status, "active"),
-      sql`${members.contributionRateId} IS NOT NULL`
-    ));
+  const { data: activeMembers, error: amError } = await client
+    .from('members')
+    .select('id, first_name, last_name, contribution_rate_id, sepa_mandate_reference, club_memberships!inner(*)')
+    .eq('club_memberships.club_id', clubId)
+    .eq('club_memberships.status', "active")
+    .eq('status', "active")
+    .not('contribution_rate_id', 'is', null);
+
+  if (amError) throw amError;
 
   // 2. Check for existing payments for this year to avoid duplicates
-  const existingPayments = await db
-    .select({ memberId: payments.memberId })
-    .from(payments)
-    .where(and(
-      eq(payments.clubId, clubId),
-      eq(payments.year, year)
-    ));
+  const { data: existingPayments, error: epError } = await client
+    .from('payments')
+    .select('member_id')
+    .eq('club_id', clubId)
+    .eq('year', year);
 
-  const existingMemberIds = new Set(existingPayments.map(p => p.memberId));
+  if (epError) throw epError;
+
+  const existingMemberIds = new Set((existingPayments || []).map(p => p.member_id));
 
   // 3. Get rate details
-  const rates = await db
-    .select()
-    .from(contributionRates)
-    .where(eq(contributionRates.clubId, clubId));
+  const { data: rates, error: rError } = await client
+    .from('contribution_rates')
+    .select('*')
+    .eq('club_id', clubId);
 
-  const rateMap = new Map(rates.map(r => [r.id, r]));
+  if (rError) throw rError;
+
+  const rateMap = new Map((rates || []).map(r => [r.id, r]));
+
+  const activeMembersMapped = (activeMembers || []).map(m => ({
+    id: m.id,
+    firstName: m.first_name,
+    lastName: m.last_name,
+    contributionRateId: m.contribution_rate_id,
+    sepaMandateReference: m.sepa_mandate_reference,
+  }));
 
   // 4. Create missing payments
   const newPayments = [];
-  for (const member of activeMembers) {
+  for (const member of activeMembersMapped) {
     if (existingMemberIds.has(member.id)) continue;
     
     const rate = rateMap.get(member.contributionRateId!);
@@ -496,20 +520,21 @@ export async function generateAnnualPayments(year: number) {
     const invoiceNumber = `RE-${year}-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
 
     newPayments.push({
-      clubId,
-      memberId: member.id,
+      club_id: clubId,
+      member_id: member.id,
       amount: rate.amount,
       description: `Mitgliedsbeitrag ${year} (${rate.name})`,
       year,
       status: "pending" as const,
-      sepaMandateReference: member.sepaMandateReference || null,
-      dueDate: `${year}-03-01`, // Default due date
-      invoiceNumber,
+      sepa_mandate_reference: member.sepaMandateReference || null,
+      due_date: `${year}-03-01`, // Default due date
+      invoice_number: invoiceNumber,
     });
   }
 
   if (newPayments.length > 0) {
-    await db.insert(payments).values(newPayments);
+    const { error } = await client.from('payments').insert(newPayments);
+    if (error) throw error;
   }
 
   revalidatePath("/dashboard/finance");
@@ -518,42 +543,38 @@ export async function generateAnnualPayments(year: number) {
 
 export async function getPaymentInvoiceData(paymentId: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [payment] = await db
-    .select({
-      id: payments.id,
-      amount: payments.amount,
-      description: payments.description,
-      year: payments.year,
-      dueDate: payments.dueDate,
-      createdAt: payments.createdAt,
-      invoiceNumber: payments.invoiceNumber,
-      member: {
-        firstName: members.firstName,
-        lastName: members.lastName,
-        email: members.email,
-      },
-      club: {
-        name: clubs.name,
-        sepaIban: clubs.sepaIban,
-        sepaBic: clubs.sepaBic,
-        creditorId: clubs.creditorId,
-      }
-    })
-    .from(payments)
-    .innerJoin(members, eq(payments.memberId, members.id))
-    .innerJoin(clubs, eq(payments.clubId, clubs.id))
-    .where(and(
-      eq(payments.id, paymentId),
-      eq(payments.clubId, clubId)
-    ));
+  const { data: payment, error } = await client
+    .from('payments')
+    .select('*, members!member_id(first_name, last_name, email), clubs!club_id(*)')
+    .eq('id', paymentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (payment) {
-    if (payment.club.sepaIban) payment.club.sepaIban = decrypt(payment.club.sepaIban);
-    if (payment.club.sepaBic) payment.club.sepaBic = decrypt(payment.club.sepaBic);
-  }
+  if (error) throw error;
+  if (!payment) return null;
 
-  return payment || null;
+  return {
+    id: payment.id,
+    amount: payment.amount,
+    description: payment.description,
+    year: payment.year,
+    dueDate: payment.due_date,
+    createdAt: payment.created_at,
+    invoiceNumber: payment.invoice_number,
+    member: {
+      firstName: payment.members.first_name,
+      lastName: payment.members.last_name,
+      email: payment.members.email,
+    },
+    club: {
+      name: payment.clubs.name,
+      sepaIban: payment.clubs.sepa_iban ? decrypt(payment.clubs.sepa_iban) : null,
+      sepaBic: payment.clubs.sepa_bic ? decrypt(payment.clubs.sepa_bic) : null,
+      creditorId: payment.clubs.creditor_id,
+    }
+  };
 }
 
 /**
@@ -562,137 +583,144 @@ export async function getPaymentInvoiceData(paymentId: string) {
  */
 export async function triggerDunningRun() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const overduePayments = await db
-    .select({
-      id: payments.id,
-      amount: payments.amount,
-      description: payments.description,
-      dueDate: payments.dueDate,
-      dunningLevel: payments.dunningLevel,
-      invoiceNumber: payments.invoiceNumber,
-      memberEmail: members.email,
-      memberFirstName: members.firstName,
-      memberLastName: members.lastName,
-    })
-    .from(payments)
-    .innerJoin(members, eq(payments.memberId, members.id))
-    .where(and(
-      eq(payments.clubId, clubId),
-      eq(payments.status, "pending"),
-      sql`${payments.dueDate} < ${today}`
-    ));
+  const { data: overduePayments, error } = await client
+    .from('payments')
+    .select('*, members!member_id(first_name, last_name, email)')
+    .eq('club_id', clubId)
+    .eq('status', "pending")
+    .lt('due_date', today);
 
-  if (overduePayments.length === 0) {
+  if (error) throw error;
+
+  if ((overduePayments || []).length === 0) {
     return { success: true, processed: 0 };
   }
 
-  const [club] = await db.select().from(clubs).where(eq(clubs.id, clubId));
+  const { data: club, error: cError } = await client
+    .from('clubs')
+    .select('name')
+    .eq('id', clubId)
+    .single();
 
-  for (const p of overduePayments) {
-    const newLevel = p.dunningLevel + 1;
-    await db
-      .update(payments)
-      .set({
-        dunningLevel: newLevel,
-        lastDunningAt: new Date(),
+  if (cError) throw cError;
+
+  for (const p of (overduePayments || [])) {
+    const newLevel = (p.dunning_level || 0) + 1;
+    const { error: uError } = await client
+      .from('payments')
+      .update({
+        dunning_level: newLevel,
+        last_dunning_at: new Date().toISOString(),
         status: "overdue",
       })
-      .where(eq(payments.id, p.id));
+      .eq('id', p.id);
+    if (uError) throw uError;
     
-    if (p.memberEmail) {
+    if (p.members.email) {
       const { subject, html, text } = dunningEmailTemplate({
-        memberName: `${p.memberFirstName} ${p.memberLastName}`,
-        clubName: club.name,
+        memberName: `${p.members.first_name} ${p.members.last_name}`,
+        clubName: club?.name || "",
         amount: p.amount,
         description: p.description,
-        dueDate: p.dueDate || "",
+        dueDate: p.due_date || "",
         dunningLevel: newLevel,
-        invoiceNumber: p.invoiceNumber || "",
+        invoiceNumber: p.invoice_number || "",
       });
-      await enqueueEmail({ to: p.memberEmail, subject, html, text });
+      await enqueueEmail({ to: p.members.email, subject, html, text });
     }
   }
 
   revalidatePath("/dashboard/finance");
-  return { success: true, processed: overduePayments.length };
+  return { success: true, processed: (overduePayments || []).length };
 }
 
 export async function getDunningStats() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const result = await db
-    .select({
-      level: payments.dunningLevel,
-      count: sql<number>`COUNT(*)`,
-      amount: sql<string>`SUM(${payments.amount}::numeric)`,
-    })
-    .from(payments)
-    .where(and(
-      eq(payments.clubId, clubId),
-      eq(payments.status, "overdue")
-    ))
-    .groupBy(payments.dunningLevel);
+  const { data: overduePayments, error } = await client
+    .from('payments')
+    .select('*')
+    .eq('club_id', clubId)
+    .eq('status', "overdue");
 
-  return result;
+  if (error) throw error;
+
+  const grouped = (overduePayments || []).reduce((acc, p) => {
+    const level = p.dunning_level;
+    if (!acc[level]) acc[level] = { level, count: 0, amount: "0" };
+    acc[level].count++;
+    acc[level].amount = (Number(acc[level].amount) + Number(p.amount)).toString();
+    return acc;
+  }, {} as Record<number, { level: number; count: number; amount: string }>);
+
+  return Object.values(grouped) as { level: number; count: number; amount: string }[];
 }
 
 export async function getClubBankSettings() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [club] = await db
-    .select({
-      creditorId: clubs.creditorId,
-      sepaIban: clubs.sepaIban,
-      sepaBic: clubs.sepaBic,
-    })
-    .from(clubs)
-    .where(eq(clubs.id, clubId));
+  const { data: club, error } = await client
+    .from('clubs')
+    .select('creditor_id, sepa_iban, sepa_bic')
+    .eq('id', clubId)
+    .single();
 
-  if (club) {
-    if (club.sepaIban) club.sepaIban = decrypt(club.sepaIban);
-    if (club.sepaBic) club.sepaBic = decrypt(club.sepaBic);
-  }
+  if (error) throw error;
+  if (!club) return undefined;
 
-  return club || null;
+  return {
+    creditorId: club.creditor_id,
+    sepaIban: club.sepa_iban ? decrypt(club.sepa_iban) : null,
+    sepaBic: club.sepa_bic ? decrypt(club.sepa_bic) : null,
+  };
 }
 
 export async function updateClubBankSettings(formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   const creditorId = (formData.get("creditorId") as string) || null;
   const sepaIban = (formData.get("sepaIban") as string) || null;
   const sepaBic = (formData.get("sepaBic") as string) || null;
 
-  await db
-    .update(clubs)
-    .set({
-      creditorId,
-      sepaIban: sepaIban ? encrypt(sepaIban) : null,
-      sepaBic: sepaBic ? encrypt(sepaBic) : null,
+  const { error } = await client
+    .from('clubs')
+    .update({
+      creditor_id: creditorId,
+      sepa_iban: sepaIban ? encrypt(sepaIban) : null,
+      sepa_bic: sepaBic ? encrypt(sepaBic) : null,
     })
-    .where(eq(clubs.id, clubId));
+    .eq('id', clubId);
+
+  if (error) throw error;
 
   revalidatePath("/dashboard/finance");
 }
 
 export async function getMembersForFinance() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  return db
-    .select({
-      id: members.id,
-      firstName: members.firstName,
-      lastName: members.lastName,
-      email: members.email,
-    })
-    .from(members)
-    .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
-    .where(and(
-      eq(clubMemberships.clubId, clubId),
-      eq(clubMemberships.status, "active"),
-      eq(members.status, "active")
-    ))
-    .orderBy(members.lastName, members.firstName);
+  const { data, error } = await client
+    .from('members')
+    .select('id, first_name, last_name, email, club_memberships!inner(*)')
+    .eq('club_memberships.club_id', clubId)
+    .eq('club_memberships.status', "active")
+    .eq('status', "active")
+    .order('last_name', { ascending: true })
+    .order('first_name', { ascending: true });
+
+  if (error) throw error;
+
+  return (data || []).map((m: any) => ({
+    id: m.id,
+    firstName: m.first_name,
+    lastName: m.last_name,
+    email: m.email,
+  }));
 }

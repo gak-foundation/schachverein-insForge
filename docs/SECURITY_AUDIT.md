@@ -67,8 +67,8 @@ export async function POST() {
 
 **Nachher:**
 ```ts
-const supabase = await createClient();
-const { data: { user }, error } = await supabase.auth.getUser();
+const client = createClient();
+const { data: { user }, error } = await client.auth.getUser();
 if (error || !user) {
   return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
 }
@@ -83,13 +83,13 @@ if (error || !user) {
 
 **Vorher:** Reli only on `switchClubAction` (Defense-in-Depth-Lücke).
 
-**Nachher:** Explizite `supabase.auth.getUser()`-Prüfung in der Route selbst. Bei fehlender Authentifizierung wird `401 Unauthorized` zurückgegeben.
+**Nachher:** Explizite `client.auth.getUser()`-Prüfung in der Route selbst. Bei fehlender Authentifizierung wird `401 Unauthorized` zurückgegeben.
 
 ---
 
 ### 3.2 [BEHOBEN] Storage-Upload ohne Validierung (Mittel)
 
-**Datei:** `src/lib/supabase/storage.ts`  
+**Datei:** `src/lib/insforge/index.ts`  
 **Status:** ✅ Implementiert
 
 **Neue Validierungen:**
@@ -143,8 +143,8 @@ if (error || !user) {
 - IP-Adressen werden anonymisiert (`127.0.0.***` bzw. `IPv6-Präfix:****`).
 - Änderungen im `changes`-Feld gespeichert.
 
-### 5.3 RLS-Wrapper für Supabase
-- `withRLS()` setzt Postgres-Session-Variablen, sodass RLS-Policies auch bei Drizzle-ORM greifen.
+### 5.3 Zugriffsschutz (Access Control)
+- Die App verwendet das InsForge Access Control System mit rollenbasierten Berechtigungen.
 
 ### 5.4 Rollenbasierter Zugriffsschutz
 - Granulares Permission-System mit 6 Rollen.

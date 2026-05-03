@@ -139,6 +139,7 @@ export const authClient = {
   signOut: async () => {
     const client = createClient();
     await client.auth.signOut();
+    await fetch("/api/auth/logout", { method: "POST" });
   },
 
   forgetPassword: async ({ email }: { email: string }) => {

@@ -2,6 +2,7 @@ import { createClient as createInsForgeClient, type InsForgeClient } from '@insf
 
 const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL ?? 'https://4d3rbpyx.eu-central.insforge.app';
 const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
+const INSFORGE_SERVICE_ROLE_KEY = process.env.INSFORGE_SERVICE_ROLE_KEY;
 
 function getAnonKey(): string | undefined {
   if (typeof window !== 'undefined') {
@@ -39,32 +40,30 @@ export function createClient(): InsForgeClientWithFrom {
  * Server client for server components, middleware and API routes.
  *
  * Always operates in server mode (isServerMode: true), which means the SDK
- * will NOT attempt browser cookie-based auth. Pass an `accessToken` (from
- * client-side SDK) to authenticate as a specific user.
+ * will NOT attempt browser cookie-based auth. Pass an `accessToken` to
+ * authenticate as a specific user.
  *
- * To authenticate via the `insforge_session` cookie, use `createServerAuthClient()`.
+ * To authenticate via cookies, use `createServerAuthClient()` from server-auth.ts.
  */
 export function createServerClient(accessToken?: string): InsForgeClientWithFrom {
   const client = wrapClient(createInsForgeClient({
     baseUrl: INSFORGE_URL,
     anonKey: getAnonKey() ?? '',
     isServerMode: true,
+    ...(accessToken ? { edgeFunctionToken: accessToken } : {}),
   }));
-  if (accessToken) {
-    (client as any).http.setAuthToken(accessToken);
-    (client as any).tokenManager.setAccessToken(accessToken);
-  }
   return client;
 }
 
 /**
  * Server client with admin privileges (bypasses RLS).
- * Uses the anon key with elevated permissions on the InsForge backend.
+ * Uses the service role key for elevated permissions.
  */
 export function createServiceClient(): InsForgeClientWithFrom {
   return wrapClient(createInsForgeClient({
     baseUrl: INSFORGE_URL,
-    anonKey: getAnonKey() ?? '',
+    anonKey: INSFORGE_SERVICE_ROLE_KEY ?? getAnonKey() ?? '',
+    isServerMode: true,
   }));
 }
 

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Github, Chrome, Loader2 } from "lucide-react";
+import { GitFork, Globe, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type ProviderId = "github" | "google";
 
-const PROVIDER_META: Record<ProviderId, { label: string; Icon: typeof Github }> = {
-  github: { label: "Weiter mit GitHub", Icon: Github },
-  google: { label: "Weiter mit Google", Icon: Chrome },
+const PROVIDER_META: Record<ProviderId, { label: string; Icon: typeof GitFork }> = {
+  github: { label: "Weiter mit GitHub", Icon: GitFork },
+  google: { label: "Weiter mit Google", Icon: Globe },
 };
 
 interface ProviderDef {

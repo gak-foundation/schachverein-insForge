@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { insforge } from '@/lib/insforge';
+import { createServerClient } from '@/lib/insforge';
 
 export async function POST(request: Request) {
   try {
@@ -9,7 +9,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Token and new password are required' }, { status: 400 });
     }
 
-    const { error } = await insforge.auth.resetPassword({
+    const client = createServerClient();
+    const { error } = await client.auth.resetPassword({
       newPassword,
       otp: token,
     });

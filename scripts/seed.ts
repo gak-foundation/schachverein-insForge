@@ -1,20 +1,26 @@
 import "dotenv/config";
-import { db } from "../src/lib/db";
-import { members } from "../src/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 
 // Seed script - creates admin member
 // Note: User accounts should be created via Better Auth API or sign-up flow
 // After running this, use the "Forgot Password" feature to set admin password
 
 async function seed() {
+  const client = createServiceClient();
   console.log("Seeding database...");
   console.log("Database URL:", process.env.DATABASE_URL?.replace(/:.*@/, ":*****@"));
 
   // Check if admin member already exists
-  const existingMember = await db.query.members.findFirst({
-    where: eq(members.email, "admin@schachverein.de"),
-  });
+  const { data: existingMember, error: lookupError } = await client
+    .from("members")
+    .select("*")
+    .eq("email", "admin@schachverein.de")
+    .maybeSingle();
+
+  if (lookupError) {
+    console.error("Error looking up member:", lookupError);
+    process.exit(1);
+  }
 
   if (existingMember) {
     console.log("Admin member already exists.");
@@ -22,16 +28,24 @@ async function seed() {
   }
 
   // Create admin member first
-  const [member] = await db
-    .insert(members)
-    .values({
-      firstName: "Admin",
-      lastName: "User",
-      email: "admin@schachverein.de",
-      role: "admin",
-      status: "active",
-    })
-    .returning();
+  const { data: member, error: insertError } = await client
+    .from("members")
+    .insert([
+      {
+        first_name: "Admin",
+        last_name: "User",
+        email: "admin@schachverein.de",
+        role: "admin",
+        status: "active",
+      },
+    ])
+    .select()
+    .single();
+
+  if (insertError || !member) {
+    console.error("Failed to create admin member:", insertError);
+    process.exit(1);
+  }
 
   console.log("✅ Admin member created successfully!");
   console.log("   Email: admin@schachverein.de");

@@ -195,7 +195,7 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
   - Datenübertragbarkeit (Art. 20 DSGVO)
 - **Einwilligungsmanagement** mit Versionierung
 - **Dokumentenarchiv** (`documents`): Satzungen, Protokolle, Beitragsordnung
-- **Hosting bevorzugt Supabase Cloud / Vercel (EU Region)**
+- **Hosting bevorzugt InsForge Cloud / Vercel (EU Region)**
 
 ---
 
@@ -203,16 +203,16 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 
 | Schicht | Maßnahme |
 |---------|----------|
-| **Authentifizierung** | Supabase Auth (JWT) |
-| **RBAC / RLS** | Row Level Security in DB + Middleware Check |
-| **Account-Lockout** | Supabase Built-in Schutz |
-| **Rate Limiting** | Supabase API Limits |
+| **Authentifizierung** | InsForge Auth (JWT) |
+| **RBAC / Zugriffsschutz** | InsForge Access Control + Middleware Check |
+| **Account-Lockout** | InsForge Built-in Schutz |
+| **Rate Limiting** | InsForge API Limits |
 | **Verschlüsselung** | AES-256-GCM für IBANs und sensible Daten |
 | **Headers** | Strikte CSP, HSTS, `X-Frame-Options: DENY` |
 | **CSRF-Schutz** | Built-in |
-| **SQL-Injection** | Verhindert durch Drizzle ORM (parametrisiert) |
+| **SQL-Injection** | Verhindert durch InsForge SDK (parametrisiert) |
 | **Audit-Log** | Lückenlose Protokollierung (`auditLog`) |
-| **OAuth** | Google, Lichess (via Supabase) |
+| **OAuth** | Google, Lichess (via InsForge) |
 
 ---
 
@@ -225,7 +225,7 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 - **SEPA**: pain.008 XML-Generator
 - **Mollie / Stripe**: Zahlungsabwicklung
 - **SMTP**: E-Mail-Versand (Postmark/MailerSend)
-- **Supabase Storage**: Objektspeicher (Dokumente, Protokolle)
+- **InsForge Storage**: Objektspeicher (Dokumente, Protokolle)
 - **iCal / Google Calendar**: Kalender-Sync
 - **REST API** (Phase 4): Für externe Entwickler und Verbände
 
@@ -249,14 +249,14 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 
 - **Next.js 16.2** mit App Router & Server Components
 - **TypeScript 5.8 Strict Mode**
-- **PostgreSQL 17 + Drizzle ORM 0.45**
-- **Supabase Backend**: Auth, Database, Storage, Realtime
+- **PostgreSQL 17 + InsForge SDK**
+- **InsForge Backend**: Auth, Database, Storage, Realtime
 - **Asynchrone Hintergrund-Tasks** für E-Mails und Metadaten
 - **Zod** für Input-Validierung
 - **Zustand 5.0** für Client-State
 - **shadcn/ui + Tailwind CSS 4**
 - **Docker Compose** für lokale Entwicklung
-- **Deployment**: Supabase Cloud (EU) + Vercel.
+- **Deployment**: InsForge Cloud (EU) + Vercel.
 
 </details>
 

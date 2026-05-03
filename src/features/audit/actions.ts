@@ -1,40 +1,35 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { 
-  auditLog, 
-  documents, 
-  clubMemberships, 
-  tournaments, 
-  teams, 
-  events,
-  payments,
-  members,
-  games,
-  matches
-} from "@/lib/db/schema";
-import { eq, desc, and, sql, gte, lt, or } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { requireClubId } from "@/lib/auth/session";
 
 export async function getAuditLogs(limit = 100) {
   try {
     const clubId = await requireClubId();
+    const client = createServiceClient();
 
-    return db
-      .select({
-        id: auditLog.id,
-        userId: auditLog.userId,
-        action: auditLog.action,
-        entity: auditLog.entity,
-        entityId: auditLog.entityId,
-        changes: auditLog.changes,
-        ipAddress: auditLog.ipAddress,
-        createdAt: auditLog.createdAt,
-      })
-      .from(auditLog)
-      .where(eq(auditLog.clubId, clubId))
-      .orderBy(desc(auditLog.createdAt))
+    const { data, error } = await client
+      .from("audit_log")
+      .select("id, user_id, action, entity, entity_id, changes, ip_address, created_at")
+      .eq("club_id", clubId)
+      .order("created_at", { ascending: false })
       .limit(limit);
+
+    if (error) {
+      console.error("Error fetching audit logs:", error);
+      return [];
+    }
+
+    return (data || []).map((log: any) => ({
+      id: log.id,
+      userId: log.user_id,
+      action: log.action,
+      entity: log.entity,
+      entityId: log.entity_id,
+      changes: log.changes,
+      ipAddress: log.ip_address,
+      createdAt: log.created_at,
+    }));
   } catch (error) {
     console.error("Error fetching audit logs:", error);
     return [];
@@ -44,20 +39,28 @@ export async function getAuditLogs(limit = 100) {
 export async function getDocuments() {
   try {
     const clubId = await requireClubId();
+    const client = createServiceClient();
 
-    return db
-      .select({
-        id: documents.id,
-        title: documents.title,
-        fileName: documents.fileName,
-        category: documents.category,
-        mimeType: documents.mimeType,
-        fileSize: documents.fileSize,
-        createdAt: documents.createdAt,
-      })
-      .from(documents)
-      .where(eq(documents.clubId, clubId))
-      .orderBy(desc(documents.createdAt));
+    const { data, error } = await client
+      .from("documents")
+      .select("id, title, file_name, category, mime_type, file_size, created_at")
+      .eq("club_id", clubId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching documents:", error);
+      return [];
+    }
+
+    return (data || []).map((doc: any) => ({
+      id: doc.id,
+      title: doc.title,
+      fileName: doc.file_name,
+      category: doc.category,
+      mimeType: doc.mime_type,
+      fileSize: doc.file_size,
+      createdAt: doc.created_at,
+    }));
   } catch (error) {
     console.error("Error fetching documents:", error);
     return [];
@@ -69,107 +72,121 @@ export async function getDashboardStats() {
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const todayStr = now.toISOString().split("T")[0];
 
   try {
-    const [memberCount] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(clubMemberships)
-      .where(and(
-        eq(clubMemberships.clubId, clubId),
-        eq(clubMemberships.status, "active")
-      ));
+    const client = createServiceClient();
 
-    const [tournamentCount] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(tournaments)
-      .where(and(
-        eq(tournaments.clubId, clubId),
-        eq(tournaments.isCompleted, false)
-      ));
+    // Active members count
+    const { count: memberCount, error: memberError } = await client
+      .from("club_memberships")
+      .select("id", { count: "exact" })
+      .eq("club_id", clubId)
+      .eq("status", "active");
 
-    const [teamCount] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(teams)
-      .where(eq(teams.clubId, clubId));
+    if (memberError) console.error("memberCount error:", memberError);
 
-    const [pendingPayments] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(payments)
-      .where(and(
-        eq(payments.clubId, clubId),
-        or(eq(payments.status, "pending"), eq(payments.status, "overdue"))
-      ));
+    // Incomplete tournaments count
+    const { count: tournamentCount, error: tournamentError } = await client
+      .from("tournaments")
+      .select("id", { count: "exact" })
+      .eq("club_id", clubId)
+      .eq("is_completed", false);
 
-    const [avgDwz] = await db
-      .select({ avg: sql<number>`AVG(${members.dwz})` })
-      .from(members)
-      .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
-      .where(and(
-        eq(clubMemberships.clubId, clubId),
-        eq(clubMemberships.status, "active"),
-        sql`${members.dwz} > 0`
-      ));
+    if (tournamentError) console.error("tournamentCount error:", tournamentError);
 
-    const [gamesThisMonth] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(games)
-      .innerJoin(tournaments, eq(games.tournamentId, tournaments.id))
-      .where(and(
-        eq(tournaments.clubId, clubId),
-        gte(games.playedAt, firstDayOfMonth),
-        lt(games.playedAt, nextMonth)
-      ));
+    // Teams count
+    const { count: teamCount, error: teamError } = await client
+      .from("teams")
+      .select("id", { count: "exact" })
+      .eq("club_id", clubId);
 
-    const upcomingMatches = await db
-      .select({
-        id: matches.id,
-        matchDate: matches.matchDate,
-        homeTeamName: teams.name,
-        location: matches.location,
-      })
-      .from(matches)
-      .innerJoin(teams, eq(matches.homeTeamId, teams.id))
-      .where(and(
-        eq(teams.clubId, clubId),
-        gte(matches.matchDate, sql`CURRENT_DATE`),
-        eq(matches.status, "scheduled")
-      ))
-      .orderBy(matches.matchDate)
+    if (teamError) console.error("teamCount error:", teamError);
+
+    // Pending/overdue payments count
+    const { count: pendingPaymentsCount, error: paymentsError } = await client
+      .from("payments")
+      .select("id", { count: "exact" })
+      .eq("club_id", clubId)
+      .in("status", ["pending", "overdue"]);
+
+    if (paymentsError) console.error("pendingPayments error:", paymentsError);
+
+    // Average DWZ of active members
+    const { data: dwzData, error: avgError } = await client
+      .from("members")
+      .select("dwz, club_memberships!inner(club_id, status)")
+      .eq("club_memberships.club_id", clubId)
+      .eq("club_memberships.status", "active")
+      .gt("dwz", 0);
+
+    if (avgError) console.error("avgDwz error:", avgError);
+
+    const avgDwz =
+      dwzData && dwzData.length > 0
+        ? Math.round(
+            dwzData.reduce((sum, m) => sum + (m.dwz || 0), 0) / dwzData.length
+          )
+        : null;
+
+    // Games this month
+    const { count: gamesCount, error: gamesError } = await client
+      .from("games")
+      .select("id, tournaments!inner(club_id)", { count: "exact" })
+      .eq("tournaments.club_id", clubId)
+      .gte("played_at", firstDayOfMonth.toISOString())
+      .lt("played_at", nextMonth.toISOString());
+
+    if (gamesError) console.error("gamesThisMonth error:", gamesError);
+
+    // Upcoming matches
+    const { data: matchesData, error: matchesError } = await client
+      .from("matches")
+      .select("id, match_date, location, status, home_team_id, teams!inner(name, club_id)")
+      .eq("teams.club_id", clubId)
+      .gte("match_date", todayStr)
+      .eq("status", "scheduled")
+      .order("match_date", { ascending: true })
       .limit(5);
 
-    const upcomingEvents = await db
-      .select({
-        id: events.id,
-        title: events.title,
-        startDate: events.startDate,
-      })
-      .from(events)
-      .where(and(
-        eq(events.clubId, clubId),
-        gte(events.startDate, now)
-      ))
-      .orderBy(events.startDate)
+    if (matchesError) console.error("upcomingMatches error:", matchesError);
+
+    // Upcoming events
+    const { data: eventsData, error: eventsError } = await client
+      .from("events")
+      .select("id, title, start_date")
+      .eq("club_id", clubId)
+      .gte("start_date", now.toISOString())
+      .order("start_date", { ascending: true })
       .limit(5);
+
+    if (eventsError) console.error("upcomingEvents error:", eventsError);
 
     return {
-      memberCount: Number(memberCount?.count ?? 0),
-      teamCount: Number(teamCount?.count ?? 0),
-      activeTournaments: Number(tournamentCount?.count ?? 0),
-      pendingPayments: Number(pendingPayments?.count ?? 0),
-      avgDwz: avgDwz?.avg ? Math.round(avgDwz.avg) : null,
-      gamesThisMonth: Number(gamesThisMonth?.count ?? 0),
-      upcomingMatches: upcomingMatches.map(m => ({
-        ...m,
-        matchDate: m.matchDate ? new Date(m.matchDate) : null
+      memberCount: Number(memberCount ?? 0),
+      teamCount: Number(teamCount ?? 0),
+      activeTournaments: Number(tournamentCount ?? 0),
+      pendingPayments: Number(pendingPaymentsCount ?? 0),
+      avgDwz,
+      gamesThisMonth: Number(gamesCount ?? 0),
+      upcomingMatches: (matchesData || []).map((m: any) => ({
+        id: m.id,
+        matchDate: m.match_date ? new Date(m.match_date) : null,
+        homeTeamName: m.teams?.name,
+        location: m.location,
       })),
-      upcomingEvents: upcomingEvents.map(e => ({
-        ...e,
-        startDate: new Date(e.startDate)
+      upcomingEvents: (eventsData || []).map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        startDate: new Date(e.start_date),
       })),
     };
   } catch (error: any) {
-    console.error("❌ Error fetching dashboard stats (RLS/Pooler?):", error.message);
-    
+    console.error(
+      "❌ Error fetching dashboard stats (RLS/Pooler?):",
+      error.message
+    );
+
     // Return empty stats as fallback to prevent dashboard crash
     return {
       memberCount: 0,

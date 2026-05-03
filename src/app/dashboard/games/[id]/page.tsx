@@ -1,9 +1,7 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getGameById } from "@/lib/actions/games";
-import { db } from "@/lib/db";
-import { members } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import {
   Card,
   CardContent,
@@ -33,10 +31,37 @@ export default async function GameDetailPage({
     notFound();
   }
 
-  const [whitePlayer, blackPlayer] = await Promise.all([
-    game.whiteId ? db.select({ firstName: members.firstName, lastName: members.lastName }).from(members).where(eq(members.id, game.whiteId)).then((r) => r[0]) : Promise.resolve(null),
-    game.blackId ? db.select({ firstName: members.firstName, lastName: members.lastName }).from(members).where(eq(members.id, game.blackId)).then((r) => r[0]) : Promise.resolve(null),
+  const client = createServiceClient();
+  const [whiteResult, blackResult] = await Promise.all([
+    game.whiteId
+      ? client
+          .from("members")
+          .select("first_name, last_name")
+          .eq("id", game.whiteId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    game.blackId
+      ? client
+          .from("members")
+          .select("first_name, last_name")
+          .eq("id", game.blackId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+
+  const whitePlayer = whiteResult.data
+    ? {
+        firstName: whiteResult.data.first_name,
+        lastName: whiteResult.data.last_name,
+      }
+    : null;
+
+  const blackPlayer = blackResult.data
+    ? {
+        firstName: blackResult.data.first_name,
+        lastName: blackResult.data.last_name,
+      }
+    : null;
 
   return (
     <div className="space-y-6">

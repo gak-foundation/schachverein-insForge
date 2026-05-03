@@ -47,7 +47,7 @@ Das System implementiert eine mehrschichtige Sicherheitsstrategie:
 
 ---
 
-## 🗄️ Datenmodell (Drizzle Schema)
+## 🗄️ Datenmodell (InsForge Schema)
 
 Das Datenmodell ist hochgradig relational und in der `src/lib/db/schema/` Verzeichnisstruktur organisiert:
 
@@ -64,7 +64,6 @@ Das Datenmodell ist hochgradig relational und in der `src/lib/db/schema/` Verzei
 
 ### Befehle
 - `npm run dev` - Lokaler Server
-- `npm run db:push` - Schema-Synchronisation
 - `npm run test` - Unit/Integration Tests (Vitest)
 - `npm run test:e2e` - End-to-End Tests (Playwright)
 

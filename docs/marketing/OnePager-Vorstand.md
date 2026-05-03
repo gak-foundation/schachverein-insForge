@@ -18,7 +18,7 @@
 
 ### 3. Rechtssicherheit & DSGVO
 *   **Datenschutz:** Vollständiges Einwilligungsmanagement (Bildrechte, Mail-Versand).
-*   **Hosting:** Alle Daten liegen sicher in Deutschland (Supabase EU-Region Frankfurt).
+*   **Hosting:** Alle Daten liegen sicher in Deutschland (InsForge EU-Region Central).
 *   **Audit-Log:** Jede Änderung an sensiblen Daten ist lückenlos nachvollziehbar.
 
 ---

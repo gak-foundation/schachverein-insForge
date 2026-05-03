@@ -53,7 +53,7 @@ Diese Spezifikation beschreibt den **Website-Editor "CheckMate Pages"** — ein 
 ### 2.2 Datenmodell
 
 ```typescript
-// Drizzle Schema (vereinfacht)
+// Datenmodell (vereinfacht)
 
 pages: {
   id: uuid
@@ -903,7 +903,7 @@ Das ist der **tiefe Integrations-Moat**, den Mitbewerber nicht einfach nachbauen
 
 Möchtest du als nächsten Schritt eines der folgenden Themen vertieft haben?
 
-- 🏗️ **Technisches Architektur-Diagramm (Vercel + Supabase)**
+- 🏗️ **Technisches Architektur-Diagramm (Vercel + InsForge)**
 - 🧩 **Konkrete Code-Spezifikation für den ersten Block** (z. B. Turnier-Karte) mit Datenbank, Renderer, Editor-Komponente
 - 🎨 **Theme-Preset-Katalog** mit 10 konkreten Schachverein-Designs (Mockups/Beschreibung)
 - 📋 **User-Stories + Akzeptanzkriterien** für die ersten 8 MVP-Blöcke

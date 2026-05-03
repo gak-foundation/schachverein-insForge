@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useActionState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/insforge";
+import { loginAction } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,14 +15,6 @@ import { AuthCard } from "@/features/auth/components/auth-card";
 import { AuthHeader } from "@/features/auth/components/auth-header";
 import { SocialButtons } from "@/features/auth/components/social-buttons";
 import { ErrorMessage } from "@/features/auth/components/error-message";
-
-const ERROR_MESSAGES: Record<string, string> = {
-  invalid_credentials: "Ungültige E-Mail oder Passwort",
-  email_not_verified: "Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse",
-  account_locked: "Ihr Account ist vorübergehend gesperrt",
-  rate_limited: "Zu viele Anfragen. Bitte versuchen Sie es später erneut",
-  default: "Ein Fehler ist aufgetreten",
-};
 
 export default function LoginPage() {
   return (
@@ -47,61 +40,17 @@ export default function LoginPage() {
 function LoginPageContent() {
   const searchParams = useSearchParams();
   const invitationToken = searchParams.get("invitation");
+  const redirectPath = searchParams.get("redirect") || "/dashboard";
   const callbackURL = invitationToken 
     ? `/auth/invitation?token=${invitationToken}`
-    : "/dashboard";
+    : redirectPath;
 
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const loginFormAction = async (_prevState: { error: string } | null, formData: FormData) => {
+    return loginAction(formData);
+  };
+  const [error, formAction, isPending] = useActionState(loginFormAction, null);
   const [showPassword, setShowPassword] = useState(false);
-  const client = createClient();
-
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    try {
-      const { error } = await client.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        const lower = error.message.toLowerCase();
-        if (lower.includes("credential") || lower.includes("passwort") || lower.includes("invalid")) {
-          setError(ERROR_MESSAGES.invalid_credentials);
-        } else if (lower.includes("email") && lower.includes("confirmed")) {
-          setError(ERROR_MESSAGES.email_not_verified);
-        } else {
-          setError(error.message);
-        }
-        return;
-      }
-
-      // Tenant verification after successful login
-      const verifyRes = await fetch("/api/auth/verify-tenant");
-      const verifyData = await verifyRes.json();
-
-      if (!verifyData.ok) {
-        // Tenant mismatch or other issue: sign out and show error
-        await client.auth.signOut();
-        setError(verifyData.error || "Tenant-Verifikation fehlgeschlagen");
-        return;
-      }
-
-      // Redirect to callbackURL
-      window.location.href = callbackURL;
-    } catch {
-      setError(ERROR_MESSAGES.default);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [client] = useState(() => createClient());
 
   function buildOAuthProvider(provider: "github" | "google") {
     return {
@@ -127,7 +76,9 @@ function LoginPageContent() {
         />
 
         <div className="mt-8">
-          <form onSubmit={handleSubmit} className="space-y-5" suppressHydrationWarning>
+          <form action={formAction} className="space-y-5" suppressHydrationWarning>
+            <input type="hidden" name="redirect" value={callbackURL} />
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-slate-900 dark:text-slate-200">
                 E-Mail
@@ -180,19 +131,19 @@ function LoginPageContent() {
               </div>
             </div>
 
-            {error && (
-              <ErrorMessage message={error} onDismiss={() => setError(null)} />
+            {error?.error && (
+              <ErrorMessage message={error.error} onDismiss={() => {}} />
             )}
 
             <Button
               type="submit"
               className="h-11 w-full font-medium"
-              disabled={loading}
+              disabled={isPending}
             >
-              {loading ? (
+              {isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              {loading ? "Wird angemeldet..." : "Anmelden"}
+              {isPending ? "Wird angemeldet..." : "Anmelden"}
             </Button>
           </form>
 

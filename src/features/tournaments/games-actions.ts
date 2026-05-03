@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { games, tournaments, clubMemberships, members } from "@/lib/db/schema";
-import { eq, and, inArray, desc, or } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "@/lib/actions/utils";
 
@@ -16,47 +14,44 @@ export async function getGames(options: {
   pageSize?: number;
 } = {}) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
   const { tournamentId, memberId, ecoCode, page = 1, pageSize = 50 } = options;
   const offset = (page - 1) * pageSize;
 
-  const tournamentConditions = [eq(tournaments.clubId, clubId)];
+  let tQuery = client.from('tournaments').select('id').eq('club_id', clubId);
   if (tournamentId) {
-    tournamentConditions.push(eq(tournaments.id, tournamentId));
+    tQuery = tQuery.eq('id', tournamentId);
   }
 
-  const clubTournaments = await db
-    .select({ id: tournaments.id })
-    .from(tournaments)
-    .where(and(...tournamentConditions));
+  const { data: clubTournaments, error: tError } = await tQuery;
+  if (tError) throw tError;
 
-  const tournamentIds = clubTournaments.map(t => t.id);
+  const tournamentIds = (clubTournaments || []).map(t => t.id);
 
   if (tournamentIds.length === 0) {
     return [];
   }
 
-  // Filter out null tournamentId if necessary, though inArray handles it
-  const conditions = [inArray(games.tournamentId, tournamentIds)];
+  let query = client
+    .from('games')
+    .select('*, white:members!white_id(*), black:members!black_id(*), tournament:tournaments!tournament_id(*)')
+    .in('tournament_id', tournamentIds);
   
   if (memberId) {
-    conditions.push(or(eq(games.whiteId, memberId), eq(games.blackId, memberId))!);
+    query = query.or(`white_id.eq.${memberId},black_id.eq.${memberId}`);
   }
 
   if (ecoCode) {
-    conditions.push(eq(games.ecoCode, ecoCode));
+    query = query.eq('eco_code', ecoCode);
   }
 
-  return db.query.games.findMany({
-    where: and(...conditions),
-    with: {
-      white: true,
-      black: true,
-      tournament: true,
-    },
-    orderBy: [desc(games.playedAt), desc(games.createdAt)],
-    limit: pageSize,
-    offset: offset,
-  });
+  const { data, error } = await query
+    .order('played_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  if (error) throw error;
+  return data || [];
 }
 
 // Helper to handle potentially null IDs in inArray
@@ -66,16 +61,16 @@ function filterNotNull<T>(arr: (T | null | undefined)[]): T[] {
 
 export async function importBulkPgn(tournamentId: string, pgnContent: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
@@ -83,21 +78,22 @@ export async function importBulkPgn(tournamentId: string, pgnContent: string) {
   const results = { imported: 0, skipped: 0, errors: [] as string[] };
 
   // Fetch all club members for mapping
-  const clubMembers = await db
-    .select({ id: members.id, firstName: members.firstName, lastName: members.lastName })
-    .from(members)
-    .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
-    .where(eq(clubMemberships.clubId, clubId));
+  const { data: clubMembers, error: cmError } = await client
+    .from('members')
+    .select('id, first_name, last_name, club_memberships!inner(*)')
+    .eq('club_memberships.club_id', clubId);
+
+  if (cmError) throw cmError;
 
   const findMemberId = (name: string) => {
     if (!name || name === "?" || name === "Unknown") return null;
     const lowerName = name.toLowerCase();
     
     // Try to find by Lastname, Firstname or Firstname Lastname
-    return clubMembers.find(m => {
-      const full1 = `${m.firstName} ${m.lastName}`.toLowerCase();
-      const full2 = `${m.lastName}, ${m.firstName}`.toLowerCase();
-      const lastOnly = m.lastName.toLowerCase();
+    return (clubMembers || []).find(m => {
+      const full1 = `${m.first_name} ${m.last_name}`.toLowerCase();
+      const full2 = `${m.last_name}, ${m.first_name}`.toLowerCase();
+      const lastOnly = m.last_name.toLowerCase();
       return lowerName.includes(full1) || lowerName.includes(full2) || lowerName === lastOnly;
     })?.id;
   };
@@ -126,17 +122,18 @@ export async function importBulkPgn(tournamentId: string, pgnContent: string) {
       const round = parsed.round ? parseInt(parsed.round) : 1;
       const lichessUrl = null;
 
-      await db.insert(games).values({
-        clubId,
-        tournamentId,
+      const { error: iError } = await client.from('games').insert([{
+        club_id: clubId,
+        tournament_id: tournamentId,
         round,
-        whiteId,
-        blackId,
-        result: parsed.result as any,
-        lichessUrl: lichessUrl,
-        ecoCode: ecoCode,
-        playedAt: parsed.date ? new Date(parsed.date) : new Date(),
-      });
+        white_id: whiteId,
+        black_id: blackId,
+        result: parsed.result,
+        lichess_url: lichessUrl,
+        eco_code: ecoCode,
+        played_at: parsed.date ? new Date(parsed.date).toISOString() : new Date().toISOString(),
+      }]);
+      if (iError) throw iError;
 
       results.imported++;
     } catch (error) {
@@ -151,40 +148,38 @@ export async function importBulkPgn(tournamentId: string, pgnContent: string) {
 
 export async function getGameById(id: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [game] = await db
-    .select({
-      id: games.id,
-      tournamentId: games.tournamentId,
-      round: games.round,
-      boardNumber: games.boardNumber,
-      whiteId: games.whiteId,
-      blackId: games.blackId,
-      result: games.result,
-      lichessUrl: games.lichessUrl,
-      fen: games.fen,
-      playedAt: games.playedAt,
-    })
-    .from(games)
-    .where(eq(games.id, id));
+  const { data: game, error } = await client
+    .from('games')
+    .select('id, tournament_id, round, board_number, white_id, black_id, result, lichess_url, fen, played_at')
+    .eq('id', id)
+    .single();
 
-  if (!game || !game.tournamentId) return null;
+  if (error || !game || !game.tournament_id) return null;
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, game.tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', game.tournament_id)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) return null;
+  if (tError || !tournament) return null;
 
-  return game;
+  return {
+    ...game,
+    whiteId: game.white_id,
+    blackId: game.black_id,
+    boardNumber: game.board_number,
+    playedAt: game.played_at,
+    lichessUrl: game.lichess_url,
+  };
 }
 
 export async function createGame(formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   const tournamentId = formData.get("tournamentId") as string;
   const round = Number(formData.get("round"));
@@ -194,142 +189,133 @@ export async function createGame(formData: FormData) {
   const result = formData.get("result") as string;
   const lichessUrl = (formData.get("lichessUrl") as string) || null;
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  const memberships = await db
-    .select()
-    .from(clubMemberships)
-    .where(and(
-      inArray(clubMemberships.memberId, [whiteId, blackId]),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  const { data: memberships, error: mError } = await client
+    .from('club_memberships')
+    .select('*')
+    .in('member_id', [whiteId, blackId])
+    .eq('club_id', clubId);
 
-  if (memberships.length !== 2) {
+  if (mError) throw mError;
+
+  if ((memberships || []).length !== 2) {
     throw new Error("Beide Spieler müssen Vereinsmitglieder sein");
   }
 
-  await db.insert(games).values({
-    clubId,
-    tournamentId,
+  const { error: iError } = await client.from('games').insert([{
+    club_id: clubId,
+    tournament_id: tournamentId,
     round,
-    boardNumber,
-    whiteId,
-    blackId,
-    result: result as any,
-    lichessUrl,
-  });
+    board_number: boardNumber,
+    white_id: whiteId,
+    black_id: blackId,
+    result,
+    lichess_url: lichessUrl,
+  }]);
+  if (iError) throw iError;
 
   revalidatePath("/dashboard/tournaments");
 }
 
 export async function updateBasicGameResult(gameId: string, result: string, lichessUrl?: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [game] = await db
-    .select({
-      id: games.id,
-      tournamentId: games.tournamentId,
-    })
-    .from(games)
-    .where(eq(games.id, gameId));
+  const { data: game, error } = await client
+    .from('games')
+    .select('id, tournament_id')
+    .eq('id', gameId)
+    .single();
 
-  if (!game || !game.tournamentId) {
+  if (error || !game || !game.tournament_id) {
     throw new Error("Partie nicht gefunden");
   }
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, game.tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', game.tournament_id)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  await db
-    .update(games)
-    .set({
-      result: result as any,
-      lichessUrl: lichessUrl ?? null,
+  const { error: uError } = await client
+    .from('games')
+    .update({
+      result,
+      lichess_url: lichessUrl ?? null,
     })
-    .where(eq(games.id, gameId));
+    .eq('id', gameId);
+  if (uError) throw uError;
 
   revalidatePath("/dashboard/tournaments");
 }
 
 export async function exportTournamentPGN(tournamentId: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  const gamesList = await db
-    .select({
-      id: games.id,
-      round: games.round,
-      boardNumber: games.boardNumber,
-      whiteId: games.whiteId,
-      blackId: games.blackId,
-      result: games.result,
-      lichessUrl: games.lichessUrl,
-      playedAt: games.playedAt,
-    })
-    .from(games)
-    .where(eq(games.tournamentId, tournamentId))
-    .orderBy(games.round, games.boardNumber);
+  const { data: gamesList, error } = await client
+    .from('games')
+    .select('id, round, board_number, white_id, black_id, result, lichess_url, played_at')
+    .eq('tournament_id', tournamentId)
+    .order('round', { ascending: true })
+    .order('board_number', { ascending: true });
 
-  const memberIds = filterNotNull([...new Set([...gamesList.map(g => g.whiteId), ...gamesList.map(g => g.blackId)])]);
+  if (error) throw error;
+
+  const memberIds = filterNotNull([...new Set([...(gamesList || []).map(g => g.white_id), ...(gamesList || []).map(g => g.black_id)])]);
   
   if (memberIds.length === 0) {
     return "";
   }
 
-  const membersList = await db
-    .select({
-      id: members.id,
-      firstName: members.firstName,
-      lastName: members.lastName,
-    })
-    .from(members)
-    .where(inArray(members.id, memberIds));
+  const { data: membersList, error: mError } = await client
+    .from('members')
+    .select('id, first_name, last_name')
+    .in('id', memberIds);
 
-  const memberMap = new Map(membersList.map(m => [m.id, `${m.firstName} ${m.lastName}`]));
+  if (mError) throw mError;
+
+  const memberMap = new Map((membersList || []).map(m => [m.id, `${m.first_name} ${m.last_name}`]));
 
   let pgn = `[Event "${tournament.name}"]\n`;
   pgn += `[Site "${tournament.location || ""}"]\n`;
-  pgn += `[Date "${tournament.startDate || new Date().toISOString().split('T')[0]}"]\n\n`;
+  pgn += `[Date "${tournament.start_date || new Date().toISOString().split('T')[0]}"]\n\n`;
 
-  for (const game of gamesList) {
-    const whiteName = game.whiteId ? memberMap.get(game.whiteId) : "Unknown";
-    const blackName = game.blackId ? memberMap.get(game.blackId) : "Unknown";
+  for (const game of (gamesList || [])) {
+    const whiteName = game.white_id ? memberMap.get(game.white_id) : "Unknown";
+    const blackName = game.black_id ? memberMap.get(game.black_id) : "Unknown";
     pgn += `[White "${whiteName || "Unknown"}"]\n`;
     pgn += `[Black "${blackName || "Unknown"}"]\n`;
     pgn += `[Result "${game.result || "*"}"}]\n`;
     pgn += `[Round "${game.round}"]\n`;
-    if (game.lichessUrl) {
-      pgn += `[Site "${game.lichessUrl}"]\n`;
+    if (game.lichess_url) {
+      pgn += `[Site "${game.lichess_url}"]\n`;
     }
     pgn += "\n1. *\n\n";
   }

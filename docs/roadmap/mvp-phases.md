@@ -34,7 +34,7 @@ Das MVP muss **mindestens eines** dieser Probleme deutlich besser lösen, sonst 
 
 | Feature | Details | Priorität |
 |---|---|---|
-| E-Mail/Passwort-Login | Über Supabase Auth | 🔴 Must |
+| E-Mail/Passwort-Login | Über InsForge Auth | 🔴 Must |
 | Passwort-Reset | Standard-Flow | 🔴 Must |
 | Einladungs-System | Vorstand lädt Mitglieder per E-Mail ein | 🔴 Must |
 | OAuth | Login with Lichess / Google | 🟡 Should |
@@ -53,12 +53,12 @@ Das MVP muss **mindestens eines** dieser Probleme deutlich besser lösen, sonst 
 
 ```
 ✅ Next.js + TypeScript Projekt aufgesetzt
-✅ PostgreSQL + Drizzle Schema (Members, Users, Roles)
-✅ Supabase Auth (E-Mail/Passwort, JWT)
+✅ PostgreSQL + InsForge SDK (Members, Users, Roles)
+✅ InsForge Auth (E-Mail/Passwort, JWT)
 ✅ Basis-Layout: Öffentlich vs. interner Bereich
 ✅ Responsives Design (Tailwind + shadcn/ui)
-✅ Docker-Setup + Deployment auf Supabase/Vercel
-✅ Automatische Backups (Supabase PITR)
+✅ Docker-Setup + Deployment auf InsForge/Vercel
+✅ Automatische Backups (InsForge Automated Backups)
 ✅ DSGVO: Datenschutzerklärung, Cookie-Hinweis
 ✅ @media print Stylesheet für Mitgliederliste
 ```
@@ -66,71 +66,14 @@ Das MVP muss **mindestens eines** dieser Probleme deutlich besser lösen, sonst 
 
 ### Datenmodell Release 1
 
-```prisma
-model Club {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  members   ClubMembership[]
-}
-
-model User {
-  id        String   @id @default(uuid()) // Supabase Auth UUID
-  email     String   @unique
-  name      String?
-  memberships ClubMembership[]
-}
-
-model Member {
-  id            String   @id @default(uuid())
-  clubId        String
-  firstName     String
-  lastName      String
-  dateOfBirth   DateTime?
-  email         String?
-  phone         String?
-  dwz           Int?
-  elo           Int?
-  joinedAt      DateTime @default(now())
-  memberships   ClubMembership[]
-}
-
-model ClubMembership {
-  id            String   @id @default(uuid())
-  clubId        String
-  userId        String?
-  memberId      String
-  role          Role     @default(mitglied)
-}
-
-model Event {
-  id          String   @id @default(uuid())
-  clubId      String
-  title       String
-  description String?
-  date        DateTime
-  isPublic    Boolean  @default(true)
-  type        EventType
-}
-
-enum Role {
-  admin
-  vorstand
-  sportwart
-  jugendwart
-  kassenwart
-  trainer
-  mitglied
-  eltern
-}
-
-enum EventType {
-  TRAINING
-  TOURNAMENT
-  MEETING
-  LEAGUE_MATCH
-  OTHER
-}
+```typescript
+// Konzeptionelles Datenmodell (vereinfacht)
+// Die tatsächliche Implementierung nutzt InsForge SDK
+interface Club { id: string; name: string; slug: string }
+interface User { id: string; email: string; name?: string }
+interface Member { id: string; clubId: string; firstName: string; lastName: string; dwz?: number }
+type Role = 'admin' | 'vorstand' | 'sportwart' | 'jugendwart' | 'kassenwart' | 'trainer' | 'mitglied' | 'eltern'
+type EventType = 'TRAINING' | 'TOURNAMENT' | 'MEETING' | 'LEAGUE_MATCH' | 'OTHER'
 ```
 
 > **Nach Release 1 hat der Verein:** Eine moderne Website mit Terminkalender, einen internen Bereich mit Mitgliederverwaltung und ein Login-System. Das allein ist für viele kleine Vereine schon ein enormer Fortschritt.
@@ -176,102 +119,13 @@ enum EventType {
 
 ### Erweitertes Datenmodell Release 2
 
-```prisma
-model Tournament {
-  id           String       @id @default(uuid())
-  clubId       String
-  name         String
-  startDate    DateTime
-  endDate      DateTime?
-  type         TournamentType
-  rounds       Int
-  status       TournamentStatus @default(PLANNED)
-  season       Season?      @relation(fields: [seasonId], references: [id])
-  seasonId     String?
-  participants TournamentParticipant[]
-  games        Game[]
-}
-
-model TournamentParticipant {
-  id           String     @id @default(uuid())
-  tournament   Tournament @relation(fields: [tournamentId], references: [id])
-  tournamentId String
-  member       Member     @relation(fields: [memberId], references: [id])
-  memberId     String
-  score        Float      @default(0)
-  rank         Int?
-
-  @@unique([tournamentId, memberId])
-}
-
-model Game {
-  id           String     @id @default(uuid())
-  tournament   Tournament @relation(fields: [tournamentId], references: [id])
-  tournamentId String
-  round        Int
-  board        Int?
-  white        Member     @relation("WhiteGames", fields: [whiteId], references: [id])
-  whiteId      String
-  black        Member     @relation("BlackGames", fields: [blackId], references: [id])
-  blackId      String
-  result       GameResult?
-  lichessUrl   String?    // Lichess-Link kommt in Release 3
-  playedAt     DateTime?
-}
-
-model Team {
-  id        String       @id @default(uuid())
-  clubId    String
-  name      String       // z.B. "SC Beispiel 1" 
-  league    String?      // z.B. "Bezirksliga Nord"
-  season    Season       @relation(fields: [seasonId], references: [id])
-  seasonId  String
-  members   TeamMember[]
-  matches   LeagueMatch[]
-}
-
-model TeamMember {
-  id       String @id @default(uuid())
-  team     Team   @relation(fields: [teamId], references: [id])
-  teamId   String
-  member   Member @relation(fields: [memberId], references: [id])
-  memberId String
-  boardOrder Int  // Brettreihenfolge
-
-  @@unique([teamId, memberId])
-}
-
-model Season {
-  id          String       @id @default(uuid())
-  clubId      String
-  name        String       // z.B. "2025/2026"
-  startDate   DateTime
-  endDate     DateTime
-  teams       Team[]
-  tournaments Tournament[]
-}
-
-enum TournamentType {
-  ROUND_ROBIN
-  SWISS
-  QUICK
-  BLITZ
-}
-
-enum TournamentStatus {
-  PLANNED
-  RUNNING
-  FINISHED
-}
-
-enum GameResult {
-  WHITE_WINS  // 1-0
-  BLACK_WINS  // 0-1
-  DRAW        // ½-½
-  FORFEIT_WHITE
-  FORFEIT_BLACK
-  NOT_PLAYED
-}
+```typescript
+// Konzeptionelles Datenmodell (vereinfacht)
+// Die tatsächliche Implementierung nutzt InsForge SDK
+interface Tournament { id: string; clubId: string; name: string; type: 'ROUND_ROBIN' | 'SWISS' }
+interface Game { id: string; tournamentId: string; round: number; whiteId: string; blackId: string; result?: string }
+interface Team { id: string; clubId: string; name: string; league?: string }
+interface Season { id: string; clubId: string; name: string; startDate: Date; endDate: Date }
 ```
 
 > **Nach Release 2 hat der Verein:** Eine vollständige Plattform für den Alltag — Mitglieder, Termine, Turniere, Liga-Ergebnisse. Der Sportwart kann Ergebnisse eingeben und sofort auf der Website veröffentlichen. SwissChess-Daten können importiert werden. **Das ist für viele Vereine bereits ausreichend.**

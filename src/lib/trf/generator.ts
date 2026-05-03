@@ -3,9 +3,7 @@
  * Format-Spezifikation: https://www.swisschess.ch/media/attached/2021/09/TRF-16.pdf
  */
 
-import { db } from "@/lib/db";
-import { tournaments, tournamentParticipants, games, members } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { requireClubId } from "@/lib/actions/utils";
 
 export interface TRFGenerationOptions {
@@ -17,99 +15,99 @@ export async function generateTRFFromTournament(
   tournamentId: string,
   options: TRFGenerationOptions = {}
 ): Promise<string> {
+  const client = createServiceClient();
   const clubId = await requireClubId();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error } = await client
+    .from("tournaments")
+    .select("*")
+    .eq("id", tournamentId)
+    .eq("club_id", clubId)
+    .single();
 
-  if (!tournament) {
+  if (error || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  const participants = await db
-    .select({
-      id: tournamentParticipants.id,
-      memberId: tournamentParticipants.memberId,
-      score: tournamentParticipants.score,
-      rank: tournamentParticipants.rank,
-      member: {
-        firstName: members.firstName,
-        lastName: members.lastName,
-        dwz: members.dwz,
-        fideId: members.fideId,
-      },
-    })
-    .from(tournamentParticipants)
-    .innerJoin(members, eq(tournamentParticipants.memberId, members.id))
-    .where(eq(tournamentParticipants.tournamentId, tournamentId));
+  const { data: participants, error: participantsError } = await client
+    .from("tournament_participants")
+    .select("*, members(first_name, last_name, dwz, fide_id)")
+    .eq("tournament_id", tournamentId);
 
-  const tournamentGames = await db
-    .select({
-      id: games.id,
-      round: games.round,
-      boardNumber: games.boardNumber,
-      whiteId: games.whiteId,
-      blackId: games.blackId,
-      result: games.result,
-    })
-    .from(games)
-    .where(eq(games.tournamentId, tournamentId))
-    .orderBy(games.round, games.boardNumber);
+  if (participantsError) {
+    throw new Error("Failed to fetch participants");
+  }
 
-  // Build player map
-  const playerMap = new Map(participants.map((p, idx) => [p.memberId, { ...p, trfId: String(idx + 1).padStart(4, '0') }]));
+  const { data: tournamentGames, error: gamesError } = await client
+    .from("games")
+    .select("id, round, board_number, white_id, black_id, result")
+    .eq("tournament_id", tournamentId);
 
-  // Calculate max round
-  const maxRound = tournamentGames.length > 0 
-    ? Math.max(...tournamentGames.map(g => g.round || 0))
-    : tournament.numberOfRounds || 1;
+  if (gamesError) {
+    throw new Error("Failed to fetch games");
+  }
+
+  const sortedGames = (tournamentGames || []).sort((a: any, b: any) => {
+    if (a.round !== b.round) return (a.round || 0) - (b.round || 0);
+    return (a.board_number || 0) - (b.board_number || 0);
+  });
+
+  const playerMap = new Map(
+    (participants || []).map((p: any, idx: number) => [
+      p.member_id,
+      { ...p, trfId: String(idx + 1).padStart(4, "0") },
+    ])
+  );
+
+  const maxRound =
+    sortedGames.length > 0
+      ? Math.max(...sortedGames.map((g: any) => g.round || 0))
+      : tournament.number_of_rounds || 1;
 
   const currentRound = options.currentRound || maxRound;
 
   let trf = "";
 
-  // Tournament header
-  trf += `012 ${tournament.name.padEnd(70, ' ')}\n`;
+  trf += `012 ${tournament.name.padEnd(70, " ")}\n`;
   if (tournament.location) {
-    trf += `022 ${tournament.location.padEnd(40, ' ')}\n`;
+    trf += `022 ${tournament.location.padEnd(40, " ")}\n`;
   }
   trf += `032 GER\n`;
-  trf += `042 ${tournament.startDate || new Date().toISOString().split('T')[0]}\n`;
-  if (tournament.endDate) {
-    trf += `052 ${tournament.endDate}\n`;
+  trf += `042 ${tournament.start_date || new Date().toISOString().split("T")[0]}\n`;
+  if (tournament.end_date) {
+    trf += `052 ${tournament.end_date}\n`;
   }
-  trf += `062 ${tournament.numberOfRounds || maxRound}\n`;
+  trf += `062 ${tournament.number_of_rounds || maxRound}\n`;
   trf += `072 ${currentRound}\n`;
-  if (tournament.timeControl) {
-    trf += `082 ${tournament.timeControl.padEnd(30, ' ')}\n`;
+  if (tournament.time_control) {
+    trf += `082 ${tournament.time_control.padEnd(30, " ")}\n`;
   }
 
-  // Player entries
-  participants.forEach((p, idx) => {
-    const trfId = String(idx + 1).padStart(4, '0');
-    const name = `${p.member.lastName}, ${p.member.firstName}`.padEnd(33, ' ');
-    const rating = String(p.member.dwz || 0).padStart(4, '0');
-    const score = String(parseFloat(p.score || "0").toFixed(1)).padStart(4, ' ');
-    const rank = String(p.rank || idx + 1).padStart(4, ' ');
+  participants?.forEach((p: any, idx: number) => {
+    const trfId = String(idx + 1).padStart(4, "0");
+    const member = p.members;
+    const name = member
+      ? `${member.last_name}, ${member.first_name}`.padEnd(33, " ")
+      : "".padEnd(33, " ");
+    const rating = String(member?.dwz || 0).padStart(4, "0");
+    const score = String(parseFloat(p.score || "0").toFixed(1)).padStart(4, " ");
+    const rank = String(p.rank || idx + 1).padStart(4, " ");
 
     let line = `001 ${trfId} ${name} GER    ${rating}           ${score} ${rank}`;
 
-    // Add opponent/results for each round
     for (let round = 1; round <= currentRound; round++) {
-      const game = tournamentGames.find(
-        g => g.round === round && (g.whiteId === p.memberId || g.blackId === p.memberId)
+      const game = sortedGames.find(
+        (g: any) =>
+          g.round === round &&
+          (g.white_id === p.member_id || g.black_id === p.member_id)
       );
 
       if (game) {
-        const isWhite = game.whiteId === p.memberId;
-        const opponentId = isWhite ? game.blackId : game.whiteId;
-        const opponentTrfId = (opponentId ? playerMap.get(opponentId)?.trfId : null) || "0000";
-        
+        const isWhite = game.white_id === p.member_id;
+        const opponentId = isWhite ? game.black_id : game.white_id;
+        const opponentTrfId =
+          (opponentId ? playerMap.get(opponentId)?.trfId : null) || "0000";
+
         let resultCode = " ";
         if (game.result) {
           if (game.result === "1-0") {
@@ -126,9 +124,9 @@ export async function generateTRFFromTournament(
             resultCode = "=";
           }
         }
-        
+
         const color = isWhite ? "w" : "b";
-        line += ` ${opponentTrfId} ${resultCode.padEnd(3, ' ')}${color}`;
+        line += ` ${opponentTrfId} ${resultCode.padEnd(3, " ")}${color}`;
       } else {
         line += ` 0000     `;
       }

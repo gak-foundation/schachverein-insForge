@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/insforge";
+import { setAuthCookies } from "@/lib/insforge/server-auth";
 import { ensureAuthUser } from "@/lib/db/queries/auth";
 import { bindUserToTenant } from "@/lib/auth/tenant-binding";
 
 export async function POST(request: Request) {
   try {
-    const { accessToken, userId, email, name, avatarUrl, emailVerified, action, slug } = await request.json();
+    const { accessToken, refreshToken, userId, email, name, avatarUrl, emailVerified, action, slug } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
@@ -24,6 +25,10 @@ export async function POST(request: Request) {
 
     if (data.user.id !== userId) {
       return NextResponse.json({ error: "User mismatch" }, { status: 403 });
+    }
+
+    if (refreshToken) {
+      await setAuthCookies(accessToken, refreshToken);
     }
 
     await ensureAuthUser({

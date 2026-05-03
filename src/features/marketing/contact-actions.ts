@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { waitlistApplications } from "@/lib/db/schema";
-import { eq, gte, and, sql } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
 import { contactFormSchema } from "@/lib/validations/contact";
 import { createHash } from "crypto";
@@ -12,19 +10,21 @@ function hashIp(ip: string): string {
 }
 
 async function checkRateLimit(ipHash: string): Promise<boolean> {
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const client = createServiceClient();
 
-  const recentSubmissions = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(waitlistApplications)
-    .where(
-      and(
-        eq(waitlistApplications.ipHash, ipHash),
-        gte(waitlistApplications.createdAt, oneHourAgo)
-      )
-    );
+  const { data, error } = await client
+    .from('waitlist_applications')
+    .select('*')
+    .eq('ip_hash', ipHash)
+    .gte('created_at', oneHourAgo);
 
-  const count = Number(recentSubmissions[0]?.count ?? 0);
+  if (error) {
+    console.error("Rate limit check error:", error);
+    return true; // Fail open
+  }
+
+  const count = (data || []).length;
   return count < 3;
 }
 
@@ -195,21 +195,22 @@ export async function submitContactForm(
 
   try {
     const memberCountNum = data.memberCount ? Number(data.memberCount) : null;
+    const client = createServiceClient();
 
-    await db.insert(waitlistApplications).values({
-      type: data.type as "waitlist" | "contact",
-      clubName: data.clubName,
-      contactEmail: data.email,
-      contactName: data.contactName,
+    await client.from('waitlist_applications').insert([{
+      type: data.type,
+      club_name: data.clubName,
+      contact_email: data.email,
+      contact_name: data.contactName,
       phone: data.phone || null,
-      memberCount: memberCountNum?.toString() || null,
+      member_count: memberCountNum?.toString() || null,
       message: data.message || null,
       source: formData.get("source") as string | null,
-      userAgent: formData.get("userAgent") as string | null,
-      ipHash,
+      user_agent: formData.get("userAgent") as string | null,
+      ip_hash: ipHash,
       status: "pending",
       position: 0,
-    });
+    }]);
 
     revalidatePath("/kontakt");
 

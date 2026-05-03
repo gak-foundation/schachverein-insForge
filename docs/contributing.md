@@ -6,8 +6,8 @@
 1. **Repository klonen**
 2. **Abhängigkeiten installieren**: `npm install`
 3. **Umgebung konfigurieren**: `cp .env.example .env` (Werte anpassen)
-4. **Infrastruktur starten**: `npm run docker:up` (startet Postgres, Redis, MinIO)
-5. **Datenbank vorbereiten**: `npm run db:push` gefolgt von `npm run db:seed`
+4. **InsForge Projekt verbinden**: API-URL und Anon-Key in `.env` setzen
+5. **Seed-Daten einspielen**: `npm run db:seed`
 6. **Entwicklungsserver starten**: `npm run dev`
 
 ## Code-Style & Standards

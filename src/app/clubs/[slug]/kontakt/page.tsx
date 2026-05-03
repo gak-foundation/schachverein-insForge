@@ -1,9 +1,7 @@
 import { Mail, MapPin, Phone, Users } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { clubs } from "@/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { notFound } from "next/navigation";
 import { ClubSettings, TrainingTime } from "@/types";
 
@@ -13,13 +11,25 @@ interface ContactPageProps {
 
 export default async function ContactPage({ params }: ContactPageProps) {
   const { slug } = await params;
-  const club = await db.query.clubs.findFirst({
-    where: eq(clubs.slug, slug),
-  });
+  const client = createServiceClient();
+  const { data: rawClub, error } = await client
+    .from("clubs")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
 
-  if (!club) {
+  if (error) {
+    console.error("Error fetching club:", error);
+  }
+
+  if (!rawClub) {
     notFound();
   }
+
+  const club = {
+    ...rawClub,
+    contactEmail: rawClub.contact_email,
+  };
 
   const settings = (club.settings as unknown as ClubSettings) || {};
   const trainingTimes: TrainingTime[] = settings.trainingTimes || [

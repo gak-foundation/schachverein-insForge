@@ -4,9 +4,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getTeamById, getTeamMembers } from "@/lib/actions/teams";
 import { getMemberById } from "@/lib/actions/members";
-import { db } from "@/lib/db";
-import { teams, matches } from "@/lib/db/schema";
-import { eq, desc, or } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -58,24 +56,28 @@ export default async function TeamDetailPage({
   }
 
   const canEdit = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.TEAMS_WRITE, session.user.isSuperAdmin);
-  const [teamMembers, captain, teamMatches] = await Promise.all([
+
+  const client = createServiceClient();
+  const [teamMembers, captain, matchesResult] = await Promise.all([
     getTeamMembers(id),
     team.captainId ? getMemberById(team.captainId) : Promise.resolve(null),
-    db.select({
-      id: matches.id,
-      matchDate: matches.matchDate,
-      location: matches.location,
-      homeScore: matches.homeScore,
-      awayScore: matches.awayScore,
-      status: matches.status,
-      homeTeamName: teams.name,
-    })
-    .from(matches)
-    .innerJoin(teams, or(eq(matches.homeTeamId, teams.id), eq(matches.awayTeamId, teams.id)))
-    .where(or(eq(matches.homeTeamId, id), eq(matches.awayTeamId, id)))
-    .orderBy(desc(matches.matchDate))
-    .limit(10)
+    client
+      .from("matches")
+      .select("*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)")
+      .or(`home_team_id.eq.${id},away_team_id.eq.${id}`)
+      .order("match_date", { ascending: false })
+      .limit(10),
   ]);
+
+  const teamMatches = (matchesResult.data || []).map((match: any) => ({
+    id: match.id,
+    matchDate: match.match_date,
+    location: match.location,
+    homeScore: match.home_score,
+    awayScore: match.away_score,
+    status: match.status,
+    homeTeamName: match.home_team?.name || "",
+  }));
 
   const avgDwz = teamMembers.length > 0
     ? Math.round(teamMembers.filter(m => m.member.dwz).reduce((sum, m) => sum + (m.member.dwz || 0), 0) / teamMembers.filter(m => m.member.dwz).length) || 0

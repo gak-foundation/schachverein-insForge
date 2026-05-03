@@ -139,17 +139,17 @@ Fehlend im Konzept:
 ## 🏗️ 4. Technische Architektur — Überprüfte Annahmen
 
 <details open>
-<summary><b>✅ Vercel + Supabase — Bestätigte Architektur</b></summary>
+<summary><b>✅ Vercel + InsForge — Bestätigte Architektur</b></summary>
 
-**Entscheidung:** Vercel für Frontend + Supabase für Backend
+**Entscheidung:** Vercel für Frontend + InsForge für Backend
 
 - **Serverless-Timeouts:** 60s (Pro) reichen für Bulk-Importe (chunked processing)
-- **bbpPairings:** Wird als Supabase Edge Function ausgeführt oder extern gehostet
-- **Hintergrund-Jobs:** Supabase Edge Functions + Cron (Vercel Cron als Backup)
-- **WebSockets:** Supabase Realtime für Live-Features
-- **DSGVO:** Supabase EU-Region (Frankfurt) + Vercel DPF Compliance
+- **bbpPairings:** Wird als externer Service (Docker/CLI) ausgeführt
+- **Hintergrund-Jobs:** Vercel Cron Jobs + Serverless Functions
+- **WebSockets:** InsForge Realtime für Live-Features
+- **DSGVO:** InsForge EU-Region (Central) + Vercel DPF Compliance
 
-**Empfohlen:** Reine Vercel + Supabase Cloud Architektur ohne zusätzliche Server.
+**Empfohlen:** Reine Vercel + InsForge Cloud Architektur ohne zusätzliche Server.
 
 </details>
 
@@ -336,7 +336,7 @@ Diese Features wirken wie **Buzzword-Bingo** statt Nutzerbedürfnis.
 | # | Blindspot | Risikostufe | Sofortmaßnahme |
 |---|-----------|:-----------:|----------------|
 | 1 | **Keine Wettbewerbsanalyse vs. Swiss-Manager/DSB-MiVIS** | 🔴 Kritisch | User-Interviews mit 10+ Vorständen; klaren USP definieren |
-| 2 | **Vercel + Supabase Architektur** | ✅ Gelöst | Entscheidung für Vercel + Supabase Cloud gefallen |
+| 2 | **Vercel + InsForge Architektur** | ✅ Gelöst | Entscheidung für Vercel + InsForge Cloud gefallen |
 | 3 | **Zielgruppe 55+ vs. Design für Digital Natives** | 🟠 Hoch | Barrierefreiheit + User Testing mit 60+ Vorständen |
 | 4 | **DSGVO/AVV/DSFA für Kinderdaten nicht konzipiert** | 🟠 Hoch | Datenschutzanwalt + DSFA vor Launch |
 | 5 | **Preismodell ignoriert Vereinsrealität** | 🟡 Mittel | Free-Tier einführen; Jahresrabatt; Gemeinnützigkeits-Tarif |

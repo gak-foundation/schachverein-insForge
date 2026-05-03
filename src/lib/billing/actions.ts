@@ -1,10 +1,11 @@
 "use server";
 
 import { requireClubAuth } from "@/lib/auth/session";
-import { getClubById, updateClub } from "@/lib/clubs/queries";
+import { getClubById } from "@/lib/clubs/queries";
 import { createCheckoutSession, createCustomerPortalSession, createStripeCustomer } from "./stripe";
 import type { PlanId, AddonId } from "./addons";
 import { APP_URL } from "@/lib/urls";
+import { createServiceClient } from "@/lib/insforge";
 
 export async function createCheckoutSessionAction({
   planId,
@@ -15,7 +16,7 @@ export async function createCheckoutSessionAction({
 }) {
   const session = await requireClubAuth();
   const clubId = session.user.clubId;
-  
+
   if (!clubId) {
     throw new Error("No club assigned");
   }
@@ -27,26 +28,27 @@ export async function createCheckoutSessionAction({
 
   let stripeCustomerId = club.stripeCustomerId;
 
-  // Create a Stripe customer if the club doesn't have one yet
   if (!stripeCustomerId) {
     const customer = await createStripeCustomer({
       email: club.contactEmail || session.user.email || "",
       name: club.name,
     });
     stripeCustomerId = customer.id;
-    await updateClub(club.id, {
-       settings: club.settings // needed because updateClub requires settings or other fields but not stripeCustomerId directly? Wait, let's check updateClub.
-    } as any); // I'll just use a direct db query or I need to add stripeCustomerId to updateClub partial.
-    
-    // Better: use direct db call here since updateClub might not expose stripeCustomerId.
-    const { db } = await import("@/lib/db");
-    const { clubs } = await import("@/lib/db/schema/clubs");
-    const { eq } = await import("drizzle-orm");
-    await db.update(clubs).set({ stripeCustomerId, updatedAt: new Date() }).where(eq(clubs.id, clubId));
+
+    const client = createServiceClient();
+    const { error } = await client
+      .from("clubs")
+      .update({ stripe_customer_id: stripeCustomerId, updated_at: new Date().toISOString() })
+      .eq("id", clubId);
+
+    if (error) {
+      console.error("Failed to update club stripe customer id:", error.message);
+      throw new Error("Failed to update club billing information");
+    }
   }
 
   const baseUrl = APP_URL;
-  const successUrl = `${baseUrl}/super-admin/billing?success=true`; // TODO: redirect to actual billing page (e.g. /dashboard/billing)
+  const successUrl = `${baseUrl}/super-admin/billing?success=true`;
   const cancelUrl = `${baseUrl}/super-admin/billing?canceled=true`;
 
   const checkoutSession = await createCheckoutSession({
@@ -67,7 +69,7 @@ export async function createCheckoutSessionAction({
 export async function createCustomerPortalSessionAction() {
   const session = await requireClubAuth();
   const clubId = session.user.clubId;
-  
+
   if (!clubId) {
     throw new Error("No club assigned");
   }
@@ -82,7 +84,7 @@ export async function createCustomerPortalSessionAction() {
   }
 
   const baseUrl = APP_URL;
-  const returnUrl = `${baseUrl}/dashboard`; // Adjust to actual billing settings return URL
+  const returnUrl = `${baseUrl}/dashboard`;
 
   const portalSession = await createCustomerPortalSession(
     club.stripeCustomerId,

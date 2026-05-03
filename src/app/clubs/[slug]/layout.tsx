@@ -1,9 +1,7 @@
 import { ReactNode } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { clubs } from "@/lib/db/schema/clubs";
+import { createServiceClient } from "@/lib/insforge";
 import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -15,9 +13,25 @@ interface ClubLayoutProps {
 
 export async function generateMetadata({ params }: ClubLayoutProps): Promise<Metadata> {
   const { slug } = await params;
-  const club = await db.query.clubs.findFirst({
-    where: eq(clubs.slug, slug),
-  });
+  const client = createServiceClient();
+  const { data: rawClub, error } = await client
+    .from("clubs")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching club for metadata:", error);
+  }
+
+  const club = rawClub
+    ? {
+        ...rawClub,
+        isActive: rawClub.is_active,
+        logoUrl: rawClub.logo_url,
+        contactEmail: rawClub.contact_email,
+      }
+    : null;
 
   if (!club || !club.isActive) {
     return {
@@ -51,9 +65,25 @@ export default async function ClubLayout({ children, params }: ClubLayoutProps) 
   const { slug } = await params;
 
   // Verify club exists
-  const club = await db.query.clubs.findFirst({
-    where: eq(clubs.slug, slug),
-  });
+  const client = createServiceClient();
+  const { data: rawClub, error } = await client
+    .from("clubs")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching club for layout:", error);
+  }
+
+  const club = rawClub
+    ? {
+        ...rawClub,
+        isActive: rawClub.is_active,
+        logoUrl: rawClub.logo_url,
+        contactEmail: rawClub.contact_email,
+      }
+    : null;
 
   if (!club || !club.isActive) {
     notFound();
@@ -86,4 +116,3 @@ export default async function ClubLayout({ children, params }: ClubLayoutProps) 
     </div>
   );
 }
-

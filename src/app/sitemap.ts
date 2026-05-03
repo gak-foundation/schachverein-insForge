@@ -1,7 +1,5 @@
 import { MetadataRoute } from "next";
-import { db } from "@/lib/db";
-import { clubs } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://schach.studio";
@@ -24,17 +22,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Dynamic club routes
   try {
-    const activeClubs = await db.query.clubs.findMany({
-      where: eq(clubs.isActive, true),
-      columns: {
-        slug: true,
-        updatedAt: true,
-      },
-    });
+    const client = createServiceClient();
+    const { data: activeClubs, error } = await client
+      .from("clubs")
+      .select("slug, updated_at")
+      .eq("is_active", true);
 
-    const clubRoutes = activeClubs.map((club) => ({
+    if (error) {
+      throw error;
+    }
+
+    const clubRoutes = (activeClubs || []).map((club) => ({
       url: `${baseUrl}/clubs/${club.slug}`,
-      lastModified: club.updatedAt,
+      lastModified: club.updated_at ? new Date(club.updated_at) : new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }));

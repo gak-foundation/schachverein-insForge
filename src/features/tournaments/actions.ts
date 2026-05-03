@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { tournaments, seasons, clubMemberships, tournamentParticipants, members, games } from "@/lib/db/schema";
-import { eq, desc, asc, and } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "@/lib/actions/utils";
 import { generateRoundRobinPairings } from "@/lib/pairings/round-robin";
@@ -10,37 +8,43 @@ import { generateTRFFromTournament } from "@/lib/trf/generator";
 
 export async function getTournaments() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  return db
-    .select({
-      id: tournaments.id,
-      name: tournaments.name,
-      type: tournaments.type,
-      startDate: tournaments.startDate,
-      location: tournaments.location,
-      isCompleted: tournaments.isCompleted,
-    })
-    .from(tournaments)
-    .where(eq(tournaments.clubId, clubId))
-    .orderBy(desc(tournaments.startDate));
+  const { data, error } = await client
+    .from('tournaments')
+    .select('id, name, type, start_date, location, is_completed')
+    .eq('club_id', clubId)
+    .order('start_date', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map((t: any) => ({
+    id: t.id,
+    name: t.name,
+    type: t.type,
+    startDate: t.start_date,
+    location: t.location,
+    isCompleted: t.is_completed,
+  }));
 }
 
 export async function getTournamentById(id: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, id),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data, error } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', id)
+    .eq('club_id', clubId)
+    .maybeSingle();
 
-  return tournament ?? null;
+  if (error) throw error;
+  return data ?? null;
 }
 
 export async function createTournament(formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   const name = formData.get("name") as string;
   const type = formData.get("type") as string;
@@ -53,48 +57,49 @@ export async function createTournament(formData: FormData) {
   const description = (formData.get("description") as string) || null;
 
   if (seasonId) {
-    const [season] = await db
-      .select()
-      .from(seasons)
-      .where(and(
-        eq(seasons.id, seasonId),
-        eq(seasons.clubId, clubId)
-      ));
+    const { data: season, error } = await client
+      .from('seasons')
+      .select('*')
+      .eq('id', seasonId)
+      .eq('club_id', clubId)
+      .single();
 
-    if (!season) {
+    if (error || !season) {
       throw new Error("Saison nicht gefunden");
     }
   }
 
-  await db.insert(tournaments).values({
-    clubId,
+  const { error } = await client.from('tournaments').insert([{
+    club_id: clubId,
     name,
     type: type as "swiss" | "round_robin" | "rapid" | "blitz" | "team_match" | "club_championship",
-    seasonId,
-    startDate,
-    endDate,
+    season_id: seasonId,
+    start_date: startDate,
+    end_date: endDate,
     location,
-    timeControl,
-    numberOfRounds,
+    time_control: timeControl,
+    number_of_rounds: numberOfRounds,
     description,
-  });
+  }]);
+
+  if (error) throw error;
 
   revalidatePath("/dashboard/tournaments");
 }
 
 export async function updateTournament(formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
   const id = formData.get("id") as string;
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, id),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', id)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (error || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
@@ -106,164 +111,186 @@ export async function updateTournament(formData: FormData) {
   const numberOfRounds = formData.get("numberOfRounds") ? Number(formData.get("numberOfRounds")) : null;
   const description = (formData.get("description") as string) || null;
 
-  await db
-    .update(tournaments)
-    .set({
+  const { error: uError } = await client
+    .from('tournaments')
+    .update({
       name,
-      startDate,
-      endDate,
+      start_date: startDate,
+      end_date: endDate,
       location,
-      timeControl,
-      numberOfRounds,
+      time_control: timeControl,
+      number_of_rounds: numberOfRounds,
       description,
     })
-    .where(eq(tournaments.id, id));
+    .eq('id', id);
+
+  if (uError) throw uError;
 
   revalidatePath("/dashboard/tournaments");
 }
 
 export async function deleteTournament(id: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, id),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', id)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (error || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  await db.delete(tournaments).where(eq(tournaments.id, id));
+  const { error: dError } = await client
+    .from('tournaments')
+    .delete()
+    .eq('id', id);
+
+  if (dError) throw dError;
 
   revalidatePath("/dashboard/tournaments");
 }
 
 export async function getTournamentParticipants(tournamentId: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  return db.query.tournamentParticipants.findMany({
-    where: eq(tournamentParticipants.tournamentId, tournamentId),
-    with: {
-      member: true,
-    },
-    orderBy: [desc(tournamentParticipants.score), asc(tournamentParticipants.rank)],
-  });
+  const { data, error } = await client
+    .from('tournament_participants')
+    .select('*, members!member_id(*)')
+    .eq('tournament_id', tournamentId)
+    .order('score', { ascending: false })
+    .order('rank', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function getTournamentGames(tournamentId: string, round?: number) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  const conditions = [eq(games.tournamentId, tournamentId)];
+  let query = client
+    .from('games')
+    .select('*, white:members!white_id(*), black:members!black_id(*)')
+    .eq('tournament_id', tournamentId);
+
   if (round !== undefined) {
-    conditions.push(eq(games.round, round));
+    query = query.eq('round', round);
   }
 
-  return db.query.games.findMany({
-    where: and(...conditions),
-    with: {
-      white: true,
-      black: true,
-    },
-    orderBy: [asc(games.round), asc(games.boardNumber)],
-  });
+  const { data, error } = await query
+    .order('round', { ascending: true })
+    .order('board_number', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
 }
 
-export async function updateGameResult(gameId: string, result: typeof games.$inferInsert.result) {
+export async function updateGameResult(gameId: string, result: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const game = await db.query.games.findFirst({
-    where: eq(games.id, gameId),
-    with: {
-      tournament: true,
-    },
-  });
+  const { data: game, error } = await client
+    .from('games')
+    .select('*, tournament:tournaments!tournament_id(*)')
+    .eq('id', gameId)
+    .single();
 
-  if (!game || !game.tournament || game.tournament.clubId !== clubId) {
+  if (error || !game || !game.tournament || game.tournament.club_id !== clubId) {
     throw new Error("Spiel nicht gefunden");
   }
 
   // Update the game result
-  await db
-    .update(games)
-    .set({
+  const { error: uError } = await client
+    .from('games')
+    .update({
       result,
-      playedAt: new Date(),
+      played_at: new Date().toISOString(),
     })
-    .where(eq(games.id, gameId));
+    .eq('id', gameId);
+
+  if (uError) throw uError;
 
   // Recalculate everything for this tournament
-  const tournamentId = game.tournamentId;
+  const tournamentId = game.tournament_id;
   if (!tournamentId) return;
 
-  const allGames = await db.select().from(games).where(eq(games.tournamentId, tournamentId));
-  const participants = await db.select().from(tournamentParticipants).where(eq(tournamentParticipants.tournamentId, tournamentId));
+  const { data: allGames, error: agError } = await client
+    .from('games')
+    .select('*')
+    .eq('tournament_id', tournamentId);
+  if (agError) throw agError;
+
+  const { data: participants, error: pError } = await client
+    .from('tournament_participants')
+    .select('*')
+    .eq('tournament_id', tournamentId);
+  if (pError) throw pError;
 
   // 1. Calculate basic scores
   const scores: Record<string, number> = {};
-  participants.forEach(p => scores[p.memberId] = 0);
+  (participants || []).forEach(p => scores[p.member_id] = 0);
 
-  allGames.forEach(g => {
+  (allGames || []).forEach(g => {
     if (!g.result) return;
-    if (g.result === "1-0" && g.whiteId) {
-      if (scores[g.whiteId] !== undefined) scores[g.whiteId] += 1;
-    } else if (g.result === "0-1" && g.blackId) {
-      if (scores[g.blackId] !== undefined) scores[g.blackId] += 1;
+    if (g.result === "1-0" && g.white_id) {
+      if (scores[g.white_id] !== undefined) scores[g.white_id] += 1;
+    } else if (g.result === "0-1" && g.black_id) {
+      if (scores[g.black_id] !== undefined) scores[g.black_id] += 1;
     } else if (g.result === "1/2-1/2") {
-      if (g.whiteId && scores[g.whiteId] !== undefined) scores[g.whiteId] += 0.5;
-      if (g.blackId && scores[g.blackId] !== undefined) scores[g.blackId] += 0.5;
-    } else if (g.result === "+-" && g.whiteId) {
-      if (scores[g.whiteId] !== undefined) scores[g.whiteId] += 1;
-    } else if (g.result === "-+" && g.blackId) {
-      if (scores[g.blackId] !== undefined) scores[g.blackId] += 1;
+      if (g.white_id && scores[g.white_id] !== undefined) scores[g.white_id] += 0.5;
+      if (g.black_id && scores[g.black_id] !== undefined) scores[g.black_id] += 0.5;
+    } else if (g.result === "+-" && g.white_id) {
+      if (scores[g.white_id] !== undefined) scores[g.white_id] += 1;
+    } else if (g.result === "-+" && g.black_id) {
+      if (scores[g.black_id] !== undefined) scores[g.black_id] += 1;
     } else if (g.result === "+/+") {
-      if (g.whiteId && scores[g.whiteId] !== undefined) scores[g.whiteId] += 1;
-      if (g.blackId && scores[g.blackId] !== undefined) scores[g.blackId] += 1;
+      if (g.white_id && scores[g.white_id] !== undefined) scores[g.white_id] += 1;
+      if (g.black_id && scores[g.black_id] !== undefined) scores[g.black_id] += 1;
     }
   });
 
   // 2. Calculate Tie-Breaks (Buchholz & Sonneborn-Berger)
   const buchholz: Record<string, number> = {};
   const sonnebornBerger: Record<string, number> = {};
-  participants.forEach(p => {
-    buchholz[p.memberId] = 0;
-    sonnebornBerger[p.memberId] = 0;
+  (participants || []).forEach(p => {
+    buchholz[p.member_id] = 0;
+    sonnebornBerger[p.member_id] = 0;
   });
 
-  participants.forEach(p => {
-    const memberId = p.memberId;
-    const playerGames = allGames.filter(g => g.whiteId === memberId || g.blackId === memberId);
+  (participants || []).forEach(p => {
+    const memberId = p.member_id;
+    const playerGames = (allGames || []).filter(g => g.white_id === memberId || g.black_id === memberId);
     
     playerGames.forEach(g => {
       if (!g.result) return;
-      const opponentId = g.whiteId === memberId ? g.blackId : g.whiteId;
+      const opponentId = g.white_id === memberId ? g.black_id : g.white_id;
       if (!opponentId) return;
       const opponentScore = scores[opponentId] || 0;
       
@@ -271,7 +298,7 @@ export async function updateGameResult(gameId: string, result: typeof games.$inf
       buchholz[memberId] += opponentScore;
       
       // Sonneborn-Berger: Opponent's score * result (1.0 for win, 0.5 for draw, 0.0 for loss)
-      const isWhite = g.whiteId === memberId;
+      const isWhite = g.white_id === memberId;
       if (g.result === "1-0") {
         if (isWhite) sonnebornBerger[memberId] += opponentScore;
       } else if (g.result === "0-1") {
@@ -289,25 +316,27 @@ export async function updateGameResult(gameId: string, result: typeof games.$inf
   });
 
   // 3. Update participants in database
-  for (const p of participants) {
-    await db
-      .update(tournamentParticipants)
-      .set({
-        score: scores[p.memberId].toFixed(1),
-        buchholz: buchholz[p.memberId].toFixed(2),
-        sonnebornBerger: sonnebornBerger[p.memberId].toFixed(2),
+  for (const p of (participants || [])) {
+    const { error: upError } = await client
+      .from('tournament_participants')
+      .update({
+        score: scores[p.member_id].toFixed(1),
+        buchholz: buchholz[p.member_id].toFixed(2),
+        sonneborn_berger: sonnebornBerger[p.member_id].toFixed(2),
       })
-      .where(eq(tournamentParticipants.id, p.id));
+      .eq('id', p.id);
+    if (upError) throw upError;
   }
 
   // 4. Update ranks based on Score -> Buchholz -> Sonneborn-Berger
-  const updatedParticipants = await db
-    .select()
-    .from(tournamentParticipants)
-    .where(eq(tournamentParticipants.tournamentId, tournamentId));
+  const { data: updatedParticipants, error: upError } = await client
+    .from('tournament_participants')
+    .select('*')
+    .eq('tournament_id', tournamentId);
+  if (upError) throw upError;
 
   // Sort: Score DESC, Buchholz DESC, Sonneborn-Berger DESC
-  updatedParticipants.sort((a, b) => {
+  (updatedParticipants || []).sort((a, b) => {
     const scoreA = parseFloat(a.score || "0");
     const scoreB = parseFloat(b.score || "0");
     if (scoreB !== scoreA) return scoreB - scoreA;
@@ -316,16 +345,17 @@ export async function updateGameResult(gameId: string, result: typeof games.$inf
     const bhB = parseFloat(b.buchholz || "0");
     if (bhB !== bhA) return bhB - bhA;
     
-    const sbA = parseFloat(a.sonnebornBerger || "0");
-    const sbB = parseFloat(b.sonnebornBerger || "0");
+    const sbA = parseFloat(a.sonneborn_berger || "0");
+    const sbB = parseFloat(b.sonneborn_berger || "0");
     return sbB - sbA;
   });
 
-  for (let i = 0; i < updatedParticipants.length; i++) {
-    await db
-      .update(tournamentParticipants)
-      .set({ rank: i + 1 })
-      .where(eq(tournamentParticipants.id, updatedParticipants[i].id));
+  for (let i = 0; i < (updatedParticipants || []).length; i++) {
+    const { error } = await client
+      .from('tournament_participants')
+      .update({ rank: i + 1 })
+      .eq('id', updatedParticipants![i].id);
+    if (error) throw error;
   }
 
   revalidatePath(`/dashboard/tournaments/${tournamentId}`);
@@ -333,85 +363,88 @@ export async function updateGameResult(gameId: string, result: typeof games.$inf
 
 export async function addTournamentParticipant(formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   const tournamentId = formData.get("tournamentId") as string;
   const memberId = formData.get("memberId") as string;
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  const [membership] = await db
-    .select()
-    .from(clubMemberships)
-    .where(and(
-      eq(clubMemberships.memberId, memberId),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  const { data: membership, error: mError } = await client
+    .from('club_memberships')
+    .select('*')
+    .eq('member_id', memberId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!membership) {
+  if (mError || !membership) {
     throw new Error("Mitglied ist nicht im Verein");
   }
 
-  await db.insert(tournamentParticipants).values({
-    tournamentId,
-    memberId,
-  });
+  const { error } = await client.from('tournament_participants').insert([{
+    tournament_id: tournamentId,
+    member_id: memberId,
+  }]);
+  if (error) throw error;
 
   revalidatePath("/dashboard/tournaments");
 }
 
 export async function removeTournamentParticipant(id: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [participant] = await db
-    .select({
-      tournamentId: tournamentParticipants.tournamentId,
-    })
-    .from(tournamentParticipants)
-    .where(eq(tournamentParticipants.id, id));
+  const { data: participant, error } = await client
+    .from('tournament_participants')
+    .select('tournament_id')
+    .eq('id', id)
+    .single();
 
-  if (!participant) {
+  if (error || !participant) {
     throw new Error("Teilnehmer nicht gefunden");
   }
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, participant.tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', participant.tournament_id)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  await db.delete(tournamentParticipants).where(eq(tournamentParticipants.id, id));
+  const { error: dError } = await client
+    .from('tournament_participants')
+    .delete()
+    .eq('id', id);
+  if (dError) throw dError;
 
   revalidatePath("/dashboard/tournaments");
 }
 
 export async function generateRoundRobinRounds(tournamentId: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
@@ -419,35 +452,34 @@ export async function generateRoundRobinRounds(tournamentId: string) {
     throw new Error("Nur für Rundenturnier und Vereinsmeisterschaft verfügbar");
   }
 
-  const participants = await db
-    .select({
-      id: tournamentParticipants.memberId,
-      member: members,
-    })
-    .from(tournamentParticipants)
-    .innerJoin(members, eq(tournamentParticipants.memberId, members.id))
-    .where(eq(tournamentParticipants.tournamentId, tournamentId));
+  const { data: participants, error: pError } = await client
+    .from('tournament_participants')
+    .select('member_id, members!member_id(*)')
+    .eq('tournament_id', tournamentId);
 
-  if (participants.length < 2) {
+  if (pError) throw pError;
+
+  if ((participants || []).length < 2) {
     throw new Error("Mindestens 2 Teilnehmer erforderlich");
   }
 
   // Generate pairings using Berger table
-  const pairingParticipants = participants.map(p => ({
-    id: p.id,
-    name: `${p.member.firstName} ${p.member.lastName}`,
-    rating: p.member.dwz || p.member.elo || undefined,
+  const pairingParticipants = (participants || []).map((p: any) => ({
+    id: p.member_id,
+    name: `${p.members.first_name} ${p.members.last_name}`,
+    rating: p.members.dwz || p.members.elo || undefined,
   }));
 
   const rounds = generateRoundRobinPairings(pairingParticipants);
 
   // Get existing games to avoid duplicates
-  const existingGames = await db
-    .select({ round: games.round })
-    .from(games)
-    .where(eq(games.tournamentId, tournamentId));
+  const { data: existingGames, error: egError } = await client
+    .from('games')
+    .select('round')
+    .eq('tournament_id', tournamentId);
+  if (egError) throw egError;
 
-  const existingRounds = new Set(existingGames.map(g => g.round));
+  const existingRounds = new Set((existingGames || []).map(g => g.round));
 
   // Create games for each round
   for (const round of rounds) {
@@ -456,23 +488,25 @@ export async function generateRoundRobinRounds(tournamentId: string) {
     }
 
     for (const pairing of round.pairings) {
-      await db.insert(games).values({
-        clubId,
-        tournamentId,
+      const { error: igError } = await client.from('games').insert([{
+        club_id: clubId,
+        tournament_id: tournamentId,
         round: round.round,
-        boardNumber: pairing.board || 1,
-        whiteId: pairing.white.id,
-        blackId: pairing.black.id,
+        board_number: pairing.board || 1,
+        white_id: pairing.white.id,
+        black_id: pairing.black.id,
         result: null,
-      });
+      }]);
+      if (igError) throw igError;
     }
   }
 
   // Update number of rounds
-  await db
-    .update(tournaments)
-    .set({ numberOfRounds: rounds.length })
-    .where(eq(tournaments.id, tournamentId));
+  const { error: uError } = await client
+    .from('tournaments')
+    .update({ number_of_rounds: rounds.length })
+    .eq('id', tournamentId);
+  if (uError) throw uError;
 
   revalidatePath(`/dashboard/tournaments/${tournamentId}`);
 
@@ -484,41 +518,44 @@ export async function updateTournamentResults(
   participants: { id?: string; memberId: string; score: string }[]
 ) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
   for (const participant of participants) {
     if (participant.id) {
-      await db
-        .update(tournamentParticipants)
-        .set({
+      const { error } = await client
+        .from('tournament_participants')
+        .update({
           score: participant.score,
         })
-        .where(eq(tournamentParticipants.id, participant.id));
+        .eq('id', participant.id);
+      if (error) throw error;
     }
   }
 
-  const allParticipants = await db
-    .select()
-    .from(tournamentParticipants)
-    .where(eq(tournamentParticipants.tournamentId, tournamentId))
-    .orderBy(desc(tournamentParticipants.score));
+  const { data: allParticipants, error: apError } = await client
+    .from('tournament_participants')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .order('score', { ascending: false });
+  if (apError) throw apError;
 
-  for (let i = 0; i < allParticipants.length; i++) {
-    await db
-      .update(tournamentParticipants)
-      .set({ rank: i + 1 })
-      .where(eq(tournamentParticipants.id, allParticipants[i].id));
+  for (let i = 0; i < (allParticipants || []).length; i++) {
+    const { error } = await client
+      .from('tournament_participants')
+      .update({ rank: i + 1 })
+      .eq('id', allParticipants![i].id);
+    if (error) throw error;
   }
 
   revalidatePath("/dashboard/tournaments");
@@ -526,23 +563,24 @@ export async function updateTournamentResults(
 
 export async function importTRF(tournamentId: string, trfData: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
-  await db
-    .update(tournaments)
-    .set({ trfData })
-    .where(eq(tournaments.id, tournamentId));
+  const { error: uError } = await client
+    .from('tournaments')
+    .update({ trf_data: trfData })
+    .eq('id', tournamentId);
+  if (uError) throw uError;
 
   revalidatePath("/dashboard/tournaments");
 
@@ -581,16 +619,16 @@ import { getPairingQueue } from "@/lib/jobs/pairing-worker";
 
 export async function generateSwissRound(tournamentId: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  const [tournament] = await db
-    .select()
-    .from(tournaments)
-    .where(and(
-      eq(tournaments.id, tournamentId),
-      eq(tournaments.clubId, clubId)
-    ));
+  const { data: tournament, error: tError } = await client
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .eq('club_id', clubId)
+    .single();
 
-  if (!tournament) {
+  if (tError || !tournament) {
     throw new Error("Turnier nicht gefunden");
   }
 
@@ -599,18 +637,19 @@ export async function generateSwissRound(tournamentId: string) {
   }
 
   // Calculate current max round
-  const existingGames = await db
-    .select({ round: games.round })
-    .from(games)
-    .where(eq(games.tournamentId, tournamentId));
+  const { data: existingGames, error: egError } = await client
+    .from('games')
+    .select('round')
+    .eq('tournament_id', tournamentId);
+  if (egError) throw egError;
 
-  const maxRound = existingGames.length > 0 
-    ? Math.max(...existingGames.map(g => g.round || 0))
+  const maxRound = (existingGames || []).length > 0 
+    ? Math.max(...(existingGames || []).map(g => g.round || 0))
     : 0;
   
   const nextRound = maxRound + 1;
 
-  if (tournament.numberOfRounds && nextRound > tournament.numberOfRounds) {
+  if (tournament.number_of_rounds && nextRound > tournament.number_of_rounds) {
     throw new Error("Maximale Rundenanzahl bereits erreicht");
   }
 

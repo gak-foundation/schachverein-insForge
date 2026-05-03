@@ -1,14 +1,15 @@
 import { vi } from "vitest";
-import { createDbMock, createQueryMock } from "./mocks";
+import { createMockInsForgeClient } from "./mocks";
 
-const dbMock = createDbMock();
-const queryMock = createQueryMock();
+const insforgeClient = createMockInsForgeClient();
 
-vi.mock("@/lib/db", () => ({
-  db: {
-    ...dbMock,
-    query: queryMock,
-  },
+vi.mock("@/lib/insforge", () => ({
+  createClient: vi.fn(() => insforgeClient),
+  createServerClient: vi.fn(() => insforgeClient),
+  createServiceClient: vi.fn(() => insforgeClient),
+  INSFORGE_URL: "https://test.insforge.dev",
+  insforge: insforgeClient,
+  auth: insforgeClient.auth,
 }));
 
 vi.mock("next/headers", () => ({
@@ -27,4 +28,9 @@ vi.mock("@/lib/audit", () => ({
   logMemberAction: vi.fn(() => Promise.resolve()),
 }));
 
-export { dbMock, queryMock };
+vi.mock("@/lib/crypto", () => ({
+  encrypt: vi.fn((v: string) => `encrypted:${v}`),
+  decrypt: vi.fn((v: string) => v.replace("encrypted:", "")),
+}));
+
+export { insforgeClient };

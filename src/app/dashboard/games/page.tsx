@@ -15,7 +15,7 @@ export default async function GamesPage() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  const games = await getClubGames();
+  const games: { id: string; date?: string; whiteName: string; blackName: string; result: string; event?: string }[] = await getClubGames();
 
   return (
     <div className="space-y-6">

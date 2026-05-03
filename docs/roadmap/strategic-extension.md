@@ -326,7 +326,7 @@ Die Software ist **für alle Vereine kostenlos** — ohne Mitgliedslimit, ohne Z
 
 4. **Architekturentscheidung final treffen**:
    - **Vercel ist nun tatsächlich sinnvoll** für Website-Layer (ISR, Edge, CDN)
-   - **Vercel** für Frontend + Supabase für Backend
+   - **Vercel** für Frontend + InsForge für Backend
    - Split-Architektur für optimale Performance
    - Split-Architektur wird aus "Bug" zum "Feature"
 
@@ -349,6 +349,6 @@ Mit dem Website-Modul **transformiert sich euer Produkt** von "Noch-eine-Verwalt
 
 Möchtest du, dass ich als nächstes eines davon ausarbeite?
 - 🎨 **Detaillierte Spezifikation des Website-Block-Editors**
-- 🏗️ **Technisches Architektur-Diagramm (Vercel + Supabase)**
+- 🏗️ **Technisches Architektur-Diagramm (Vercel + InsForge)**
 - 📊 **Detaillierte Wettbewerbsanalyse Vereinswebsite-Markt**
 - ⚖️ **DSGVO-Compliance-Paket für öffentliche Vereinsseiten**

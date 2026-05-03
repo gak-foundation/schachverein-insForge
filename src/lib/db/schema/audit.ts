@@ -1,28 +1,25 @@
-import {
-  pgTable,
-  uuid,
-  varchar,
-  timestamp,
-  jsonb,
-  index,
-} from "drizzle-orm/pg-core";
-import { clubs } from "./clubs";
+export const auditLog = "audit_log" as const;
 
-export const auditLog = pgTable(
-  "audit_log",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    clubId: uuid("club_id").references(() => clubs.id, { onDelete: "cascade" }),
-    userId: varchar("user_id", { length: 36 }),
-    action: varchar("action", { length: 50 }).notNull(),
-    entity: varchar("entity", { length: 50 }).notNull(),
-    entityId: uuid("entity_id"),
-    changes: jsonb("changes"),
-    ipAddress: varchar("ip_address", { length: 45 }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    clubIdx: index("audit_log_club_idx").on(table.clubId),
-    entityIdx: index("audit_log_entity_idx").on(table.entity, table.entityId),
-  }),
-);
+export interface AuditLog {
+  id: string;
+  clubId: string | null;
+  userId: string | null;
+  action: string;
+  entity: string;
+  entityId: string | null;
+  changes: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+export interface NewAuditLog {
+  id?: string;
+  clubId?: string | null;
+  userId?: string | null;
+  action: string;
+  entity: string;
+  entityId?: string | null;
+  changes?: Record<string, unknown> | null;
+  ipAddress?: string | null;
+  createdAt?: string;
+}

@@ -48,8 +48,6 @@ Setze alle Variablen aus `.env.example` in den Vercel Project Settings:
 - `NEXT_PUBLIC_INSFORGE_URL`
 - `NEXT_PUBLIC_INSFORGE_ANON_KEY`
 - `INSFORGE_SERVICE_ROLE_KEY`
-- `DATABASE_URL` (mit Connection Pooler)
-- `DIRECT_URL` (für Migrations)
 - `RESEND_API_KEY`
 - `ENCRYPTION_KEY`
 - Weitere je nach Features

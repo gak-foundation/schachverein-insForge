@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/insforge";
-import { authClient } from "@/lib/auth/client";
+import { signupAction } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,14 +16,14 @@ import { SocialButtons } from "@/features/auth/components/social-buttons";
 import { ErrorMessage } from "@/features/auth/components/error-message";
 
 export default function SignupPage() {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const signupFormAction = async (_prevState: { error: string } | null, formData: FormData) => {
+    return signupAction(formData);
+  };
+  const [error, formAction, isPending] = useActionState(signupFormAction, null);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
-  const client = createClient();
+  const [client] = useState(() => createClient());
 
-  // Extract subdomain slug for tenant binding (used by both email and OAuth signup)
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || hostname;
   let slug = "";
@@ -48,55 +47,6 @@ export default function SignupPage() {
     strengthCount <= 3 ? "bg-amber-500" : 
     "bg-green-500";
 
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const name = formData.get("name") as string;
-
-    try {
-      const { data, error } = await authClient.signUp.email({
-        email,
-        password,
-        name,
-        slug,
-      });
-
-      if (error) {
-        setError(error.message || "Ein Fehler ist aufgetreten");
-      } else if (data?.user) {
-        // Bind user to tenant immediately after signup
-        if (slug) {
-          try {
-            await fetch("/api/auth/bind-tenant", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                userId: data.user.id,
-                email,
-                name,
-                slug,
-              }),
-            });
-          } catch (bindError: any) {
-            console.error("Tenant binding error:", bindError?.message);
-          }
-        }
-        router.push("/auth/verify-email");
-      } else {
-        router.push("/auth/verify-email");
-      }
-    } catch {
-      setError("Ein Fehler ist aufgetreten");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   function buildOAuthProvider(provider: "github" | "google") {
     return {
       id: provider,
@@ -117,11 +67,11 @@ export default function SignupPage() {
       <AuthCard>
         <AuthHeader
           title="Konto erstellen"
-          subtitle="Werden Sie Teil Ihres Schachvereins"
+          subtitle="Registrieren Sie sich und richten Sie Ihren Schachverein ein"
         />
 
         <div className="mt-8">
-          <form onSubmit={handleSubmit} className="space-y-4" suppressHydrationWarning>
+          <form action={formAction} className="space-y-4" suppressHydrationWarning>
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium text-slate-900 dark:text-slate-200">
                 Name
@@ -182,7 +132,6 @@ export default function SignupPage() {
                 </button>
               </div>
 
-              {/* Password Strength Indicator */}
               {password && (
                 <div className="mt-2 space-y-2">
                   <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -201,19 +150,19 @@ export default function SignupPage() {
               )}
             </div>
 
-            {error && (
-              <ErrorMessage message={error} onDismiss={() => setError(null)} />
+            {error?.error && (
+              <ErrorMessage message={error.error} onDismiss={() => {}} />
             )}
 
             <Button
               type="submit"
               className="h-11 w-full font-medium"
-              disabled={loading}
+              disabled={isPending}
             >
-              {loading ? (
+              {isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              {loading ? "Wird erstellt..." : "Konto erstellen"}
+              {isPending ? "Wird erstellt..." : "Konto erstellen"}
             </Button>
           </form>
 

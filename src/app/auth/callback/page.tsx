@@ -18,7 +18,7 @@ function CallbackContent() {
     if (processedRef.current) return;
     processedRef.current = true;
 
-    const next = searchParams.get("next") || "/dashboard";
+    const next = searchParams.get("next") || "/onboarding";
     const action = searchParams.get("action");
     const slug = searchParams.get("slug");
     const client = createClient();
@@ -32,12 +32,15 @@ function CallbackContent() {
           const { data, error } = await client.auth.getCurrentUser();
           if (!error && data?.user) {
             const user = data.user;
-            const token = (client as any).tokenManager?.accessToken;
+            const tokenMgr = (client as any).tokenManager;
+            const accessToken = tokenMgr?.accessToken;
+            const refreshToken = tokenMgr?.refreshToken;
             const res = await fetch("/api/auth/complete-oauth", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                accessToken: token,
+                accessToken,
+                refreshToken,
                 userId: user.id,
                 email: user.email,
                 name: user.profile?.name || user.email?.split("@")[0],

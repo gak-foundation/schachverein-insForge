@@ -1,9 +1,7 @@
 import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { authUsers, members } from "@/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { UserEditForm } from "./user-edit-form";
 
@@ -19,22 +17,30 @@ const ROLES = [
 ] as const;
 
 async function getUserById(id: string) {
-  const [user] = await db
-    .select({
-      id: authUsers.id,
-      name: authUsers.name,
-      email: authUsers.email,
-      role: authUsers.role,
-      permissions: authUsers.permissions,
-      memberId: authUsers.memberId,
-      firstName: members.firstName,
-      lastName: members.lastName,
-    })
-    .from(authUsers)
-    .leftJoin(members, eq(authUsers.memberId, members.id))
-    .where(eq(authUsers.id, id));
+  const client = createServiceClient();
+  const { data, error } = await client
+    .from("auth_user")
+    .select("id, name, email, role, permissions, member_id, members(first_name, last_name)")
+    .eq("id", id)
+    .maybeSingle();
 
-  return user;
+  if (error || !data) {
+    console.error("Error fetching user:", error);
+    return null;
+  }
+
+  const memberData = Array.isArray(data.members) ? data.members[0] : data.members;
+
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    role: data.role,
+    permissions: data.permissions,
+    memberId: data.member_id,
+    firstName: memberData?.first_name ?? null,
+    lastName: memberData?.last_name ?? null,
+  };
 }
 
 export default async function EditUserPage({

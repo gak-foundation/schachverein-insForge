@@ -194,7 +194,7 @@ DAMIT     ich rechtlich abgesichert bin
 | 1 | Upload via Drag-Drop, Klick oder Paste | 🔴 |
 | 2 | Akzeptierte Formate: JPG, PNG, WebP, AVIF, HEIC (iOS), GIF | 🔴 |
 | 3 | **Max 20 MB** pro Datei, Client-seitige Vorab-Prüfung | 🔴 |
-| 4 | Upload läuft direkt zu MinIO via Presigned URL (nicht durch Vercel!) | 🔴 |
+| 4 | Upload läuft direkt zu InsForge Storage via Presigned URL (nicht durch Vercel!) | 🔴 |
 | 5 | Progress-Bar während Upload (% + verbleibende Zeit) | 🟠 |
 | 6 | **EXIF-Daten werden server-seitig entfernt** (GPS, Kamera-Seriennr.) | 🔴 |
 | 7 | Automatische Generierung von: AVIF, WebP, JPG-Fallback in 5 Größen | 🔴 |
@@ -212,14 +212,13 @@ DAMIT     ich rechtlich abgesichert bin
 │             │                └──────────┘
 │             │
 │             │   3. PUT Binary  ┌──────────────┐
-│             │ ────────────────▶│  Supabase    │
+│             │ ────────────────▶│  InsForge    │
 │             │                  │  Storage     │
 │             │                  └────┬─────────┘
 │             │                       │
 │             │   4. Confirm S3Key    ▼
-│             │ ────────────────▶┌──────────────┐
-│             │                  │  Supabase    │
-│             │                  │  Edge Func   │
+│             │ ────────────────▶┌──────────────────┐
+│             │                  │  Server/API Route│
 │             │                  │ - Resize     │
 │             │                  │ - EXIF       │
 │             │                  │ - AVIF       │
@@ -845,7 +844,7 @@ DAMIT     es in Rich-Results angezeigt wird
 │ • Editor-Shell (TipTap, Slash-Command, Save)    │
 │ • Block-Registry & Rendering-Pipeline           │
 │ • Inspector-Panel & Autosave                    │
-│ • Media-Asset-Service (MinIO)                   │
+│ • Media-Asset-Service (InsForge Storage)                   │
 │ • Permissions & Multi-Tenant-Routing            │
 └──────────────────┬──────────────────────────────┘
                    │

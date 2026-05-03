@@ -1,18 +1,8 @@
 "use server";
 
-import { eq, and, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
-import {
-  clubs,
-  clubMemberships,
-  clubInvitations,
-  members,
-  authUsers,
-} from "@/lib/db/schema";
-import { getAllAuthUsers, updateAuthUser } from "@/lib/db/queries/auth";
 import { requireAuth, requireClub } from "@/lib/auth/session";
 import { sendClubInvitationEmail } from "@/lib/auth/email";
-import { createServerClient, createServiceClient } from "@/lib/insforge";
+import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
 import {
   createClub,
@@ -26,6 +16,7 @@ import {
   getClubById,
 } from "./queries";
 import { getInvitationUrl } from "@/lib/auth/invitations";
+import { getAllAuthUsers, updateAuthUser } from "@/lib/db/queries/auth";
 
 // ─── Club CRUD ─────────────────────────────────────────────────
 
@@ -63,7 +54,6 @@ export async function createClubAction(formData: FormData) {
     address,
   });
 
-  // Ensure user has a member record, create one if not
   let memberId = session.user.memberId;
   if (!memberId) {
     const newMember = await createMember({
@@ -76,10 +66,8 @@ export async function createClubAction(formData: FormData) {
     });
     memberId = newMember.id;
 
-    // Link member to auth user and set clubId
     await updateAuthUser(session.user.id, { memberId: newMember.id, clubId: club.id });
   } else {
-    // Update existing member with clubId
     await addMemberToClub(club.id, memberId, "admin", true);
     await updateAuthUser(session.user.id, { clubId: club.id });
   }
@@ -90,7 +78,7 @@ export async function createClubAction(formData: FormData) {
 
 export async function completeOnboardingAction(_formData?: FormData) {
   const club = await requireClub();
-  
+
   const settings = (club.settings as Record<string, any>) || {};
   settings.onboardingCompleted = true;
 
@@ -169,12 +157,10 @@ export async function switchClubAction(clubId: string) {
   const session = await requireAuth();
 
   if (session.user.isSuperAdmin) {
-    // Super-admins can still switch context for admin purposes
     await updateUserClub(session.user.id, clubId);
     return { success: true };
   }
 
-  // Regular users cannot switch clubs under strict tenancy
   throw new Error("Wechsel zwischen Vereinen ist nicht erlaubt");
 }
 
@@ -191,32 +177,36 @@ export async function inviteMemberToClubAction(formData: FormData) {
     throw new Error("E-Mail ist erforderlich");
   }
 
-  // Check if email already belongs to a member of this club
-  const [existingClubMember] = await db
-    .select({ id: members.id })
-    .from(members)
-    .where(and(eq(members.email, email), eq(members.clubId, club.id)));
+  const client = createServiceClient();
+
+  const { data: existingClubMember } = await client
+    .from("members")
+    .select("id")
+    .eq("email", email)
+    .eq("club_id", club.id)
+    .maybeSingle();
 
   if (existingClubMember) {
     throw new Error("Mitglied ist bereits im Verein");
   }
 
-  // Check if email belongs to a user in ANOTHER club (strict tenancy)
-  const [otherClubMember] = await db
-    .select({ id: members.id, clubId: members.clubId })
-    .from(members)
-    .where(eq(members.email, email));
+  const { data: otherClubMember } = await client
+    .from("members")
+    .select("id, club_id")
+    .eq("email", email)
+    .maybeSingle();
 
-  if (otherClubMember && otherClubMember.clubId && otherClubMember.clubId !== club.id) {
+  if (otherClubMember && otherClubMember.club_id && otherClubMember.club_id !== club.id) {
     throw new Error("Diese E-Mail ist bereits einem anderen Verein zugeordnet");
   }
 
   if (otherClubMember) {
-    // Existing member in no club (unlikely) or same club (handled above)
-    await db
-      .update(members)
-      .set({ clubId: club.id, role: role as typeof members.$inferInsert.role })
-      .where(eq(members.id, otherClubMember.id));
+    const { error } = await client
+      .from("members")
+      .update({ club_id: club.id, role })
+      .eq("id", otherClubMember.id);
+
+    if (error) throw new Error(error.message);
 
     return {
       success: true,
@@ -224,7 +214,6 @@ export async function inviteMemberToClubAction(formData: FormData) {
     };
   }
 
-  // Create invitation for new user
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -236,11 +225,10 @@ export async function inviteMemberToClubAction(formData: FormData) {
     expiresAt,
   });
 
-  // Send invitation email
-  const { getInvitationUrl } = await import("@/lib/auth/invitations");
+  const { getInvitationUrl: getUrl } = await import("@/lib/auth/invitations");
   await sendClubInvitationEmail({
     email,
-    invitationUrl: getInvitationUrl(invitation.token),
+    invitationUrl: getUrl(invitation.token),
     clubName: club.name,
     invitedByName: session.user.name,
   });
@@ -256,27 +244,27 @@ export async function removeMemberFromClubAction(memberId: string) {
   const session = await requireAuth();
   const club = await requireClub();
 
-  // Prevent removing yourself
   if (memberId === session.user.memberId) {
     throw new Error("Sie koennen sich nicht selbst entfernen");
   }
 
-  // Remove club association using strict tenancy (set clubId null)
-  await db
-    .update(members)
-    .set({ clubId: null, updatedAt: new Date() })
-    .where(and(eq(members.id, memberId), eq(members.clubId, club.id)));
+  const client = createServiceClient();
 
-  // Also update legacy membership record
-  await db
-    .update(clubMemberships)
-    .set({ status: "inactive", updatedAt: new Date() })
-    .where(
-      and(
-        eq(clubMemberships.clubId, club.id),
-        eq(clubMemberships.memberId, memberId)
-      )
-    );
+  const { error: memberError } = await client
+    .from("members")
+    .update({ club_id: null, updated_at: new Date().toISOString() })
+    .eq("id", memberId)
+    .eq("club_id", club.id);
+
+  if (memberError) throw new Error(memberError.message);
+
+  const { error: membershipError } = await client
+    .from("club_memberships")
+    .update({ status: "inactive", updated_at: new Date().toISOString() })
+    .eq("club_id", club.id)
+    .eq("member_id", memberId);
+
+  if (membershipError) throw new Error(membershipError.message);
 
   revalidatePath("/dashboard/club/members");
   return { success: true };
@@ -285,22 +273,23 @@ export async function removeMemberFromClubAction(memberId: string) {
 export async function updateMemberRoleAction(memberId: string, role: string) {
   const club = await requireClub();
 
-  // Update role directly on members table (strict tenancy)
-  await db
-    .update(members)
-    .set({ role: role as typeof members.$inferInsert.role, updatedAt: new Date() })
-    .where(and(eq(members.id, memberId), eq(members.clubId, club.id)));
+  const client = createServiceClient();
 
-  // Also update legacy record during migration period
-  await db
-    .update(clubMemberships)
-    .set({ role: role as typeof clubMemberships.$inferInsert.role, updatedAt: new Date() })
-    .where(
-      and(
-        eq(clubMemberships.clubId, club.id),
-        eq(clubMemberships.memberId, memberId)
-      )
-    );
+  const { error: memberError } = await client
+    .from("members")
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq("id", memberId)
+    .eq("club_id", club.id);
+
+  if (memberError) throw new Error(memberError.message);
+
+  const { error: membershipError } = await client
+    .from("club_memberships")
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq("club_id", club.id)
+    .eq("member_id", memberId);
+
+  if (membershipError) throw new Error(membershipError.message);
 
   revalidatePath("/dashboard/club/members");
   return { success: true };
@@ -313,27 +302,29 @@ export async function importFromDsbAction(zps: string) {
   const club = await requireClub();
 
   const dsbMembers = await fetchClubMembersFromDsb(zps);
-  
-  // Note: DSB doesn't provide emails, so we create members with placeholder or empty emails
-  // For the invitation system to work, we need emails. 
-  // Strategy: We'll create the member records directly and they can be "claimed" later, 
-  // or we just return them for the UI to let the admin add emails.
-  
-  // For this "intelligent onboarding", we will return the list so the admin can 
-  // verify and potentially add emails for the most important members immediately.
+
   return {
     success: true,
-    members: dsbMembers.map(m => ({
+    members: dsbMembers.map((m) => ({
       firstName: m.firstName,
       lastName: m.lastName,
       dwz: m.dwz ?? undefined,
       dwzId: m.dwzId,
-      email: "", // Admin must provide these
-    }))
+      email: "",
+    })),
   };
 }
 
-export async function importMembersAction(membersToImport: { firstName: string; lastName: string; email: string; role: string; dwzId?: string; dwz?: number }[]) {
+export async function importMembersAction(
+  membersToImport: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    dwzId?: string;
+    dwz?: number;
+  }[]
+) {
   const session = await requireAuth();
   const club = await requireClub();
 
@@ -343,39 +334,41 @@ export async function importMembersAction(membersToImport: { firstName: string; 
     errors: [] as string[],
   };
 
+  const client = createServiceClient();
+
   for (const memberData of membersToImport) {
     try {
       if (!memberData.email) {
-        // Just create the member record if no email for invitation
-        await db.insert(members).values({
-          clubId: club.id,
-          firstName: memberData.firstName,
-          lastName: memberData.lastName,
-          email: `${memberData.dwzId || 'unknown'}@no-email.club`, // Placeholder
-          dwz: memberData.dwz,
-          dwzId: memberData.dwzId,
-          role: (memberData.role || "mitglied") as any,
-          status: "active",
-        });
+        const { error } = await client.from("members").insert([
+          {
+            club_id: club.id,
+            first_name: memberData.firstName,
+            last_name: memberData.lastName,
+            email: `${memberData.dwzId || "unknown"}@no-email.club`,
+            dwz: memberData.dwz,
+            dwz_id: memberData.dwzId,
+            role: memberData.role || "mitglied",
+            status: "active",
+          },
+        ]);
+
+        if (error) throw new Error(error.message);
         results.success++;
         continue;
       }
 
-      // Reuse existing invitation logic
       const formData = new FormData();
       formData.append("email", memberData.email);
       formData.append("role", memberData.role || "mitglied");
-      
+
       await inviteMemberToClubAction(formData);
-      
-      // Update the newly created member (if any) with DWZ info
-      // inviteMemberToClubAction creates a member or invitation. 
-      // This part might need more surgical database updates if we want to store DWZ right away.
-      
+
       results.success++;
     } catch (error) {
       results.failed++;
-      results.errors.push(`${memberData.email || memberData.lastName}: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`);
+      results.errors.push(
+        `${memberData.email || memberData.lastName}: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`
+      );
     }
   }
 
@@ -393,37 +386,33 @@ export async function acceptClubInvitationAction(token: string) {
     throw new Error("Ungueltige oder abgelaufene Einladung");
   }
 
-  // Check if email matches
-  const [userMember] = await db
-    .select({ email: members.email })
-    .from(members)
-    .where(eq(members.id, session.user.memberId!));
+  const client = createServiceClient();
+
+  const { data: userMember } = await client
+    .from("members")
+    .select("email")
+    .eq("id", session.user.memberId!)
+    .single();
 
   if (userMember?.email !== invitation.email) {
     throw new Error("Die Einladung wurde fuer eine andere E-Mail-Adresse erstellt");
   }
 
-  // Set member.clubId for strict tenancy
-  await db
-    .update(members)
-    .set({
-      clubId: invitation.clubId,
-      role: invitation.role as typeof members.$inferInsert.role,
-      updatedAt: new Date(),
+  const { error: updateError } = await client
+    .from("members")
+    .update({
+      club_id: invitation.clubId,
+      role: invitation.role,
+      updated_at: new Date().toISOString(),
     })
-    .where(eq(members.id, session.user.memberId!));
+    .eq("id", session.user.memberId!);
 
-  // Update authUser.clubId
+  if (updateError) throw new Error(updateError.message);
+
   await updateAuthUser(session.user.id, { clubId: invitation.clubId });
 
-  // Add legacy membership record
-  await addMemberToClub(
-    invitation.clubId,
-    session.user.memberId!,
-    invitation.role
-  );
+  await addMemberToClub(invitation.clubId, session.user.memberId!, invitation.role);
 
-  // Mark invitation as used
   await markInvitationUsed(invitation.id);
 
   return {
@@ -441,43 +430,62 @@ export async function getAllInvitationsAction() {
     throw new Error("Nicht autorisiert");
   }
 
-  return db
-    .select({
-      id: clubInvitations.id,
-      clubId: clubInvitations.clubId,
-      email: clubInvitations.email,
-      role: clubInvitations.role,
-      token: clubInvitations.token,
-      expiresAt: clubInvitations.expiresAt,
-      usedAt: clubInvitations.usedAt,
-      createdAt: clubInvitations.createdAt,
-      clubName: clubs.name,
-      invitedByName: sql<string>`COALESCE(${members.firstName} || ' ' || ${members.lastName}, 'Administration')`,
-    })
-    .from(clubInvitations)
-    .innerJoin(clubs, eq(clubInvitations.clubId, clubs.id))
-    .leftJoin(members, eq(clubInvitations.invitedBy, members.id))
-    .orderBy(sql`${clubInvitations.createdAt} DESC`);
+  const client = createServiceClient();
+
+  const { data, error } = await client
+    .from("club_invitations")
+    .select("*, clubs(name), members(first_name, last_name)")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to fetch invitations:", error.message);
+    return [];
+  }
+
+  return (data || []).map((inv: any) => ({
+    id: inv.id,
+    clubId: inv.club_id,
+    email: inv.email,
+    role: inv.role,
+    token: inv.token,
+    expiresAt: inv.expires_at,
+    usedAt: inv.used_at,
+    createdAt: inv.created_at,
+    clubName: inv.clubs?.name,
+    invitedByName: inv.members
+      ? `${inv.members.first_name || ""} ${inv.members.last_name || ""}`.trim() || "Administration"
+      : "Administration",
+  }));
 }
 
 export async function getClubInvitationsAction() {
   const club = await requireClub();
 
-  return db
-    .select({
-      id: clubInvitations.id,
-      email: clubInvitations.email,
-      role: clubInvitations.role,
-      token: clubInvitations.token,
-      expiresAt: clubInvitations.expiresAt,
-      usedAt: clubInvitations.usedAt,
-      createdAt: clubInvitations.createdAt,
-      invitedByName: sql<string>`COALESCE(${members.firstName} || ' ' || ${members.lastName}, 'Administration')`,
-    })
-    .from(clubInvitations)
-    .leftJoin(members, eq(clubInvitations.invitedBy, members.id))
-    .where(eq(clubInvitations.clubId, club.id))
-    .orderBy(sql`${clubInvitations.createdAt} DESC`);
+  const client = createServiceClient();
+
+  const { data, error } = await client
+    .from("club_invitations")
+    .select("*, members(first_name, last_name)")
+    .eq("club_id", club.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to fetch club invitations:", error.message);
+    return [];
+  }
+
+  return (data || []).map((inv: any) => ({
+    id: inv.id,
+    email: inv.email,
+    role: inv.role,
+    token: inv.token,
+    expiresAt: inv.expires_at,
+    usedAt: inv.used_at,
+    createdAt: inv.created_at,
+    invitedByName: inv.members
+      ? `${inv.members.first_name || ""} ${inv.members.last_name || ""}`.trim() || "Administration"
+      : "Administration",
+  }));
 }
 
 export async function adminCreateInvitationAction(formData: FormData) {
@@ -497,15 +505,18 @@ export async function adminCreateInvitationAction(formData: FormData) {
     throw new Error("Verein nicht gefunden");
   }
 
-  // Super admin can specify any club; club admin uses clubCreateInvitationAction
   if (!session.user.isSuperAdmin) {
     throw new Error("Nicht autorisiert");
   }
 
-  const [existing] = await db
-    .select({ id: members.id })
-    .from(members)
-    .where(and(eq(members.email, email), eq(members.clubId, clubId)));
+  const client = createServiceClient();
+
+  const { data: existing } = await client
+    .from("members")
+    .select("id")
+    .eq("email", email)
+    .eq("club_id", clubId)
+    .maybeSingle();
 
   if (existing) {
     throw new Error("Mitglied ist bereits im Verein");
@@ -546,10 +557,14 @@ export async function clubCreateInvitationAction(formData: FormData) {
     throw new Error("E-Mail ist erforderlich");
   }
 
-  const [existing] = await db
-    .select({ id: members.id })
-    .from(members)
-    .where(and(eq(members.email, email), eq(members.clubId, club.id)));
+  const client = createServiceClient();
+
+  const { data: existing } = await client
+    .from("members")
+    .select("id")
+    .eq("email", email)
+    .eq("club_id", club.id)
+    .maybeSingle();
 
   if (existing) {
     throw new Error("Mitglied ist bereits im Verein");
@@ -581,26 +596,28 @@ export async function clubCreateInvitationAction(formData: FormData) {
 export async function revokeInvitationAction(invitationId: string) {
   const session = await requireAuth();
 
-  const [invitation] = await db
-    .select({ clubId: clubInvitations.clubId })
-    .from(clubInvitations)
-    .where(eq(clubInvitations.id, invitationId));
+  const client = createServiceClient();
+
+  const { data: invitation } = await client
+    .from("club_invitations")
+    .select("club_id")
+    .eq("id", invitationId)
+    .maybeSingle();
 
   if (!invitation) {
     throw new Error("Einladung nicht gefunden");
   }
 
   if (!session.user.isSuperAdmin) {
-    // Club admin can only revoke invitations from their club
     const club = await requireClub();
-    if (invitation.clubId !== club.id) {
+    if (invitation.club_id !== club.id) {
       throw new Error("Nicht autorisiert");
     }
   }
 
-  await db
-    .delete(clubInvitations)
-    .where(eq(clubInvitations.id, invitationId));
+  const { error } = await client.from("club_invitations").delete().eq("id", invitationId);
+
+  if (error) throw new Error(error.message);
 
   revalidatePath("/admin/einladungen");
   revalidatePath("/dashboard/einladungen");
@@ -616,68 +633,44 @@ export async function getAllClubsAction() {
     throw new Error("Nicht autorisiert");
   }
 
-  try {
-    const allClubs = await db
-      .select({
-        id: clubs.id,
-        name: clubs.name,
-        slug: clubs.slug,
-        isActive: clubs.isActive,
-        stripeCustomerId: clubs.stripeCustomerId,
-        stripeConnectAccountId: clubs.stripeConnectAccountId,
-        createdAt: clubs.createdAt,
-        memberCount: sql<number>`(
-          SELECT COUNT(*) FROM ${members}
-          WHERE ${members.clubId} = ${clubs.id}
-        )`,
-      })
-      .from(clubs)
-      .orderBy(clubs.createdAt);
+  const client = createServiceClient();
 
-    return allClubs;
-  } catch (error: any) {
-    const errorMessage = error.message || "Unknown error";
-    const isPoolerError = errorMessage.includes("Tenant or user not found") || error.cause?.message?.includes("Tenant or user not found");
-    
-    console.error("Drizzle getAllClubs failed:", {
-      message: errorMessage,
-      cause: error.cause?.message,
-      code: error.code || error.cause?.code,
-      isPoolerError
+  try {
+    const { data: allClubs, error: clubsError } = await client
+      .from("clubs")
+      .select("id, name, slug, is_active, stripe_customer_id, stripe_connect_account_id, created_at")
+      .order("created_at");
+
+    if (clubsError) throw clubsError;
+
+    const { data: allMembers, error: membersError } = await client
+      .from("members")
+      .select("club_id");
+
+    if (membersError) {
+      console.error("Failed to fetch members for club stats:", membersError.message);
+    }
+
+    const memberCountMap = new Map<string, number>();
+    allMembers?.forEach((m: any) => {
+      if (m.club_id) {
+        memberCountMap.set(m.club_id, (memberCountMap.get(m.club_id) || 0) + 1);
+      }
     });
 
-    if (isPoolerError) {
-      console.warn("⚠️ InsForge Pooler Error: Bitte prüfe ob das Projekt pausiert ist.");
-    }
-
-    console.info("🔄 Falling back to InsForge REST API (Service Role)...");
-
-    try {
-      const client = createServiceClient();
-      const { data, error: restError } = await client
-        .from('clubs')
-        .select('id, name, slug, is_active, stripe_customer_id, stripe_connect_account_id, created_at')
-        .order('created_at');
-
-      if (restError) {
-        console.error("REST API fallback for clubs also failed:", restError.message);
-        return [];
-      }
-
-      return (data || []).map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        isActive: c.is_active,
-        stripeCustomerId: c.stripe_customer_id,
-        stripeConnectAccountId: c.stripe_connect_account_id,
-        createdAt: c.created_at,
-        memberCount: 0,
-      }));
-    } catch (fallbackError: any) {
-      console.error("Failed to fetch clubs in getAllClubsAction fallback:", fallbackError.message);
-      return [];
-    }
+    return (allClubs || []).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      isActive: c.is_active,
+      stripeCustomerId: c.stripe_customer_id,
+      stripeConnectAccountId: c.stripe_connect_account_id,
+      createdAt: c.created_at,
+      memberCount: memberCountMap.get(c.id) || 0,
+    }));
+  } catch (error: any) {
+    console.error("Failed to fetch clubs in getAllClubsAction:", error.message);
+    return [];
   }
 }
 
@@ -703,10 +696,14 @@ export async function toggleClubStatusAction(clubId: string, isActive: boolean) 
     throw new Error("Nicht autorisiert");
   }
 
-  await db
-    .update(clubs)
-    .set({ isActive, updatedAt: new Date() })
-    .where(eq(clubs.id, clubId));
+  const client = createServiceClient();
+
+  const { error } = await client
+    .from("clubs")
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq("id", clubId);
+
+  if (error) throw new Error(error.message);
 
   revalidatePath("/super-admin");
   return { success: true };
@@ -724,7 +721,6 @@ export async function impersonateClubAction(clubId: string) {
     throw new Error("Verein nicht gefunden");
   }
 
-  // Set club as active for this session using strict tenancy
   await updateUserClub(session.user.id, clubId);
 
   return { success: true, club };

@@ -5,7 +5,7 @@ Willkommen in der Dokumentation der Schachvereins-Software. Dieses Projekt ist e
 ## 🏗️ Architektur & Technik
 
 - [Architektur & Tech-Stack Overview](./architecture/techstack.md)
-- [Vercel + Supabase Deployment](./architecture/vercel-deploy.md)
+- [Vercel + InsForge Deployment](./architecture/vercel-deploy.md)
 - [Authentifizierung & RBAC](./architecture/auth-rbac.md)
 - [Datenbank-Schema](./architecture/database.md)
 - [Technische Blindspots](./architecture/blindspots.md)

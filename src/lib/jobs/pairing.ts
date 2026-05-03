@@ -1,11 +1,6 @@
-import { db } from "@/lib/db";
-import { tournaments, games } from "@/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { generateSwissPairings, SwissPairingOptions } from "@/lib/pairings/swiss";
-import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
-
-// Einfache async Funktion - kein BullMQ mehr
-// Wird direkt von API Routes aufgerufen
 
 interface PairingJobData {
   tournamentId: string;
@@ -26,47 +21,55 @@ export async function generateTournamentPairings({
 }: PairingJobData): Promise<PairingJobResult> {
   logger.info(`Processing pairing for tournament ${tournamentId}, round ${options.round}`);
 
+  const client = createServiceClient();
+
   try {
-    // Generate pairings using Swiss system
     const result = await generateSwissPairings(trfContent, options);
 
     if (!result.success || !result.pairings) {
       throw new Error(result.errors?.join(", ") || "Pairing failed");
     }
 
-    // Update tournament with new TRF data
     if (result.trfOutput) {
-      await db
-        .update(tournaments)
-        .set({ trfData: result.trfOutput, updatedAt: new Date() })
-        .where(eq(tournaments.id, tournamentId));
+      const { error } = await client
+        .from("tournaments")
+        .update({ trf_data: result.trfOutput, updated_at: new Date().toISOString() })
+        .eq("id", tournamentId);
+
+      if (error) {
+        logger.error(`Failed to update tournament TRF data: ${error.message}`);
+      }
     }
 
-    // Get clubId
-    const [tournament] = await db
-      .select({ clubId: tournaments.clubId })
-      .from(tournaments)
-      .where(eq(tournaments.id, tournamentId));
+    const { data: tournament, error: tournamentError } = await client
+      .from("tournaments")
+      .select("club_id")
+      .eq("id", tournamentId)
+      .single();
 
-    if (!tournament) {
+    if (tournamentError || !tournament) {
       throw new Error("Tournament not found");
     }
 
-    // Insert new games
-    const newGames = result.pairings.map(p => ({
-      tournamentId,
-      clubId: tournament.clubId,
+    const newGames = result.pairings.map((p) => ({
+      tournament_id: tournamentId,
+      club_id: tournament.club_id,
       round: options.round,
-      boardNumber: p.board,
-      whiteId: p.whiteId,
-      blackId: p.blackId,
+      board_number: p.board,
+      white_id: p.whiteId,
+      black_id: p.blackId,
       result: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }));
 
     if (newGames.length > 0) {
-      await db.insert(games).values(newGames);
+      const { error } = await client.from("games").insert(newGames);
+
+      if (error) {
+        logger.error(`Failed to insert games: ${error.message}`);
+        throw new Error(`Failed to insert games: ${error.message}`);
+      }
     }
 
     logger.info(`Pairings generated: ${result.pairings.length} games`);
@@ -84,7 +87,6 @@ export async function generateTournamentPairings({
   }
 }
 
-// API Route Handler
 export async function handlePairingRequest(data: PairingJobData) {
   return await generateTournamentPairings(data);
 }

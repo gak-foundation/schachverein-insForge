@@ -1,6 +1,4 @@
-import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { clubs } from "@/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, Trophy, Users } from "lucide-react";
@@ -14,13 +12,25 @@ interface ClubPageProps {
 export default async function ClubPage({ params }: ClubPageProps) {
   const { slug } = await params;
 
-  const club = await db.query.clubs.findFirst({
-    where: eq(clubs.slug, slug),
-  });
+  const client = createServiceClient();
+  const { data: rawClub, error } = await client
+    .from("clubs")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
 
-  if (!club) {
+  if (error) {
+    console.error("Error fetching club:", error);
+  }
+
+  if (!rawClub) {
     notFound();
   }
+
+  const club = {
+    ...rawClub,
+    logoUrl: rawClub.logo_url,
+  };
 
   return (
     <div className="flex flex-col">

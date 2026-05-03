@@ -1,9 +1,7 @@
 import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { waitlistApplications } from "@/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { redirect } from "next/navigation";
-import { eq, desc } from "drizzle-orm";
 import { Suspense } from "react";
 import { WaitlistActions } from "./waitlist-actions";
 import { Clock, CheckCircle2, XCircle, Users, Rocket } from "lucide-react";
@@ -32,18 +30,32 @@ const STATUS_CONFIG = {
 };
 
 async function getWaitlistApplications(status?: string) {
+  const client = createServiceClient();
+  let query = client
+    .from("waitlist_applications")
+    .select("*")
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: false });
+
   if (status) {
-    return db
-      .select()
-      .from(waitlistApplications)
-      .where(eq(waitlistApplications.status, status as "pending" | "approved" | "rejected" | "waitlisted"))
-      .orderBy(waitlistApplications.position, desc(waitlistApplications.createdAt));
+    query = query.eq("status", status);
   }
 
-  return db
-    .select()
-    .from(waitlistApplications)
-    .orderBy(waitlistApplications.position, desc(waitlistApplications.createdAt));
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching waitlist applications:", error);
+    return [];
+  }
+
+  return (data || []).map((app: any) => ({
+    ...app,
+    clubName: app.club_name,
+    contactEmail: app.contact_email,
+    contactName: app.contact_name,
+    memberCount: app.member_count,
+    createdAt: app.created_at,
+  }));
 }
 
 function WaitlistTable({ applications }: { applications: Awaited<ReturnType<typeof getWaitlistApplications>> }) {
@@ -74,7 +86,7 @@ function WaitlistTable({ applications }: { applications: Awaited<ReturnType<type
         </thead>
         <tbody className="divide-y divide-gray-200">
           {applications.map((app) => {
-            const statusConfig = STATUS_CONFIG[app.status];
+            const statusConfig = STATUS_CONFIG[app.status as keyof typeof STATUS_CONFIG];
             const StatusIcon = statusConfig.icon;
 
             return (
@@ -206,17 +218,19 @@ export default async function AdminWaitlistPage({
 
   const { status } = await searchParams;
 
-  const counts = await db
-    .select({
-      status: waitlistApplications.status,
-      count: waitlistApplications.id,
-    })
-    .from(waitlistApplications)
-    .groupBy(waitlistApplications.status);
+  const client = createServiceClient();
+  const { data: allApplications, error } = await client
+    .from("waitlist_applications")
+    .select("status");
 
-  const statusCounts = Object.fromEntries(
-    counts.map(c => [c.status, c.count])
-  );
+  if (error) {
+    console.error("Error fetching waitlist counts:", error);
+  }
+
+  const statusCounts: Record<string, number> = {};
+  allApplications?.forEach((app: any) => {
+    statusCounts[app.status] = (statusCounts[app.status] || 0) + 1;
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-10">

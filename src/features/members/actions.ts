@@ -1,15 +1,5 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { 
-  members, 
-  clubMemberships, 
-  dwzHistory, 
-  authUsers, 
-  contributionRates,
-  memberStatusHistory 
-} from "@/lib/db/schema";
-import { eq, desc, asc, and, or, sql, SQL } from "drizzle-orm";
 import { createMemberSchema } from "@/lib/validations";
 import { updateUserRoleSchema } from "@/lib/validations/user";
 import { revalidatePath } from "next/cache";
@@ -22,8 +12,9 @@ import { requireClubId } from "@/lib/actions/utils";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { createServerClient, createServiceClient } from "@/lib/insforge";
 
-type ClubMemberRole = typeof clubMemberships.$inferSelect.role;
-type MemberRecordStatus = typeof members.$inferSelect.status;
+// Define types used across the file
+type ClubMemberRole = "admin" | "vorstand" | "mitglied" | "jugend" | "passiv";
+type MemberRecordStatus = "active" | "inactive" | "resigned" | "honorary";
 
 export type MemberSortField = "name" | "email" | "dwz" | "elo" | "role" | "status" | "createdAt";
 export type SortOrder = "asc" | "desc";
@@ -40,149 +31,93 @@ export async function getMembers(
   const clubId = await requireClubId();
   const offset = (page - 1) * pageSize;
 
-  const conditions: (SQL<unknown> | undefined)[] = [
-    eq(clubMemberships.clubId, clubId),
-  ];
+  const client = createServiceClient();
 
-  if (search) {
-    conditions.push(
-      or(
-        sql`${members.firstName} ILIKE ${`%${search}%`}`,
-        sql`${members.lastName} ILIKE ${`%${search}%`}`,
-        sql`${members.email} ILIKE ${`%${search}%`}`
-      )
-    );
-  }
+  // We fetch memberships with joined members for the club filter
+  let query = client
+    .from('club_memberships')
+    .select('role, members(*)', { count: 'exact' })
+    .eq('club_id', clubId);
 
   if (role) {
-    conditions.push(eq(clubMemberships.role, role as ClubMemberRole));
+    query = query.eq('role', role);
   }
 
   if (status) {
-    conditions.push(eq(members.status, status as MemberRecordStatus));
+    query = query.eq('members.status', status);
   }
 
-  let orderBy: SQL<unknown>;
-  const orderFn = sortOrder === "desc" ? desc : asc;
+  if (search) {
+    // Use or filter for search across first_name, last_name, email
+    // InsForge supports or as a separate method in some versions, but let's use a simple approach
+    // If or is not directly chainable, we may need to fetch and filter client-side for complex OR
+    // However, InsForge supports `.or()` method
+    query = query.or(`members.first_name.ilike.%${search}%,members.last_name.ilike.%${search}%,members.email.ilike.%${search}%`);
+  }
 
+  // Ordering
+  const ascending = sortOrder === "asc";
   switch (sortBy) {
     case "name":
-      orderBy = sql`${orderFn(members.lastName)}, ${orderFn(members.firstName)}`;
+      query = query.order('last_name', { ascending }).order('first_name', { ascending });
       break;
     case "email":
-      orderBy = orderFn(members.email);
+      query = query.order('members.email', { ascending });
       break;
     case "dwz":
-      orderBy = orderFn(members.dwz);
+      query = query.order('members.dwz', { ascending });
       break;
     case "elo":
-      orderBy = orderFn(members.elo);
+      query = query.order('members.elo', { ascending });
       break;
     case "role":
-      orderBy = orderFn(clubMemberships.role);
+      query = query.order('role', { ascending });
       break;
     case "status":
-      orderBy = orderFn(members.status);
+      query = query.order('members.status', { ascending });
       break;
     case "createdAt":
-      orderBy = orderFn(members.createdAt);
+      query = query.order('members.created_at', { ascending });
       break;
     default:
-      orderBy = desc(members.createdAt);
+      query = query.order('members.created_at', { ascending: false });
   }
 
-  try {
-    // 1. Try Drizzle
-    const query = db
-      .select({
-        id: members.id,
-        firstName: members.firstName,
-        lastName: members.lastName,
-        email: members.email,
-        phone: members.phone,
-        dateOfBirth: members.dateOfBirth,
-        gender: members.gender,
-        dwz: members.dwz,
-        elo: members.elo,
-        dwzId: members.dwzId,
-        lichessUsername: members.lichessUsername,
-        chesscomUsername: members.chesscomUsername,
-        role: clubMemberships.role,
-        status: members.status,
-        photoConsent: members.photoConsent,
-        newsletterConsent: members.newsletterConsent,
-        notes: members.notes,
-        createdAt: members.createdAt,
-      })
-      .from(clubMemberships)
-      .innerJoin(members, eq(clubMemberships.memberId, members.id))
-      .where(and(...conditions.filter(Boolean)))
-      .orderBy(orderBy)
-      .limit(pageSize)
-      .offset(offset);
+  query = query.range(offset, offset + pageSize - 1);
 
-    const totalCountQuery = db
-      .select({ count: sql<number>`count(*)` })
-      .from(clubMemberships)
-      .innerJoin(members, eq(clubMemberships.memberId, members.id))
-      .where(and(...conditions.filter(Boolean)));
+  const { data, count, error } = await query;
 
-    const [membersList, [totalCountResult]] = await Promise.all([
-      query,
-      totalCountQuery,
-    ]);
-
-    return {
-      members: membersList,
-      totalCount: Number(totalCountResult?.count ?? 0),
-      totalPages: Math.ceil(Number(totalCountResult?.count ?? 0) / pageSize),
-    };
-  } catch (error) {
-    // 2. Fallback to REST API (Service Role)
-    const client = createServiceClient();
-    
-    // We fetch memberships first for the club filter
-    let membersQuery = client
-      .from('club_memberships')
-      .select('role, members(*)', { count: 'exact' })
-      .eq('club_id', clubId);
-
-    if (role) {
-      membersQuery = membersQuery.eq('role', role);
-    }
-    
-    const { data, count, error: restError } = await membersQuery
-      .range(offset, offset + pageSize - 1);
-      
-    if (restError || !data) return { members: [], totalCount: 0, totalPages: 0 };
-    
-    const membersList = data.map((item: any) => ({
-      id: item.members.id,
-      firstName: item.members.first_name,
-      lastName: item.members.last_name,
-      email: item.members.email,
-      phone: item.members.phone,
-      dateOfBirth: item.members.date_of_birth,
-      gender: item.members.gender,
-      dwz: item.members.dwz,
-      elo: item.members.elo,
-      dwzId: item.members.dwz_id,
-      lichessUsername: item.members.lichess_username,
-      chesscomUsername: item.members.chesscom_username,
-      role: item.role,
-      status: item.members.status,
-      photoConsent: item.members.photo_consent,
-      newsletterConsent: item.members.newsletter_consent,
-      notes: item.members.notes,
-      createdAt: item.members.created_at,
-    }));
-
-    return {
-      members: membersList,
-      totalCount: count || 0,
-      totalPages: Math.ceil((count || 0) / pageSize),
-    };
+  if (error || !data) {
+    console.error("getMembers failed:", error);
+    return { members: [], totalCount: 0, totalPages: 0 };
   }
+
+  const membersList = data.map((item: any) => ({
+    id: item.members.id,
+    firstName: item.members.first_name,
+    lastName: item.members.last_name,
+    email: item.members.email,
+    phone: item.members.phone,
+    dateOfBirth: item.members.date_of_birth,
+    gender: item.members.gender,
+    dwz: item.members.dwz,
+    elo: item.members.elo,
+    dwzId: item.members.dwz_id,
+    lichessUsername: item.members.lichess_username,
+    chesscomUsername: item.members.chesscom_username,
+    role: item.role,
+    status: item.members.status,
+    photoConsent: item.members.photo_consent,
+    newsletterConsent: item.members.newsletter_consent,
+    notes: item.members.notes,
+    createdAt: item.members.created_at,
+  }));
+
+  return {
+    members: membersList,
+    totalCount: count || 0,
+    totalPages: Math.ceil((count || 0) / pageSize),
+  };
 }
 
 export async function getMembersForForms() {
@@ -192,75 +127,44 @@ export async function getMembersForForms() {
 
 export async function getMemberById(id: string) {
   const clubId = await requireClubId();
+  const client = createServerClient();
 
-  let member: any = null;
+  const { data: membership, error: membershipError } = await client
+    .from('club_memberships')
+    .select('*')
+    .eq('member_id', id)
+    .eq('club_id', clubId)
+    .maybeSingle();
 
-  try {
-    const [membership] = await db
-      .select()
-      .from(clubMemberships)
-      .where(and(
-        eq(clubMemberships.memberId, id),
-        eq(clubMemberships.clubId, clubId)
-      ));
-
-    if (!membership) {
-      return null;
-    }
-
-    member = await db.query.members.findFirst({
-      where: eq(members.id, id),
-      with: {
-        clubMemberships: true,
-      }
-    });
-    if (member) {
-      (member as any).membership = membership;
-    }
-  } catch (error: any) {
-    console.error("❌ Drizzle getMemberById failed:", {
-      message: error.message,
-      code: error.code,
-      detail: error.detail,
-    });
-
-    // Fallback auf InsForge REST API für kritische Read-Operation
-    const client = createServerClient();
-    const { data: membership, error: membershipError } = await client
-      .from('club_memberships')
-      .select('*')
-      .eq('member_id', id)
-      .eq('club_id', clubId)
-      .maybeSingle();
-
-    if (membershipError) {
-      console.error("REST API fallback for club_memberships failed:", membershipError.message);
-      throw error;
-    }
-
-    if (!membership) return null;
-
-    const { data: memberData, error: memberError } = await client
-      .from('members')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (memberError) {
-      console.error("REST API fallback for members failed:", memberError.message);
-      throw error;
-    }
-
-    member = {
-      ...memberData,
-      membership,
-    };
+  if (membershipError) {
+    console.error("getMemberById club_memberships failed:", membershipError.message);
+    throw membershipError;
   }
 
+  if (!membership) {
+    return null;
+  }
+
+  const { data: memberData, error: memberError } = await client
+    .from('members')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (memberError) {
+    console.error("getMemberById members failed:", memberError.message);
+    throw memberError;
+  }
+
+  const member = {
+    ...memberData,
+    membership,
+  };
+
   if (member) {
-    if (member.sepaIban) member.sepaIban = decrypt(member.sepaIban);
-    if (member.sepaBic) member.sepaBic = decrypt(member.sepaBic);
-    if (member.medicalNotes) member.medicalNotes = decrypt(member.medicalNotes);
+    if (member.sepa_iban) member.sepa_iban = decrypt(member.sepa_iban);
+    if (member.sepa_bic) member.sepa_bic = decrypt(member.sepa_bic);
+    if (member.medical_notes) member.medical_notes = decrypt(member.medical_notes);
   }
 
   return member;
@@ -268,58 +172,52 @@ export async function getMemberById(id: string) {
 
 export async function getMemberStatusHistory(memberId: string) {
   const clubId = await requireClubId();
+  const client = createServerClient();
 
-  try {
-    // Check if member belongs to club
-    const [membership] = await db
-      .select()
-      .from(clubMemberships)
-      .where(and(
-        eq(clubMemberships.memberId, memberId),
-        eq(clubMemberships.clubId, clubId)
-      ));
+  // Check if member belongs to club
+  const { data: membership, error: membershipError } = await client
+    .from('club_memberships')
+    .select('*')
+    .eq('member_id', memberId)
+    .eq('club_id', clubId)
+    .maybeSingle();
 
-    if (!membership) {
-      throw new Error("Mitglied nicht gefunden");
-    }
-
-    return db
-      .select()
-      .from(memberStatusHistory)
-      .where(eq(memberStatusHistory.memberId, memberId))
-      .orderBy(desc(memberStatusHistory.changedAt));
-  } catch (error: any) {
-    console.error("❌ Drizzle getMemberStatusHistory failed, falling back to REST API");
-    const client = createServerClient();
-    const { data, error: restError } = await client
-      .from('member_status_history')
-      .select('*')
-      .eq('member_id', memberId)
-      .order('created_at', { ascending: false });
-
-    if (restError) throw error;
-    return data || [];
+  if (membershipError) {
+    throw membershipError;
   }
-}
 
+  if (!membership) {
+    throw new Error("Mitglied nicht gefunden");
+  }
+
+  const { data, error } = await client
+    .from('member_status_history')
+    .select('*')
+    .eq('member_id', memberId)
+    .order('changed_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
 
 export async function getContributionRatesForMemberSelect() {
   const clubId = await requireClubId();
+  const client = createServerClient();
 
-  return db
-    .select({
-      id: contributionRates.id,
-      name: contributionRates.name,
-      amount: contributionRates.amount,
-    })
-    .from(contributionRates)
-    .where(eq(contributionRates.clubId, clubId))
-    .orderBy(contributionRates.name);
+  const { data, error } = await client
+    .from('contribution_rates')
+    .select('id, name, amount')
+    .eq('club_id', clubId)
+    .order('name');
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function createMember(formData: FormData) {
   const clubId = await requireClubId();
   const session = await getSession();
+  const client = createServerClient();
 
   const rawData = {
     firstName: formData.get("firstName") as string,
@@ -355,35 +253,72 @@ export async function createMember(formData: FormData) {
 
   const validated = createMemberSchema.parse(rawData);
 
-  const [member] = await db
-    .insert(members)
-    .values({
-      ...validated,
-      dateOfBirth: validated.dateOfBirth || null,
-      parentId: validated.parentId || null,
-      sepaIban: validated.sepaIban ? encrypt(validated.sepaIban) : null,
-      sepaBic: validated.sepaBic ? encrypt(validated.sepaBic) : null,
-      medicalNotes: validated.medicalNotes ? encrypt(validated.medicalNotes) : null,
-    })
-    .returning();
+  const { data: member, error: memberError } = await client
+    .from('members')
+    .insert([{
+      first_name: validated.firstName,
+      last_name: validated.lastName,
+      email: validated.email,
+      phone: validated.phone || null,
+      date_of_birth: validated.dateOfBirth || null,
+      gender: validated.gender || null,
+      dwz: validated.dwz || null,
+      elo: validated.elo || null,
+      dwz_id: validated.dwzId || null,
+      lichess_username: validated.lichessUsername || null,
+      chesscom_username: validated.chesscomUsername || null,
+      status: validated.status,
+      parent_id: validated.parentId || null,
+      photo_consent: validated.photoConsent,
+      newsletter_consent: validated.newsletterConsent,
+      result_publication_consent: validated.resultPublicationConsent,
+      notes: validated.notes || null,
+      medical_notes: validated.medicalNotes ? encrypt(validated.medicalNotes) : null,
+      emergency_contact_name: validated.emergencyContactName || null,
+      emergency_contact_phone: validated.emergencyContactPhone || null,
+      sepa_iban: validated.sepaIban ? encrypt(validated.sepaIban) : null,
+      sepa_bic: validated.sepaBic ? encrypt(validated.sepaBic) : null,
+      sepa_mandate_reference: validated.sepaMandateReference || null,
+      mandate_signed_at: validated.mandateSignedAt || null,
+      mandate_url: validated.mandateUrl || null,
+      contribution_rate_id: validated.contributionRateId || null,
+    }])
+    .select()
+    .single();
 
-  await db.insert(clubMemberships).values({
-    clubId,
-    memberId: member.id,
-    role: validated.role,
-  });
+  if (memberError || !member) {
+    throw memberError || new Error("Mitglied konnte nicht erstellt werden");
+  }
+
+  const { error: membershipError } = await client
+    .from('club_memberships')
+    .insert([{
+      club_id: clubId,
+      member_id: member.id,
+      role: validated.role,
+    }]);
+
+  if (membershipError) {
+    throw membershipError;
+  }
 
   // Record initial status in history
-  await db.insert(memberStatusHistory).values({
-    memberId: member.id,
-    newStatus: validated.status as "active" | "inactive" | "resigned" | "honorary",
-    reason: "Mitglied angelegt",
-    changedBy: session?.user.memberId ?? null,
-  });
+  const { error: historyError } = await client
+    .from('member_status_history')
+    .insert([{
+      member_id: member.id,
+      new_status: validated.status as MemberRecordStatus,
+      reason: "Mitglied angelegt",
+      changed_by: session?.user.memberId ?? null,
+    }]);
+
+  if (historyError) {
+    throw historyError;
+  }
 
   await logMemberAction("CREATED", member.id, {
-    firstName: { old: null, new: member.firstName },
-    lastName: { old: null, new: member.lastName },
+    firstName: { old: null, new: member.first_name },
+    lastName: { old: null, new: member.last_name },
     email: { old: null, new: member.email },
     role: { old: null, new: validated.role },
   });
@@ -409,14 +344,18 @@ export async function createMember(formData: FormData) {
 export async function deleteMember(id: string) {
   const clubId = await requireClubId();
   const session = await getSession();
+  const client = createServerClient();
 
-  const [membership] = await db
-    .select()
-    .from(clubMemberships)
-    .where(and(
-      eq(clubMemberships.memberId, id),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  const { data: membership, error: membershipError } = await client
+    .from('club_memberships')
+    .select('*')
+    .eq('member_id', id)
+    .eq('club_id', clubId)
+    .maybeSingle();
+
+  if (membershipError) {
+    throw membershipError;
+  }
 
   if (!membership) {
     throw new Error("Mitglied nicht gefunden");
@@ -424,30 +363,45 @@ export async function deleteMember(id: string) {
 
   const member = await getMemberById(id);
 
-  await db
-    .update(clubMemberships)
-    .set({ status: "inactive" })
-    .where(and(
-      eq(clubMemberships.memberId, id),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  const { error: updateMembershipError } = await client
+    .from('club_memberships')
+    .update({ status: "inactive" })
+    .eq('member_id', id)
+    .eq('club_id', clubId);
+
+  if (updateMembershipError) {
+    throw updateMembershipError;
+  }
 
   // Record status change in history
   if (member && member.status !== "inactive") {
-    await db.insert(memberStatusHistory).values({
-      memberId: id,
-      oldStatus: member.status,
-      newStatus: "inactive",
-      reason: "Mitglied deaktiviert (gelöscht)",
-      changedBy: session?.user.memberId ?? null,
-    });
+    const { error: historyError } = await client
+      .from('member_status_history')
+      .insert([{
+        member_id: id,
+        old_status: member.status,
+        new_status: "inactive",
+        reason: "Mitglied deaktiviert (gelöscht)",
+        changed_by: session?.user.memberId ?? null,
+      }]);
 
-    await db.update(members).set({ status: "inactive" }).where(eq(members.id, id));
+    if (historyError) {
+      throw historyError;
+    }
+
+    const { error: updateMemberError } = await client
+      .from('members')
+      .update({ status: "inactive" })
+      .eq('id', id);
+
+    if (updateMemberError) {
+      throw updateMemberError;
+    }
   }
 
   await logMemberAction("DELETED", id, {
-    firstName: { old: member?.firstName, new: null },
-    lastName: { old: member?.lastName, new: null },
+    firstName: { old: member?.first_name, new: null },
+    lastName: { old: member?.last_name, new: null },
     email: { old: member?.email, new: null },
   });
 
@@ -458,14 +412,18 @@ export async function updateMember(formData: FormData) {
   const clubId = await requireClubId();
   const session = await getSession();
   const id = formData.get("id") as string;
+  const client = createServerClient();
 
-  const [membership] = await db
-    .select()
-    .from(clubMemberships)
-    .where(and(
-      eq(clubMemberships.memberId, id),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  const { data: membership, error: membershipError } = await client
+    .from('club_memberships')
+    .select('*')
+    .eq('member_id', id)
+    .eq('club_id', clubId)
+    .maybeSingle();
+
+  if (membershipError) {
+    throw membershipError;
+  }
 
   if (!membership) {
     throw new Error("Mitglied nicht gefunden");
@@ -493,44 +451,56 @@ export async function updateMember(formData: FormData) {
 
   // Record status change if it changed
   if (status !== currentMember.status) {
-    await db.insert(memberStatusHistory).values({
-      memberId: id,
-      oldStatus: currentMember.status,
-      newStatus: status as MemberRecordStatus,
-      reason: "Status manuell aktualisiert",
-      changedBy: session?.user.memberId ?? null,
-    });
+    const { error: historyError } = await client
+      .from('member_status_history')
+      .insert([{
+        member_id: id,
+        old_status: currentMember.status,
+        new_status: status as MemberRecordStatus,
+        reason: "Status manuell aktualisiert",
+        changed_by: session?.user.memberId ?? null,
+      }]);
+
+    if (historyError) {
+      throw historyError;
+    }
   }
 
-  await db
-    .update(members)
-    .set({
-      firstName,
-      lastName,
+  const { error: updateMemberError } = await client
+    .from('members')
+    .update({
+      first_name: firstName,
+      last_name: lastName,
       email,
       phone,
       dwz,
       status: status as MemberRecordStatus,
-      medicalNotes: medicalNotes ? encrypt(medicalNotes) : null,
-      emergencyContactName,
-      emergencyContactPhone,
-      sepaIban: sepaIban ? encrypt(sepaIban) : null,
-      sepaBic: sepaBic ? encrypt(sepaBic) : null,
-      sepaMandateReference,
-      mandateSignedAt,
-      mandateUrl,
-      contributionRateId,
+      medical_notes: medicalNotes ? encrypt(medicalNotes) : null,
+      emergency_contact_name: emergencyContactName,
+      emergency_contact_phone: emergencyContactPhone,
+      sepa_iban: sepaIban ? encrypt(sepaIban) : null,
+      sepa_bic: sepaBic ? encrypt(sepaBic) : null,
+      sepa_mandate_reference: sepaMandateReference,
+      mandate_signed_at: mandateSignedAt,
+      mandate_url: mandateUrl,
+      contribution_rate_id: contributionRateId,
     })
-    .where(eq(members.id, id));
+    .eq('id', id);
+
+  if (updateMemberError) {
+    throw updateMemberError;
+  }
 
   if (role) {
-    await db
-      .update(clubMemberships)
-      .set({ role: role as ClubMemberRole })
-      .where(and(
-        eq(clubMemberships.memberId, id),
-        eq(clubMemberships.clubId, clubId)
-      ));
+    const { error: updateRoleError } = await client
+      .from('club_memberships')
+      .update({ role: role as ClubMemberRole })
+      .eq('member_id', id)
+      .eq('club_id', clubId);
+
+    if (updateRoleError) {
+      throw updateRoleError;
+    }
   }
 
   revalidatePath("/dashboard/members");
@@ -538,41 +508,37 @@ export async function updateMember(formData: FormData) {
 
 export async function getDWZHistory(memberId: string) {
   const clubId = await requireClubId();
+  const client = createServerClient();
 
-  try {
-    const [membership] = await db
-      .select()
-      .from(clubMemberships)
-      .where(and(
-        eq(clubMemberships.memberId, memberId),
-        eq(clubMemberships.clubId, clubId)
-      ));
+  // Check if member belongs to club
+  const { data: membership, error: membershipError } = await client
+    .from('club_memberships')
+    .select('*')
+    .eq('member_id', memberId)
+    .eq('club_id', clubId)
+    .maybeSingle();
 
-    if (!membership) {
-      throw new Error("Mitglied ist nicht im Verein");
-    }
-
-    return db
-      .select()
-      .from(dwzHistory)
-      .where(eq(dwzHistory.memberId, memberId))
-      .orderBy(desc(dwzHistory.recordedAt));
-  } catch (error: any) {
-    console.error("❌ Drizzle getDWZHistory failed, falling back to REST API");
-    const client = createServerClient();
-    const { data, error: restError } = await client
-      .from('dwz_history')
-      .select('*')
-      .eq('member_id', memberId)
-      .order('recorded_at', { ascending: false });
-
-    if (restError) throw error;
-    return data || [];
+  if (membershipError) {
+    throw membershipError;
   }
+
+  if (!membership) {
+    throw new Error("Mitglied ist nicht im Verein");
+  }
+
+  const { data, error } = await client
+    .from('dwz_history')
+    .select('*')
+    .eq('member_id', memberId)
+    .order('recorded_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function addDWZEntry(formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServerClient();
 
   const memberId = formData.get("memberId") as string;
   const dwz = Number(formData.get("dwz"));
@@ -580,30 +546,43 @@ export async function addDWZEntry(formData: FormData) {
   const source = (formData.get("source") as string) || "manual";
   const recordedAt = formData.get("recordedAt") as string;
 
-  const [membership] = await db
-    .select()
-    .from(clubMemberships)
-    .where(and(
-      eq(clubMemberships.memberId, memberId),
-      eq(clubMemberships.clubId, clubId)
-    ));
+  const { data: membership, error: membershipError } = await client
+    .from('club_memberships')
+    .select('*')
+    .eq('member_id', memberId)
+    .eq('club_id', clubId)
+    .maybeSingle();
+
+  if (membershipError) {
+    throw membershipError;
+  }
 
   if (!membership) {
     throw new Error("Mitglied ist nicht im Verein");
   }
 
-  await db.insert(dwzHistory).values({
-    memberId,
-    dwz,
-    elo,
-    source,
-    recordedAt,
-  });
+  const { error: insertError } = await client
+    .from('dwz_history')
+    .insert([{
+      member_id: memberId,
+      dwz,
+      elo,
+      source,
+      recorded_at: recordedAt,
+    }]);
 
-  await db
-    .update(members)
-    .set({ dwz })
-    .where(eq(members.id, memberId));
+  if (insertError) {
+    throw insertError;
+  }
+
+  const { error: updateError } = await client
+    .from('members')
+    .update({ dwz })
+    .eq('id', memberId);
+
+  if (updateError) {
+    throw updateError;
+  }
 
   revalidatePath("/dashboard/members");
 }
@@ -611,34 +590,51 @@ export async function addDWZEntry(formData: FormData) {
 import { fetchDwzData } from "@/lib/dwz";
 
 export async function syncMemberDwz(memberId: string) {
-  const [member] = await db
-    .select()
-    .from(members)
-    .where(eq(members.id, memberId));
+  const client = createServerClient();
 
-  if (!member || !member.dwzId) {
+  const { data: member, error: memberError } = await client
+    .from('members')
+    .select('*')
+    .eq('id', memberId)
+    .single();
+
+  if (memberError || !member) {
     return { success: false, error: "Keine DWZ-ID vorhanden" };
   }
 
-  const data = await fetchDwzData(member.dwzId);
+  if (!member.dwz_id) {
+    return { success: false, error: "Keine DWZ-ID vorhanden" };
+  }
+
+  const data = await fetchDwzData(member.dwz_id);
   if (!data) {
     return { success: false, error: "Daten konnten nicht von DeWIS abgerufen werden" };
   }
 
   // Only update if changed
   if (data.dwz !== member.dwz) {
-    await db
-      .update(members)
-      .set({ dwz: data.dwz })
-      .where(eq(members.id, memberId));
+    const { error: updateError } = await client
+      .from('members')
+      .update({ dwz: data.dwz })
+      .eq('id', memberId);
 
-    await db.insert(dwzHistory).values({
-      memberId,
-      dwz: data.dwz,
-      elo: member.elo,
-      source: "dewis-sync",
-      recordedAt: new Date().toISOString().split("T")[0],
-    });
+    if (updateError) {
+      throw updateError;
+    }
+
+    const { error: insertError } = await client
+      .from('dwz_history')
+      .insert([{
+        member_id: memberId,
+        dwz: data.dwz,
+        elo: member.elo,
+        source: "dewis-sync",
+        recorded_at: new Date().toISOString().split("T")[0],
+      }]);
+
+    if (insertError) {
+      throw insertError;
+    }
 
     return { success: true, oldDwz: member.dwz, newDwz: data.dwz };
   }
@@ -648,23 +644,22 @@ export async function syncMemberDwz(memberId: string) {
 
 export async function syncAllMembersDwz() {
   const clubId = await requireClubId();
+  const client = createServerClient();
 
-  const allMembersWithId = await db
-    .select({
-      id: members.id,
-      dwzId: members.dwzId,
-    })
-    .from(members)
-    .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
-    .where(and(
-      eq(clubMemberships.clubId, clubId),
-      sql`${members.dwzId} IS NOT NULL`
-    ));
+  const { data: allMembersWithId, error } = await client
+    .from('members')
+    .select('id, dwz_id, club_memberships!inner(club_id)')
+    .eq('club_memberships.club_id', clubId)
+    .not('dwz_id', 'is', null);
+
+  if (error) {
+    throw error;
+  }
 
   let updatedCount = 0;
   let errorCount = 0;
 
-  for (const m of allMembersWithId) {
+  for (const m of (allMembersWithId || [])) {
     try {
       const result = await syncMemberDwz(m.id);
       if (result.success && result.newDwz !== undefined) {
@@ -679,7 +674,7 @@ export async function syncAllMembersDwz() {
   }
 
   revalidatePath("/dashboard/members");
-  return { updatedCount, errorCount, total: allMembersWithId.length };
+  return { updatedCount, errorCount, total: (allMembersWithId || []).length };
 }
 
 const ALL_PERMISSION_VALUES = new Set(Object.values(PERMISSIONS));
@@ -710,14 +705,20 @@ export async function updateUserRole(formData: FormData) {
     (p) => ALL_PERMISSION_VALUES.has(p as (typeof PERMISSIONS)[keyof typeof PERMISSIONS]) && !rolePermSet.has(p as never),
   );
 
-  await db
-    .update(authUsers)
-    .set({
-      role: role as (typeof authUsers.$inferInsert)["role"],
+  const client = createServerClient();
+
+  const { error } = await client
+    .from('auth_users')
+    .update({
+      role: role,
       permissions: additional,
-      updatedAt: new Date(),
+      updated_at: new Date().toISOString(),
     })
-    .where(eq(authUsers.id, userId));
+    .eq('id', userId);
+
+  if (error) {
+    throw error;
+  }
 
   revalidatePath("/dashboard/admin/users");
   revalidatePath(`/dashboard/admin/users/${userId}/edit`);
@@ -725,21 +726,20 @@ export async function updateUserRole(formData: FormData) {
 
 export async function syncLichessRating(memberId: string) {
   const clubId = await requireClubId();
+  const client = createServerClient();
 
-  const [result] = await db
-    .select({
-      lichessUsername: members.lichessUsername,
-      dwz: members.dwz,
-    })
-    .from(members)
-    .innerJoin(clubMemberships, eq(members.id, clubMemberships.memberId))
-    .where(and(eq(members.id, memberId), eq(clubMemberships.clubId, clubId)));
+  const { data: result, error } = await client
+    .from('members')
+    .select('lichess_username, dwz, club_memberships!inner(club_id)')
+    .eq('id', memberId)
+    .eq('club_memberships.club_id', clubId)
+    .single();
 
-  if (!result || !result.lichessUsername) {
+  if (error || !result || !result.lichess_username) {
     throw new Error("Mitglied nicht gefunden oder kein Lichess-Benutzername hinterlegt");
   }
 
-  const profile = await fetchLichessProfile(result.lichessUsername);
+  const profile = await fetchLichessProfile(result.lichess_username);
   if (!profile) {
     throw new Error("Lichess-Profil konnte nicht abgerufen werden");
   }
@@ -750,19 +750,29 @@ export async function syncLichessRating(memberId: string) {
   }
 
   // Update member ELO
-  await db
-    .update(members)
-    .set({ elo: newElo })
-    .where(eq(members.id, memberId));
+  const { error: updateError } = await client
+    .from('members')
+    .update({ elo: newElo })
+    .eq('id', memberId);
+
+  if (updateError) {
+    throw updateError;
+  }
 
   // Add history entry
-  await db.insert(dwzHistory).values({
-    memberId,
-    dwz: result.dwz ?? 0,
-    elo: newElo,
-    source: "lichess-sync",
-    recordedAt: new Date().toISOString().split("T")[0],
-  });
+  const { error: insertError } = await client
+    .from('dwz_history')
+    .insert([{
+      member_id: memberId,
+      dwz: result.dwz ?? 0,
+      elo: newElo,
+      source: "lichess-sync",
+      recorded_at: new Date().toISOString().split("T")[0],
+    }]);
+
+  if (insertError) {
+    throw insertError;
+  }
 
   revalidatePath(`/dashboard/members/${memberId}`);
   return { success: true, newElo };

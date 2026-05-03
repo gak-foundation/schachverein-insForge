@@ -1,9 +1,7 @@
 import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { authUsers, members } from "@/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { redirect } from "next/navigation";
-import { eq, desc, ilike, or } from "drizzle-orm";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -30,38 +28,39 @@ const ROLE_STYLES: Record<string, string> = {
 };
 
 async function getUsers(search?: string, roleFilter?: string) {
-  const conditions = [];
+  const client = createServiceClient();
+  let query = client
+    .from("auth_user")
+    .select("id, name, email, role, permissions, member_id, created_at, members(first_name, last_name)")
+    .order("created_at", { ascending: false });
 
   if (search) {
     const escapedSearch = search.replace(/[%_]/g, "\\$&");
-    conditions.push(
-      or(
-        ilike(authUsers.name, `%${escapedSearch}%`),
-        ilike(authUsers.email, `%${escapedSearch}%`),
-      ),
-    );
+    query = query.or(`name.ilike.%${escapedSearch}%,email.ilike.%${escapedSearch}%`);
   }
 
   if (roleFilter) {
-    conditions.push(eq(authUsers.role, roleFilter as typeof authUsers.role.enumValues[number]));
+    query = query.eq("role", roleFilter);
   }
 
-  return db
-    .select({
-      id: authUsers.id,
-      name: authUsers.name,
-      email: authUsers.email,
-      role: authUsers.role,
-      permissions: authUsers.permissions,
-      memberId: authUsers.memberId,
-      firstName: members.firstName,
-      lastName: members.lastName,
-      createdAt: authUsers.createdAt,
-    })
-    .from(authUsers)
-    .leftJoin(members, eq(authUsers.memberId, members.id))
-    .where(conditions.length > 0 ? or(...conditions) : undefined)
-    .orderBy(desc(authUsers.createdAt));
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching users:", error);
+    return [];
+  }
+
+  return (data || []).map((u: any) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    permissions: u.permissions,
+    memberId: u.member_id,
+    firstName: u.members?.first_name ?? null,
+    lastName: u.members?.last_name ?? null,
+    createdAt: u.created_at,
+  }));
 }
 
 function UsersTable({ authUsers: userList }: { authUsers: Awaited<ReturnType<typeof getUsers>> }) {

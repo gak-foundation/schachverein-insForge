@@ -1,18 +1,11 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { insforge } from '@/lib/insforge';
+import { createServerAuthClient } from '@/lib/insforge/server-auth';
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('insforge_session')?.value;
-  
-  if (!token) {
-    return NextResponse.json({ user: null });
-  }
-  
   try {
-    const { data, error } = await insforge.auth.getCurrentUser();
-    if (error || !data.user) {
+    const client = await createServerAuthClient();
+    const { data, error } = await client.auth.getCurrentUser();
+    if (error || !data?.user) {
       return NextResponse.json({ user: null });
     }
     return NextResponse.json({ user: data.user });

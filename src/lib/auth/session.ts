@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/insforge";
+import { createServerAuthClient } from "@/lib/insforge/server-auth";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { ROLE_PERMISSIONS, Permission } from "./permissions";
@@ -10,36 +10,18 @@ import { getClubById, getClubBySlug } from "@/lib/clubs/queries";
 // Cached session getter for server components
 export const getSession = cache(async () => {
   try {
-    const client = createServerClient();
+    const client = await createServerAuthClient();
     let user = null;
 
     try {
       const { data, error } = await client.auth.getCurrentUser();
       if (error) {
-        const errorMessage = (error as any).message?.toLowerCase() || '';
-        const errorCode = (error as any).code;
-        const isMissingSession =
-          errorCode === 'refresh_token_not_found' ||
-          errorCode === 'session_not_found' ||
-          errorMessage.includes('session missing');
-
-        if (!isMissingSession) {
-          console.error("Auth error in getSession:", error.message);
-        }
         return null;
       }
       user = data?.user;
     } catch (error: any) {
       if (error?.digest === 'DYNAMIC_SERVER_USAGE' || error?.message?.includes('dynamic-server-error')) {
         throw error;
-      }
-      const isMissingSession =
-        error?.code === 'refresh_token_not_found' ||
-        error?.code === 'session_not_found' ||
-        error?.message?.toLowerCase().includes('session missing');
-
-      if (!isMissingSession) {
-        console.error("Unexpected auth error in getSession:", error);
       }
       return null;
     }

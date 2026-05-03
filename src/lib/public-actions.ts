@@ -1,160 +1,243 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { members, teams, seasons, tournaments, events, matches, clubs } from "@/lib/db/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
-
-// ─── Public Actions (No auth required) ─────────────────────────
+import { createServiceClient } from "@/lib/insforge";
 
 export async function getPublicEvents(clubSlug: string, limit?: number) {
-  const query = db
-    .select({
-      id: events.id,
-      title: events.title,
-      description: events.description,
-      eventType: events.eventType,
-      startDate: events.startDate,
-      endDate: events.endDate,
-      location: events.location,
-      isAllDay: events.isAllDay,
-    })
-    .from(events)
-    .innerJoin(clubs, eq(events.clubId, clubs.id))
-    .where(
-      and(
-        eq(clubs.slug, clubSlug),
-        sql`${events.startDate} >= NOW()`
-      )
-    )
-    .orderBy(events.startDate);
+  const client = createServiceClient();
+
+  const { data: club, error: clubError } = await client
+    .from("clubs")
+    .select("id")
+    .eq("slug", clubSlug)
+    .single();
+
+  if (clubError || !club) return [];
+
+  const query = client
+    .from("events")
+    .select("id, title, description, event_type, start_date, end_date, location, is_all_day")
+    .eq("club_id", club.id)
+    .gte("start_date", new Date().toISOString())
+    .order("start_date", { ascending: true });
 
   if (limit) {
-    return query.limit(limit);
+    const { data, error } = await query.limit(limit);
+    if (error) return [];
+    return (data || []).map((e: any) => ({
+      id: e.id,
+      title: e.title,
+      description: e.description,
+      eventType: e.event_type,
+      startDate: e.start_date,
+      endDate: e.end_date,
+      location: e.location,
+      isAllDay: e.is_all_day,
+    }));
   }
-  return query;
+
+  const { data, error } = await query;
+  if (error) return [];
+  return (data || []).map((e: any) => ({
+    id: e.id,
+    title: e.title,
+    description: e.description,
+    eventType: e.event_type,
+    startDate: e.start_date,
+    endDate: e.end_date,
+    location: e.location,
+    isAllDay: e.is_all_day,
+  }));
 }
 
 export async function getPublicTeams(clubSlug: string) {
+  const client = createServiceClient();
   const currentYear = new Date().getFullYear();
 
-  const result = await db
-    .select({
-      id: teams.id,
-      name: teams.name,
-      league: teams.league,
-      captainName: sql<string>`${members.firstName} || ' ' || ${members.lastName}`.as("captainName"),
-      seasonName: seasons.name,
-    })
-    .from(teams)
-    .innerJoin(clubs, eq(teams.clubId, clubs.id))
-    .innerJoin(seasons, eq(teams.seasonId, seasons.id))
-    .leftJoin(members, eq(teams.captainId, members.id))
-    .where(
-      and(
-        eq(clubs.slug, clubSlug),
-        sql`${seasons.year} = ${currentYear}`
-      )
-    )
-    .orderBy(teams.name);
+  const { data: club, error: clubError } = await client
+    .from("clubs")
+    .select("id")
+    .eq("slug", clubSlug)
+    .single();
 
-  return result;
+  if (clubError || !club) return [];
+
+  const { data: seasons } = await client
+    .from("seasons")
+    .select("id, name")
+    .eq("club_id", club.id)
+    .eq("year", currentYear);
+
+  const seasonIds = seasons?.map((s: any) => s.id) || [];
+  if (seasonIds.length === 0) return [];
+
+  const { data: teamsData, error } = await client
+    .from("teams")
+    .select("id, name, league, captain_id, season_id")
+    .in("season_id", seasonIds)
+    .order("name", { ascending: true });
+
+  if (error || !teamsData) return [];
+
+  const captainIds = [...new Set(teamsData.map((t: any) => t.captain_id).filter(Boolean))];
+  const captainMap = new Map<string, string>();
+  if (captainIds.length > 0) {
+    const { data: captains } = await client
+      .from("members")
+      .select("id, first_name, last_name")
+      .in("id", captainIds);
+
+    captains?.forEach((c: any) => {
+      captainMap.set(c.id, `${c.last_name}, ${c.first_name}`);
+    });
+  }
+
+  const seasonMap = new Map(seasons?.map((s: any) => [s.id, s.name]) || []);
+
+  return teamsData.map((t: any) => ({
+    id: t.id,
+    name: t.name,
+    league: t.league,
+    captainName: t.captain_id ? captainMap.get(t.captain_id) : undefined,
+    seasonName: seasonMap.get(t.season_id),
+  }));
 }
 
 export async function getPublicTournaments(clubSlug: string) {
-  return db
-    .select({
-      id: tournaments.id,
-      name: tournaments.name,
-      type: tournaments.type,
-      startDate: tournaments.startDate,
-      endDate: tournaments.endDate,
-      location: tournaments.location,
-      isCompleted: tournaments.isCompleted,
-    })
-    .from(tournaments)
-    .innerJoin(clubs, eq(tournaments.clubId, clubs.id))
-    .where(eq(clubs.slug, clubSlug))
-    .orderBy(desc(tournaments.startDate))
+  const client = createServiceClient();
+
+  const { data: club, error: clubError } = await client
+    .from("clubs")
+    .select("id")
+    .eq("slug", clubSlug)
+    .single();
+
+  if (clubError || !club) return [];
+
+  const { data, error } = await client
+    .from("tournaments")
+    .select("id, name, type, start_date, end_date, location, is_completed")
+    .eq("club_id", club.id)
+    .order("start_date", { ascending: false })
     .limit(10);
+
+  if (error || !data) return [];
+
+  return data.map((t: any) => ({
+    id: t.id,
+    name: t.name,
+    type: t.type,
+    startDate: t.start_date,
+    endDate: t.end_date,
+    location: t.location,
+    isCompleted: t.is_completed,
+  }));
 }
 
 export async function getClubStats(clubSlug: string) {
-  // We need to resolve slug to ID first for performance if doing multiple queries
-  const club = await db.query.clubs.findFirst({
-    where: eq(clubs.slug, clubSlug),
-    columns: { id: true }
-  });
+  const client = createServiceClient();
 
-  if (!club) return { memberCount: 0, teamCount: 0, matchesThisYear: 0 };
+  const { data: club, error: clubError } = await client
+    .from("clubs")
+    .select("id")
+    .eq("slug", clubSlug)
+    .single();
 
-  const [activeMembers] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(members)
-    .innerJoin(clubs, eq(members.id, members.id)) // This is a placeholder, actual schema should have club_memberships
-    .where(and(eq(members.status, "active")));
-    // Note: members logic needs careful adjustment based on club_memberships table
-    // For now, let's keep it simple and focus on teams/matches which definitely have clubId
+  if (clubError || !club) return { memberCount: 0, teamCount: 0, matchesThisYear: 0 };
 
-  const [teamCount] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(teams)
-    .where(eq(teams.clubId, club.id));
+  const { count: activeMemberCount } = await client
+    .from("members")
+    .select("*", { count: "exact", head: true })
+    .eq("club_id", club.id)
+    .eq("status", "active");
+
+  const { count: teamCount } = await client
+    .from("teams")
+    .select("*", { count: "exact", head: true })
+    .eq("club_id", club.id);
 
   const currentYear = new Date().getFullYear();
-  const [matchesThisYear] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(matches)
-    .innerJoin(seasons, eq(matches.seasonId, seasons.id))
-    .where(and(eq(seasons.clubId, club.id), sql`${seasons.year} = ${currentYear}`));
+  const { data: seasons } = await client
+    .from("seasons")
+    .select("id")
+    .eq("club_id", club.id)
+    .eq("year", currentYear);
+
+  let matchesThisYear = 0;
+  if (seasons && seasons.length > 0) {
+    const seasonIds = seasons.map((s: any) => s.id);
+    const { count: matchCount } = await client
+      .from("matches")
+      .select("*", { count: "exact", head: true })
+      .in("season_id", seasonIds);
+    matchesThisYear = matchCount || 0;
+  }
 
   return {
-    memberCount: activeMembers?.count ?? 0,
-    teamCount: teamCount?.count ?? 0,
-    matchesThisYear: matchesThisYear?.count ?? 0,
+    memberCount: activeMemberCount || 0,
+    teamCount: teamCount || 0,
+    matchesThisYear,
   };
 }
 
 export async function getUpcomingMatches(clubSlug: string, limit = 5) {
-  const result = await db
-    .select({
-      id: matches.id,
-      matchDate: matches.matchDate,
-      location: matches.location,
-      homeTeamId: matches.homeTeamId,
-      awayTeamId: matches.awayTeamId,
-      homeScore: matches.homeScore,
-      awayScore: matches.awayScore,
-      status: matches.status,
-    })
-    .from(matches)
-    .innerJoin(seasons, eq(matches.seasonId, seasons.id))
-    .innerJoin(clubs, eq(seasons.clubId, clubs.id))
-    .where(
-      and(
-        eq(clubs.slug, clubSlug),
-        sql`${matches.matchDate} >= CURRENT_DATE`,
-        sql`${matches.status} != 'cancelled'`
-      )
-    )
-    .orderBy(matches.matchDate)
+  const client = createServiceClient();
+
+  const { data: club, error: clubError } = await client
+    .from("clubs")
+    .select("id")
+    .eq("slug", clubSlug)
+    .single();
+
+  if (clubError || !club) return [];
+
+  const { data: seasons, error: seasonError } = await client
+    .from("seasons")
+    .select("id")
+    .eq("club_id", club.id);
+
+  if (seasonError || !seasons || seasons.length === 0) return [];
+  const seasonIds = seasons.map((s: any) => s.id);
+
+  const { data: result, error } = await client
+    .from("matches")
+    .select("id, match_date, location, home_team_id, away_team_id, home_score, away_score, status")
+    .in("season_id", seasonIds)
+    .gte("match_date", new Date().toISOString().split("T")[0])
+    .neq("status", "cancelled")
+    .order("match_date", { ascending: true })
     .limit(limit);
 
-  if (result.length === 0) return [];
+  if (error || !result || result.length === 0) return [];
 
-  // Get team names separately
-  const teamIds = [...new Set([...result.map(m => m.homeTeamId), ...result.map(m => m.awayTeamId)])];
-  const teamData = teamIds.length > 0
-    ? await db
-        .select({ id: teams.id, name: teams.name })
-        .from(teams)
-        .where(sql`${teams.id} IN ${teamIds}`)
-    : [];
+  const teamIds = [
+    ...new Set([
+      ...result.map((m: any) => m.home_team_id),
+      ...result.map((m: any) => m.away_team_id),
+    ]),
+  ].filter(Boolean);
 
-  const teamMap = new Map(teamData.map(t => [t.id, t.name]));
+  const teamMap = new Map<string, string>();
+  if (teamIds.length > 0) {
+    const { data: teamData } = await client
+      .from("teams")
+      .select("id, name")
+      .in("id", teamIds);
 
-  return result.map(match => ({
-    ...match,
-    homeTeamName: teamMap.get(match.homeTeamId) || "Unbekannt",
-    awayTeamName: teamMap.get(match.awayTeamId) || "Unbekannt",
+    if (teamData) {
+      teamData.forEach((t: any) => teamMap.set(t.id, t.name));
+    }
+  }
+
+  return result.map((match: any) => ({
+    id: match.id,
+    matchDate: match.match_date,
+    location: match.location,
+    homeTeamId: match.home_team_id,
+    awayTeamId: match.away_team_id,
+    homeScore: match.home_score,
+    awayScore: match.away_score,
+    status: match.status,
+    homeTeamName: teamMap.get(match.home_team_id) || "Unbekannt",
+    awayTeamName: teamMap.get(match.away_team_id) || "Unbekannt",
   }));
 }

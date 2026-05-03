@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { waitlistApplications } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
 
@@ -40,6 +38,7 @@ const waitlistSchema = {
 
 export async function submitWaitlistApplication(formData: FormData) {
   try {
+    const client = createServiceClient();
     const clubName = formData.get("clubName") as string;
     const contactEmail = formData.get("contactEmail") as string;
     const contactName = formData.get("contactName") as string | null;
@@ -76,13 +75,15 @@ export async function submitWaitlistApplication(formData: FormData) {
     let counter = 0;
 
     while (slugExists) {
-      const existing = await db
-        .select({ id: waitlistApplications.id })
-        .from(waitlistApplications)
-        .where(eq(waitlistApplications.slug, slug))
+      const { data: existing, error } = await client
+        .from('waitlist_applications')
+        .select('id')
+        .eq('slug', slug)
         .limit(1);
 
-      if (existing.length === 0) {
+      if (error) throw error;
+
+      if (!existing || existing.length === 0) {
         slugExists = false;
       } else {
         counter++;
@@ -90,13 +91,15 @@ export async function submitWaitlistApplication(formData: FormData) {
       }
     }
 
-    const maxPosition = await db
-      .select({ maxPos: waitlistApplications.position })
-      .from(waitlistApplications)
-      .orderBy(waitlistApplications.position)
+    const { data: maxPosition, error: mpError } = await client
+      .from('waitlist_applications')
+      .select('position')
+      .order('position', { ascending: true })
       .limit(1);
 
-    const nextPosition = (maxPosition[0]?.maxPos ?? 0) + 1;
+    if (mpError) throw mpError;
+
+    const nextPosition = (maxPosition?.[0]?.position ?? 0) + 1;
 
     const address = {
       street: (formData.get("street") as string) || "",
@@ -105,23 +108,24 @@ export async function submitWaitlistApplication(formData: FormData) {
       country: (formData.get("country") as string) || "Deutschland",
     };
 
-    await db
-      .insert(waitlistApplications)
-      .values({
-        clubName,
+    const { error: iError } = await client
+      .from('waitlist_applications')
+      .insert([{
+        club_name: clubName,
         slug,
-        contactEmail,
-        contactName: contactName || null,
+        contact_email: contactEmail,
+        contact_name: contactName || null,
         type,
         website: website || null,
         address: Object.values(address).some((v) => v) ? address : null,
-        memberCount: memberCount || null,
+        member_count: memberCount || null,
         notes: notes || null,
         message: painPoints || null, // Storing pain points in the message field
         status: "pending",
         position: nextPosition,
-      })
-      .returning({ id: waitlistApplications.id });
+      }]);
+
+    if (iError) throw iError;
 
     revalidatePath("/");
     revalidatePath("/dashboard/admin/waitlist");
@@ -144,14 +148,19 @@ export async function submitWaitlistApplication(formData: FormData) {
 
 export async function getWaitlistApplications(status?: "pending" | "approved" | "rejected" | "waitlisted") {
   try {
-    let query = db.select().from(waitlistApplications);
+    const client = createServiceClient();
+    let query = client.from('waitlist_applications').select('*');
 
     if (status) {
-      query = query.where(eq(waitlistApplications.status, status)) as typeof query;
+      query = query.eq('status', status);
     }
 
-    const results = await query.orderBy(waitlistApplications.position, waitlistApplications.createdAt);
-    return results;
+    const { data, error } = await query
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
   } catch (error) {
     console.error("Error fetching waitlist applications:", error);
     return [];
@@ -163,16 +172,18 @@ export async function updateWaitlistApplicationStatus(
   newStatus: "pending" | "approved" | "rejected" | "waitlisted"
 ) {
   try {
-    const result = await db
-      .update(waitlistApplications)
-      .set({
+    const client = createServiceClient();
+    const { data: result, error } = await client
+      .from('waitlist_applications')
+      .update({
         status: newStatus,
-        reviewedAt: new Date(),
+        reviewed_at: new Date().toISOString(),
       })
-      .where(eq(waitlistApplications.id, id))
-      .returning({ id: waitlistApplications.id });
+      .eq('id', id)
+      .select('id')
+      .single();
 
-    if (result.length === 0) {
+    if (error || !result) {
       return { error: "Bewerbung nicht gefunden" };
     }
 

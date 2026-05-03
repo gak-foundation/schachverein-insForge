@@ -1,19 +1,19 @@
 # 🚀 Technische Voraussetzungen für den Launch
 
-Basierend auf der Architektur (Vercel + Supabase, Next.js 16, Postgres 17, Multi-Tenant SaaS mit öffentlichen Vereinswebsites) hier die konsolidierte Launch-Checkliste — gegliedert nach Kritikalität.
+Basierend auf der Architektur (Vercel + InsForge, Next.js 16, Postgres 17, Multi-Tenant SaaS mit öffentlichen Vereinswebsites) hier die konsolidierte Launch-Checkliste — gegliedert nach Kritikalität.
 
 ---
 
 ## 🔴 1. Infrastruktur & Hosting (Must-have)
 
 <details open>
-<summary><b>Vercel + Supabase Setup</b></summary>
+<summary><b>Vercel + InsForge Setup</b></summary>
 
 | Komponente | Empfehlung | Begründung |
 |------------|-----------|------------|
 | **App-Server** | **Vercel Pro** | Edge-Network, ISR, automatisches Skalieren |
-| **Backend / DB** | **Supabase Cloud (Pro Plan)** | Managed Postgres, Auth, Storage, Realtime |
-| **Backup** | Supabase PITR (Point-in-Time) | 7-30 Tage Backup-History |
+| **Backend / DB** | **InsForge Cloud** | Managed Postgres, Auth, Storage, Realtime |
+| **Backup** | InsForge Automated Backups | 7-30 Tage Backup-History |
 
 **Standort zwingend:** EU (Frankfurt) — DSGVO & Auftragsverarbeitung.
 
@@ -41,7 +41,7 @@ Das ist bei einer SaaS mit personenbeziehbaren Daten (DWZ, Mitglieder, Jugendlic
 | **Datenschutzerklärung** (eure SaaS-Seite) | 🔴 | anwaltlich geprüft |
 | **AVV (Auftragsverarbeitungsvertrag)** mit jedem Verein | 🔴 | Muster vorbereiten |
 | **AVV mit Vercel** | 🔴 | Standard Contractual Clauses akzeptieren |
-| **AVV mit Supabase** | 🔴 | online abschließbar |
+| **AVV mit InsForge** | 🔴 | online abschließbar |
 | **Verzeichnis von Verarbeitungstätigkeiten (VVT)** nach Art. 30 | 🔴 | intern |
 | **TOMs (Technisch-organisatorische Maßnahmen)** dokumentieren | 🔴 | pro Verein vorzeigbar |
 | **Datenschutz-Folgenabschätzung (DSFA)** | 🔴 | wegen Jugendlicher-Daten! |
@@ -63,9 +63,9 @@ Das ist bei einer SaaS mit personenbeziehbaren Daten (DWZ, Mitglieder, Jugendlic
 - ✅ **Secrets-Management**: `.env` niemals in Git — nutzt **Vercel Environment Variables** (encrypted)
 - ✅ **Vercel Firewall**: IP-Blocking und Rate-Limiting aktivieren
 - ✅ **Automatische Security-Updates**: Vercel managed Node.js Versionen
-- ✅ **Datenbank**: Supabase RLS Policies implementiert
+- ✅ **Datenbank**: InsForge Access Control implementiert
 - ✅ **AES-256-GCM Schlüssel-Rotation** dokumentiert (IBAN-Encryption)
-- ✅ **Backup-Verschlüsselung** (Supabase automatisch)
+- ✅ **Backup-Verschlüsselung** (InsForge automatisch)
 - ✅ **Restore-Test** mindestens 1× durchgeführt und dokumentiert (kein Backup ohne Restore-Test!)
 - ✅ **Dependency Scanning**: Renovate/Dependabot + `npm audit` in CI
 - ✅ **SAST**: Semgrep oder GitHub CodeQL in CI
@@ -85,17 +85,17 @@ Ohne funktionierendes Monitoring ist ein Launch fahrlässig — insbesondere bei
 | Tool | Zweck | Alternative |
 |------|-------|-------------|
 | **Sentry** (Cloud-EU) | Error-Tracking Frontend + Backend | GlitchTip (OSS) |
-| **Supabase Dashboard** | Metriken (DB-Usage, API, Auth) | — |
+| **InsForge Dashboard** | Metriken (DB-Usage, API, Auth) | — |
 | **Vercel Analytics** | Web Vitals, Performance | — |
 | **Vercel Logs** | Serverless Function Logs | — |
 | **Uptime Kuma** | Uptime-Monitoring pro Vereinsdomain | StatusCake |
 | **Matomo** (self-hosted) | Produkt-Analytics statt GA4 | Plausible (EU) |
 
 **Alerts zwingend konfigurieren für:**
-- Supabase DB-Storage > 80 %
+- InsForge DB-Storage > 80 %
 - 5xx-Rate > 1 %
 - Vercel Error Rate > 0.1%
-- Backup failed (Supabase Check)
+- Backup failed (InsForge Check)
 - Sentry Error-Spike (Backend/Frontend)
 
 ---

@@ -11,8 +11,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Sparkles,
-  Trophy,
-  Rocket
+  Rocket,
+  Plus,
+  X,
+  Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,12 +27,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClubAction, completeOnboardingAction } from "@/lib/clubs/actions";
+import { createClubAction, completeOnboardingAction, clubCreateInvitationAction } from "@/lib/clubs/actions";
 import { createEvent } from "@/features/calendar/actions";
 import { toast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 
-type Step = "welcome" | "club" | "members" | "event" | "finished";
+type Step = "welcome" | "club" | "invitations" | "event" | "finished";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -41,9 +43,23 @@ export default function OnboardingPage() {
   // Form States
   const [clubId, setClubId] = useState<string | null>(null);
   const [clubName, setClubName] = useState("");
+  const [inviteRows, setInviteRows] = useState([{ email: "", role: "vorstand" }]);
+  const [sentInvitations, setSentInvitations] = useState<{email: string; role: string; url: string}[]>([]);
+
+  function addInviteRow() {
+    setInviteRows(prev => [...prev, { email: "", role: "vorstand" }]);
+  }
+
+  function removeInviteRow(index: number) {
+    setInviteRows(prev => prev.filter((_, i) => i !== index));
+  }
+
+  function updateInviteRow(index: number, field: "email" | "role", value: string) {
+    setInviteRows(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row));
+  }
 
   useEffect(() => {
-    const steps: Step[] = ["welcome", "club", "members", "event", "finished"];
+    const steps: Step[] = ["welcome", "club", "invitations", "event", "finished"];
     const index = steps.indexOf(step);
     setProgress((index / (steps.length - 1)) * 100);
   }, [step]);
@@ -59,7 +75,7 @@ export default function OnboardingPage() {
       if (result.success && result.club) {
         setClubId(result.club.id);
         setClubName(result.club.name);
-        setStep("members");
+        setStep("invitations");
         toast({ title: "Verein erstellt!", description: `${result.club.name} wurde erfolgreich angelegt.` });
       }
     } catch (error) {
@@ -73,12 +89,37 @@ export default function OnboardingPage() {
     }
   }
 
-  // Step 2: Member Info (Placeholder for now, just skip or add one)
-  async function handleNextFromMembers() {
-    setStep("event");
+  // Step 3: Send Invitations
+  async function handleSendInvitations() {
+    setIsLoading(true);
+    const sent: {email: string; role: string; url: string}[] = [];
+
+    try {
+      for (const row of inviteRows) {
+        if (!row.email) continue;
+        const formData = new FormData();
+        formData.append("email", row.email);
+        formData.append("role", row.role);
+        formData.append("sendEmail", "true");
+
+        const result = await clubCreateInvitationAction(formData);
+        sent.push({ email: row.email, role: row.role, url: (result as any).invitationUrl });
+      }
+
+      setSentInvitations(sent);
+      toast({ title: "Einladungen versendet!", description: `${sent.length} Einladung(en) erfolgreich versendet.` });
+    } catch (error) {
+      toast({
+        title: "Fehler",
+        description: error instanceof Error ? error.message : "Einladungen konnten nicht versendet werden",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
-  // Step 3: Create First Event
+  // Step 4: Create First Event
   async function handleCreateEvent(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsLoading(true);
@@ -121,7 +162,7 @@ export default function OnboardingPage() {
             <span className="font-bold text-xl tracking-tight">Schach.studio</span>
           </div>
           <div className="text-sm font-medium text-muted-foreground">
-            Schritt {step === "welcome" ? 1 : step === "club" ? 2 : step === "members" ? 3 : step === "event" ? 4 : 5} von 5
+            Schritt {step === "welcome" ? 1 : step === "club" ? 2 : step === "invitations" ? 3 : step === "event" ? 4 : 5} von 5
           </div>
         </div>
         
@@ -142,9 +183,9 @@ export default function OnboardingPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
               {[
-                { icon: Building2, title: "Verein anlegen", desc: "Basisdaten und Logo" },
-                { icon: Users, title: "Mitglieder", desc: "Importieren oder anlegen" },
-                { icon: Calendar, title: "Termine", desc: "Erste Events planen" },
+                { icon: Building2, title: "Verein anlegen", desc: "Basisdaten deines Vereins" },
+                { icon: Users, title: "Einladungen", desc: "Vorstandskollegen hinzufügen" },
+                { icon: Calendar, title: "Termine", desc: "Ersten Vereinsabend planen" },
               ].map((item, i) => (
                 <Card key={i} className="border-none shadow-sm">
                   <CardContent className="pt-6">
@@ -216,41 +257,118 @@ export default function OnboardingPage() {
           </Card>
         )}
 
-        {step === "members" && (
+        {step === "invitations" && (
           <Card className="border-primary/20 shadow-xl animate-in slide-in-from-right-4 duration-500">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl flex items-center gap-2">
                 <Users className="h-6 w-6 text-primary" />
-                Mitglieder hinzufügen
+                Vorstandskollegen einladen
               </CardTitle>
               <CardDescription>
-                Du kannst Mitglieder später bequem per Excel oder über den DSB-Import hinzufügen.
+                Lade andere Vorstandsmitglieder per E-Mail ein. Sie erhalten einen Link zur Registrierung.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 py-12 text-center">
-              <div className="max-w-md mx-auto space-y-4">
-                <div className="p-4 bg-slate-100 dark:bg-slate-900 rounded-xl border border-dashed flex items-center gap-4 text-left">
-                  <div className="h-10 w-10 bg-blue-500/10 rounded flex items-center justify-center text-blue-600">
-                    <Trophy className="h-5 w-5" />
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                {inviteRows.map((row, index) => (
+                  <div key={index} className="flex items-end gap-3">
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor={`invite-email-${index}`}>E-Mail</Label>
+                      <Input
+                        id={`invite-email-${index}`}
+                        type="email"
+                        placeholder="vorstand@beispiel.de"
+                        value={row.email}
+                        onChange={(e) => updateInviteRow(index, "email", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="w-44 space-y-2">
+                      <Label htmlFor={`invite-role-${index}`}>Rolle</Label>
+                      <select
+                        id={`invite-role-${index}`}
+                        value={row.role}
+                        onChange={(e) => updateInviteRow(index, "role", e.target.value)}
+                        className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="vorstand">Vorstand</option>
+                        <option value="sportwart">Sportwart</option>
+                        <option value="jugendwart">Jugendwart</option>
+                        <option value="kassenwart">Kassenwart</option>
+                      </select>
+                    </div>
+                    {inviteRows.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="mb-0.5"
+                        onClick={() => removeInviteRow(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-bold text-sm">DSB-Import verfügbar</p>
-                    <p className="text-xs text-muted-foreground">Importiere deine Mitglieder direkt über die ZPS-Nummer.</p>
-                  </div>
-                </div>
-                <p className="text-muted-foreground">
-                  Für den Moment überspringen wir diesen Schritt, damit du dir erst einmal das Dashboard ansehen kannst.
-                </p>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addInviteRow}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" /> Weiteres Mitglied
+                </Button>
               </div>
+
+              {sentInvitations.length > 0 && (
+                <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 p-4 space-y-3">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200 flex items-center gap-2">
+                    <Check className="h-4 w-4" /> Einladungen versendet
+                  </p>
+                  {sentInvitations.map((inv, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
+                      <span className="flex-1 truncate">{inv.email}</span>
+                      <span className="text-xs bg-green-200 dark:bg-green-800 px-2 py-0.5 rounded">{inv.role}</span>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(inv.url)}
+                        className="text-xs underline hover:no-underline shrink-0"
+                      >
+                        Link kopieren
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
-            <CardFooter className="flex justify-between gap-4 pt-6">
-              <Button type="button" variant="ghost" onClick={() => setStep("club")} disabled>
-                <ChevronLeft className="mr-2 h-4 w-4" /> Zurück
-              </Button>
-              <Button onClick={handleNextFromMembers} size="lg" className="font-bold">
-                Weiter zum nächsten Schritt
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+            <CardFooter className="flex flex-col gap-3 pt-6">
+              <div className="flex justify-between w-full gap-4">
+                <Button type="button" variant="ghost" onClick={() => setStep("club")}>
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Zurück
+                </Button>
+                <div className="flex gap-3">
+                  {sentInvitations.length > 0 ? (
+                    <Button onClick={() => setStep("event")} size="lg" className="font-bold">
+                      Weiter <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <>
+                      <Button type="button" variant="outline" onClick={() => setStep("event")}>
+                        Überspringen
+                      </Button>
+                      <Button type="button" size="lg" className="font-bold" disabled={isLoading || inviteRows.every(r => !r.email)} onClick={handleSendInvitations}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                        Einladungen senden
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+              {sentInvitations.length > 0 && (
+                <button onClick={() => setSentInvitations([])} className="text-sm text-muted-foreground underline hover:no-underline">
+                  Weitere Einladungen hinzufügen
+                </button>
+              )}
             </CardFooter>
           </Card>
         )}
@@ -259,13 +377,18 @@ export default function OnboardingPage() {
           <Card className="border-primary/20 shadow-xl animate-in slide-in-from-right-4 duration-500">
             <form onSubmit={handleCreateEvent}>
               <CardHeader className="space-y-1">
+              <div className="flex items-center gap-3">
                 <CardTitle className="text-2xl flex items-center gap-2">
                   <Calendar className="h-6 w-6 text-primary" />
-                  Der erste Vereinsabend
+                  Erster Vereinsabend
                 </CardTitle>
-                <CardDescription>
-                  Planen Sie direkt Ihren nächsten Termin, um Ihre Mitglieder zu informieren.
-                </CardDescription>
+                <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-0.5 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                  Optional
+                </span>
+              </div>
+              <CardDescription>
+                Plane direkt deinen nächsten Termin, um deine Mitglieder zu informieren. Du kannst diesen Schritt auch überspringen.
+              </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">

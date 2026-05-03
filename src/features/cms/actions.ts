@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { pages, pageBlocks } from "@/lib/db/schema";
-import { eq, desc, asc, and, or, sql, SQL } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
@@ -15,6 +13,38 @@ import { z } from "zod";
 export type PageSortField = "title" | "slug" | "status" | "createdAt" | "updatedAt";
 export type SortOrder = "asc" | "desc";
 
+function mapPage(page: any) {
+  return {
+    id: page.id,
+    clubId: page.club_id,
+    slug: page.slug,
+    title: page.title,
+    status: page.status,
+    publishAt: page.publish_at,
+    seo: page.seo,
+    layout: page.layout,
+    navigationParent: page.navigation_parent,
+    order: page.order,
+    createdAt: page.created_at,
+    updatedAt: page.updated_at,
+    deletedAt: page.deleted_at,
+  };
+}
+
+function mapPageBlock(block: any) {
+  return {
+    id: block.id,
+    pageId: block.page_id,
+    blockType: block.block_type,
+    order: block.order,
+    content: block.content,
+    visibility: block.visibility,
+    createdBy: block.created_by,
+    createdAt: block.created_at,
+    updatedAt: block.updated_at,
+  };
+}
+
 export async function getPages(
   search?: string,
   status?: string,
@@ -25,65 +55,42 @@ export async function getPages(
 ) {
   const clubId = await requireClubId();
   const offset = (page - 1) * pageSize;
+  const client = createServiceClient();
 
-  const conditions: (SQL<unknown> | undefined)[] = [
-    eq(pages.clubId, clubId),
-  ];
+  let query = client
+    .from("pages")
+    .select("*", { count: "exact" })
+    .eq("club_id", clubId);
 
   if (search) {
-    conditions.push(
-      or(
-        sql`${pages.title} ILIKE ${`%${search}%`}`,
-        sql`${pages.slug} ILIKE ${`%${search}%`}`
-      )
-    );
+    query = query.or(`title.ilike.%${search}%,slug.ilike.%${search}%`);
   }
 
   if (status) {
-    conditions.push(eq(pages.status, status as any));
+    query = query.eq("status", status);
   }
 
-  const orderFn = sortOrder === "desc" ? desc : asc;
-  let orderBy: SQL<unknown>;
+  const sortColumn =
+    sortBy === "createdAt"
+      ? "created_at"
+      : sortBy === "updatedAt"
+        ? "updated_at"
+        : sortBy;
 
-  switch (sortBy) {
-    case "title":
-      orderBy = orderFn(pages.title);
-      break;
-    case "slug":
-      orderBy = orderFn(pages.slug);
-      break;
-    case "status":
-      orderBy = orderFn(pages.status);
-      break;
-    case "createdAt":
-      orderBy = orderFn(pages.createdAt);
-      break;
-    case "updatedAt":
-      orderBy = orderFn(pages.updatedAt);
-      break;
-    default:
-      orderBy = desc(pages.updatedAt);
+  const { data, error, count } = await query
+    .order(sortColumn, { ascending: sortOrder === "asc" })
+    .range(offset, offset + pageSize - 1);
+
+  if (error) {
+    console.error("Error fetching pages:", error);
+    throw new Error("Fehler beim Laden der Seiten");
   }
 
-  const result = await db
-    .select()
-    .from(pages)
-    .where(and(...conditions))
-    .orderBy(orderBy)
-    .limit(pageSize)
-    .offset(offset);
-
-  const totalCountResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(pages)
-    .where(and(...conditions));
-
-  const totalCount = Number(totalCountResult[0]?.count || 0);
+  const totalCount = Number(count || 0);
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return {
-    pages: result,
+    pages: (data || []).map(mapPage),
     totalCount,
     totalPages,
   };
@@ -91,77 +98,163 @@ export async function getPages(
 
 export async function getPageById(id: string) {
   const clubId = await requireClubId();
-  
-  const page = await db.query.pages.findFirst({
-    where: and(eq(pages.id, id), eq(pages.clubId, clubId)),
-    with: {
-      blocks: {
-        orderBy: asc(pageBlocks.order),
-      },
-    },
-  });
+  const client = createServiceClient();
 
-  return page;
+  const { data: page, error } = await client
+    .from("pages")
+    .select("*")
+    .eq("id", id)
+    .eq("club_id", clubId)
+    .single();
+
+  if (error || !page) {
+    return null;
+  }
+
+  const { data: blocks, error: blocksError } = await client
+    .from("page_blocks")
+    .select("*")
+    .eq("page_id", id)
+    .order("order", { ascending: true });
+
+  if (blocksError) {
+    console.error("Error fetching page blocks:", blocksError);
+  }
+
+  return {
+    ...mapPage(page),
+    blocks: (blocks || []).map(mapPageBlock),
+  };
 }
 
 export async function createPage(data: z.infer<typeof pageSchema>) {
   const clubId = await requireClubId();
   const session = await getSession();
-  
-  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
+
+  if (
+    !session ||
+    !hasPermission(
+      session.user.role ?? "mitglied",
+      session.user.permissions ?? [],
+      PERMISSIONS.PAGES_WRITE,
+      session.user.isSuperAdmin
+    )
+  ) {
     throw new Error("Keine Berechtigung");
   }
 
   const validated = pageSchema.parse(data);
+  const client = createServiceClient();
 
-  const [newPage] = await db
-    .insert(pages)
-    .values({
-      ...validated,
-      clubId,
-      status: validated.status as any, // Cast for drizzle enum
-    })
-    .returning();
+  const { data: newPage, error } = await client
+    .from("pages")
+    .insert([
+      {
+        title: validated.title,
+        slug: validated.slug,
+        status: validated.status,
+        publish_at: validated.publishAt
+          ? validated.publishAt.toISOString()
+          : null,
+        layout: validated.layout,
+        seo: validated.seo ?? null,
+        club_id: clubId,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating page:", error);
+    throw new Error("Fehler beim Erstellen der Seite");
+  }
 
   revalidatePath("/dashboard/pages");
-  return newPage;
+  return mapPage(newPage);
 }
 
-export async function updatePage(id: string, data: Partial<z.infer<typeof pageSchema>>) {
+export async function updatePage(
+  id: string,
+  data: Partial<z.infer<typeof pageSchema>>
+) {
   const clubId = await requireClubId();
   const session = await getSession();
-  
-  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
+
+  if (
+    !session ||
+    !hasPermission(
+      session.user.role ?? "mitglied",
+      session.user.permissions ?? [],
+      PERMISSIONS.PAGES_WRITE,
+      session.user.isSuperAdmin
+    )
+  ) {
     throw new Error("Keine Berechtigung");
   }
 
   const validated = pageSchema.partial().parse(data);
+  const client = createServiceClient();
 
-  const [updatedPage] = await db
-    .update(pages)
-    .set({
-      ...validated,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(pages.id, id), eq(pages.clubId, clubId)))
-    .returning();
+  const updateData: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (validated.title !== undefined) updateData.title = validated.title;
+  if (validated.slug !== undefined) updateData.slug = validated.slug;
+  if (validated.status !== undefined) updateData.status = validated.status;
+  if (validated.publishAt !== undefined)
+    updateData.publish_at = validated.publishAt
+      ? validated.publishAt.toISOString()
+      : null;
+  if (validated.layout !== undefined) updateData.layout = validated.layout;
+  if (validated.seo !== undefined) updateData.seo = validated.seo;
+
+  const { data: updatedPage, error } = await client
+    .from("pages")
+    .update(updateData)
+    .eq("id", id)
+    .eq("club_id", clubId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating page:", error);
+    throw new Error("Fehler beim Aktualisieren der Seite");
+  }
 
   revalidatePath("/dashboard/pages");
   revalidatePath(`/dashboard/pages/${id}`);
-  return updatedPage;
+  return mapPage(updatedPage);
 }
 
 export async function deletePage(id: string) {
   const clubId = await requireClubId();
   const session = await getSession();
-  
-  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
+
+  if (
+    !session ||
+    !hasPermission(
+      session.user.role ?? "mitglied",
+      session.user.permissions ?? [],
+      PERMISSIONS.PAGES_WRITE,
+      session.user.isSuperAdmin
+    )
+  ) {
     throw new Error("Keine Berechtigung");
   }
 
-  await db
-    .delete(pages)
-    .where(and(eq(pages.id, id), eq(pages.clubId, clubId)));
+  const client = createServiceClient();
+
+  const { error } = await client
+    .from("pages")
+    .delete()
+    .eq("id", id)
+    .eq("club_id", clubId);
+
+  if (error) {
+    console.error("Error deleting page:", error);
+    throw new Error("Fehler beim Löschen der Seite");
+  }
 
   revalidatePath("/dashboard/pages");
 }
@@ -177,7 +270,11 @@ function sanitizeBlockData(block: any): any {
   }
 
   // Auch content-String sanitisisieren falls es HTML enthält
-  if (sanitized.content && typeof sanitized.content === "string" && sanitized.content.includes("<")) {
+  if (
+    sanitized.content &&
+    typeof sanitized.content === "string" &&
+    sanitized.content.includes("<")
+  ) {
     sanitized.content = sanitizeHtml(sanitized.content);
   }
 
@@ -188,43 +285,73 @@ export async function savePageBlocks(pageId: string, blocksData: any[]) {
   const clubId = await requireClubId();
   const session = await getSession();
 
-  if (!session || !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
+  if (
+    !session ||
+    !hasPermission(
+      session.user.role ?? "mitglied",
+      session.user.permissions ?? [],
+      PERMISSIONS.PAGES_WRITE,
+      session.user.isSuperAdmin
+    )
+  ) {
     throw new Error("Keine Berechtigung");
   }
 
   // Blöcke vor dem Speichern sanitisisieren
   const sanitizedBlocks = blocksData.map((b) => sanitizeBlockData(b));
+  const client = createServiceClient();
 
-  // In einer Transaktion: alte Blöcke löschen, neue einfügen
-  await db.transaction(async (tx) => {
-    // Sicherheit: Prüfen ob Seite zum Club gehört
-    const page = await tx.query.pages.findFirst({
-      where: and(eq(pages.id, pageId), eq(pages.clubId, clubId)),
-    });
+  // Sicherheit: Prüfen ob Seite zum Club gehört
+  const { data: page, error: pageError } = await client
+    .from("pages")
+    .select("id")
+    .eq("id", pageId)
+    .eq("club_id", clubId)
+    .single();
 
-    if (!page) throw new Error("Seite nicht gefunden");
+  if (pageError || !page) throw new Error("Seite nicht gefunden");
 
-    // Alte Blöcke löschen
-    await tx.delete(pageBlocks).where(eq(pageBlocks.pageId, pageId));
+  // Alte Blöcke löschen
+  const { error: deleteError } = await client
+    .from("page_blocks")
+    .delete()
+    .eq("page_id", pageId);
 
-    // Neue Blöcke einfügen
-    if (sanitizedBlocks.length > 0) {
-      await tx.insert(pageBlocks).values(
-        sanitizedBlocks.map((b, index) => ({
-          pageId,
-          blockType: b.type,
-          order: index * 10,
-          content: b.data,
-          createdBy: session.user.memberId ?? null,
-        }))
-      );
+  if (deleteError) {
+    console.error("Error deleting old blocks:", deleteError);
+    throw new Error("Fehler beim Löschen der alten Blöcke");
+  }
+
+  // Neue Blöcke einfügen
+  if (sanitizedBlocks.length > 0) {
+    const blocksToInsert = sanitizedBlocks.map((b, index) => ({
+      page_id: pageId,
+      block_type: b.type,
+      order: index * 10,
+      content: b.data,
+      created_by: session.user.memberId ?? null,
+    }));
+
+    const { error: insertError } = await client
+      .from("page_blocks")
+      .insert(blocksToInsert);
+
+    if (insertError) {
+      console.error("Error inserting blocks:", insertError);
+      throw new Error("Fehler beim Speichern der Blöcke");
     }
+  }
 
-    // Seite updatedAt aktualisieren
-    await tx.update(pages).set({ updatedAt: new Date() }).where(eq(pages.id, pageId));
-  });
+  // Seite updatedAt aktualisieren
+  const { error: updateError } = await client
+    .from("pages")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", pageId);
+
+  if (updateError) {
+    console.error("Error updating page timestamp:", updateError);
+  }
 
   revalidatePath("/dashboard/pages");
   revalidatePath(`/dashboard/pages/${pageId}`);
 }
-

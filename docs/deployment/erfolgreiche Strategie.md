@@ -2,7 +2,7 @@
 
 > Quelle der Wahrheit für Positionierung, Pricing und Go-To-Market von **schach.studio**.
 > Diese Datei ersetzt die vorherige Version, die vom falschen Ausgangszustand
-> (Self-Hosted-Supabase, UG-Gründung, 3.000–5.000 € Rechts-Budget) ausgegangen ist.
+> (Self-Hosted-Backend, UG-Gründung, 3.000–5.000 € Rechts-Budget) ausgegangen ist.
 
 ---
 
@@ -12,7 +12,7 @@
 - **Budget:** Bootstrap, 0–500 € Gesamt-Startbudget.
 - **Team:** Solo-Gründer, aktiver DWZ-Spieler.
 - **Zielgruppe:** mittlere deutsche Schachvereine, 50–200 Mitglieder.
-- **Stack:** Next.js 16 + Supabase Managed (EU) + Drizzle, siehe `docs/AGENTS.md`.
+- **Stack:** Next.js 16 + InsForge (EU), siehe `docs/AGENTS.md`.
 - **Vertriebs-Modus:** Product-Led, keine Aussendienst-Kapazität.
 
 ---
@@ -193,7 +193,7 @@ NÄCHSTE WOCHE
 |---|---|---|
 | BFSG-Abmahnwelle durch übertriebene Claims | mittel | Wording-Regel (Säule 2), Anwalts-Review vor Launch |
 | Pilotvereine springen ab | mittel | Langfristige Pilotkonditionen (50 % lifetime), enge Einzel-Begleitung |
-| Datenschutz-Vorfall | niedrig, hoch-impact | Supabase EU-Region, Verschlüsselung sensibler Felder, Audit-Logs |
+| Datenschutz-Vorfall | niedrig, hoch-impact | InsForge EU-Region, Verschlüsselung sensibler Felder, Audit-Logs |
 | Konkurrent kopiert Pricing | hoch | Geschwindigkeit + Community-Beziehung als Moat, nicht Feature-Count |
 | Solo-Burnout | mittel | Zeitbudget-Disziplin, klare R-Cuts, keine Ads-Experimente |
 
@@ -201,7 +201,7 @@ NÄCHSTE WOCHE
 
 ## 10. Was NICHT getan wird
 
-- Kein Self-Hosted Supabase zum Start (Managed Supabase EU ist DSGVO-konform).
+- Kein Self-Hosted Backend zum Start (Managed InsForge EU ist DSGVO-konform).
 - Keine UG-/GmbH-Gründung vor Product-Market-Fit.
 - Keine Cookie-Banner-Walls ohne nachgewiesenes Tracking (Plausible self-hosted = cookiefrei).
 - Keine Google Fonts vom CDN — lokal via `next/font`.

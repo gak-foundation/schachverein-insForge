@@ -1,77 +1,95 @@
 import "dotenv/config";
-import { db } from "../src/lib/db";
-import { members, clubs } from "../src/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { encrypt } from "../src/lib/crypto";
-import { sql } from "drizzle-orm";
 
 async function main() {
+  const client = createServiceClient();
   console.log("🔒 Starting encryption migration for existing data...");
 
   // 1. Members
-  const allMembers = await db.select({
-    id: members.id,
-    sepaIban: members.sepaIban,
-    sepaBic: members.sepaBic,
-  }).from(members);
+  const { data: allMembers, error: membersError } = await client
+    .from("members")
+    .select("id, sepa_iban, sepa_bic");
 
-  console.log(`Processing ${allMembers.length} members...`);
+  if (membersError) {
+    console.error("❌ Failed to fetch members:", membersError);
+    process.exit(1);
+  }
+
+  console.log(`Processing ${allMembers?.length ?? 0} members...`);
   let memberCount = 0;
 
-  for (const member of allMembers) {
+  for (const member of allMembers || []) {
     let needsUpdate = false;
     const updateData: Record<string, unknown> = {};
 
-    // If it's already encrypted, decrypt() returns it as is (due to missing colons)
-    // or fails and returns as is. The encrypt() function always adds colons.
-    
-    if (member.sepaIban && !member.sepaIban.includes(":")) {
-      updateData.sepaIban = encrypt(member.sepaIban);
+    if (member.sepa_iban && !member.sepa_iban.includes(":")) {
+      updateData.sepa_iban = encrypt(member.sepa_iban);
       needsUpdate = true;
     }
 
-    if (member.sepaBic && !member.sepaBic.includes(":")) {
-      updateData.sepaBic = encrypt(member.sepaBic);
+    if (member.sepa_bic && !member.sepa_bic.includes(":")) {
+      updateData.sepa_bic = encrypt(member.sepa_bic);
       needsUpdate = true;
     }
 
     if (needsUpdate) {
-      await db.update(members).set(updateData).where(sql`${members.id} = ${member.id}`);
-      memberCount++;
+      const { error: updateError } = await client
+        .from("members")
+        .update(updateData)
+        .eq("id", member.id);
+
+      if (updateError) {
+        console.error(`❌ Failed to update member ${member.id}:`, updateError);
+      } else {
+        memberCount++;
+      }
     }
   }
   console.log(`✅ Updated ${memberCount} members.`);
 
   // 2. Clubs
-  const allClubs = await db.select({
-    id: clubs.id,
-    sepaIban: clubs.sepaIban,
-    sepaBic: clubs.sepaBic,
-  }).from(clubs);
+  const { data: allClubs, error: clubsError } = await client
+    .from("clubs")
+    .select("id, sepa_iban, sepa_bic");
 
-  console.log(`Processing ${allClubs.length} clubs...`);
+  if (clubsError) {
+    console.error("❌ Failed to fetch clubs:", clubsError);
+    process.exit(1);
+  }
+
+  console.log(`Processing ${allClubs?.length ?? 0} clubs...`);
   let clubCount = 0;
 
-  for (const club of allClubs) {
+  for (const club of allClubs || []) {
     let needsUpdate = false;
     const updateData: Record<string, unknown> = {};
 
-    if (club.sepaIban && !club.sepaIban.includes(":")) {
-      updateData.sepaIban = encrypt(club.sepaIban);
+    if (club.sepa_iban && !club.sepa_iban.includes(":")) {
+      updateData.sepa_iban = encrypt(club.sepa_iban);
       needsUpdate = true;
     }
 
-    if (club.sepaBic && !club.sepaBic.includes(":")) {
-      updateData.sepaBic = encrypt(club.sepaBic);
+    if (club.sepa_bic && !club.sepa_bic.includes(":")) {
+      updateData.sepa_bic = encrypt(club.sepa_bic);
       needsUpdate = true;
     }
 
     if (needsUpdate) {
-      await db.update(clubs).set(updateData).where(sql`${clubs.id} = ${club.id}`);
-      clubCount++;
+      const { error: updateError } = await client
+        .from("clubs")
+        .update(updateData)
+        .eq("id", club.id);
+
+      if (updateError) {
+        console.error(`❌ Failed to update club ${club.id}:`, updateError);
+      } else {
+        clubCount++;
+      }
     }
   }
   console.log(`✅ Updated ${clubCount} clubs.`);
-  
+
   console.log("🏁 Encryption migration finished.");
   process.exit(0);
 }
