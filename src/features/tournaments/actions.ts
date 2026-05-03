@@ -679,3 +679,27 @@ export async function generateSwissRound(tournamentId: string) {
     message: "Die Auslosung wurde gestartet und wird im Hintergrund verarbeitet.",
   };
 }
+
+export async function saveAllRoundResults(
+  tournamentId: string,
+  results: { whiteId: string; blackId: string; result: string; round: number; boardNumber: number }[]
+) {
+  const clubId = await requireClubId();
+  const client = createServiceClient();
+
+  const inserts = results.map((r, i) => ({
+    tournament_id: tournamentId,
+    club_id: clubId,
+    white_id: r.whiteId,
+    black_id: r.blackId,
+    result: r.result,
+    round: r.round,
+    board_number: r.boardNumber || i + 1,
+  }));
+
+  const { error } = await client.from("games").insert(inserts);
+  if (error) throw new Error("Fehler beim Speichern der Ergebnisse: " + error.message);
+
+  revalidatePath(`/dashboard/tournaments/${tournamentId}`);
+  return { saved: inserts.length };
+}
