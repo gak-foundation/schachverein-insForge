@@ -198,7 +198,7 @@ export function BlockInspector() {
               <Switch
                 id="tc-registration"
                 checked={activeBlock.data.showRegistration !== false}
-                onCheckedChange={(val) => handleUpdate({ showRegistration: val })}
+                onCheckedChange={(val: boolean) => handleUpdate({ showRegistration: val })}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -208,7 +208,7 @@ export function BlockInspector() {
               <Switch
                 id="tc-standings"
                 checked={activeBlock.data.showLiveStandings === true}
-                onCheckedChange={(val) => handleUpdate({ showLiveStandings: val })}
+                onCheckedChange={(val: boolean) => handleUpdate({ showLiveStandings: val })}
               />
             </div>
           </>
@@ -256,7 +256,7 @@ export function BlockInspector() {
               <Switch
                 id="cf-phone"
                 checked={activeBlock.data.showPhoneField === true}
-                onCheckedChange={(val) => handleUpdate({ showPhoneField: val })}
+                onCheckedChange={(val: boolean) => handleUpdate({ showPhoneField: val })}
               />
             </div>
           </>

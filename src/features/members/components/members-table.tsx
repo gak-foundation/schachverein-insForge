@@ -75,15 +75,15 @@ export function MembersTable({
         />
       ) : (
         <>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-border/60 bg-card shadow-sm">
             <Table aria-label="Mitgliederliste">
               <TableHeader>
-                <TableRow className="border-b border-foreground/10 hover:bg-transparent">
+                <TableRow className="border-b border-border bg-muted/20 hover:bg-muted/20">
                   {hasWritePermission && (
                     <TableHead className="w-10">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded-none border-foreground focus:ring-0 focus:ring-offset-0 text-foreground bg-transparent"
+                        className="h-4 w-4 rounded border-input focus:ring-1 focus:ring-ring text-primary bg-background"
                         checked={allSelected}
                         onChange={(e) => onSelectAll(e.target.checked)}
                         aria-label="Alle auswaehlen"
@@ -125,13 +125,13 @@ export function MembersTable({
                 {members.map((member) => (
                   <TableRow 
                     key={member.id} 
-                    className="group hover:bg-muted/10 transition-colors border-b border-border/40"
+                    className="group hover:bg-muted/40 even:bg-muted/10 transition-colors border-b border-border/40 last:border-0"
                   >
                     {hasWritePermission && (
                       <TableCell>
                         <input
                           type="checkbox"
-                          className="h-4 w-4 rounded-none border-foreground/50 focus:ring-0 focus:ring-offset-0 text-foreground bg-transparent"
+                          className="h-4 w-4 rounded border-input focus:ring-1 focus:ring-ring text-primary bg-background"
                           checked={selectedIds.has(member.id)}
                           onChange={(e) => onSelectionChange(member.id, e.target.checked)}
                           onClick={(e) => e.stopPropagation()}

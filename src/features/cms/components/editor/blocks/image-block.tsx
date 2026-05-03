@@ -2,7 +2,7 @@
 import { cn } from "@/lib/utils";
 import { AlertTriangle, ImageIcon } from "lucide-react";
 
-export function ImageBlock({ data }: { data: any; blockId: string; mode: string }) {
+export function ImageBlock({ data, mode }: { data: any; blockId: string; mode: string }) {
   const hasAltText = data.alt || data.caption;
   const isDecorative = data.decorative === true;
   const needsAltWarning = !hasAltText && !isDecorative && data.mediaAssetId;

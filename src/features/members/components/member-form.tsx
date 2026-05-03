@@ -26,10 +26,9 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createMemberSchema, type CreateMemberInput } from "@/lib/validations/member";
 import { createMember, updateMember } from "@/features/members/actions";
-import { Loader2, CreditCard, User, Award, ShieldCheck, FileText } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface MemberFormProps {
   member?: any;
@@ -107,28 +106,27 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
     });
   }
 
+  const labelClass = "text-xs uppercase tracking-widest font-semibold text-muted-foreground block mb-2";
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Personal Information */}
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 rounded-t-lg border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              Persönliche Daten
-            </CardTitle>
-            <CardDescription>Grundlegende Informationen zum Mitglied</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+        <div className="bg-card rounded-xl border border-border/60 p-8 shadow-sm">
+          <div className="mb-8 border-b border-border/40 pb-4">
+            <h2 className="text-2xl font-heading tracking-tight">Persönliche Daten</h2>
+            <p className="text-sm text-muted-foreground mt-1">Grundlegende Informationen zum Mitglied</p>
+          </div>
+          <div className="space-y-6">
             <div className="grid gap-6 sm:grid-cols-2">
               <FormField
                 control={form.control as any}
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vorname <span className="text-red-500" aria-hidden="true">*</span></FormLabel>
+                    <FormLabel className={labelClass}>Vorname <span className="text-red-500" aria-hidden="true">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="Max" {...field} className="h-11" aria-required="true" />
+                      <Input placeholder="Max" {...field} aria-required="true" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -139,9 +137,9 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nachname <span className="text-red-500" aria-hidden="true">*</span></FormLabel>
+                    <FormLabel className={labelClass}>Nachname <span className="text-red-500" aria-hidden="true">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="Mustermann" {...field} className="h-11" aria-required="true" />
+                      <Input placeholder="Mustermann" {...field} aria-required="true" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -154,9 +152,9 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>E-Mail <span className="text-red-500" aria-hidden="true">*</span></FormLabel>
+                    <FormLabel className={labelClass}>E-Mail <span className="text-red-500" aria-hidden="true">*</span></FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="max@beispiel.de" {...field} className="h-11" aria-required="true" />
+                      <Input type="email" placeholder="max@beispiel.de" {...field} aria-required="true" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -167,9 +165,9 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Telefon</FormLabel>
+                    <FormLabel className={labelClass}>Telefon</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="+49 123 456789" {...field} value={field.value || ""} className="h-11" />
+                      <Input type="tel" placeholder="+49 123 456789" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -182,11 +180,11 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="dateOfBirth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Geburtsdatum</FormLabel>
+                    <FormLabel className={labelClass}>Geburtsdatum</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} value={field.value || ""} className="h-11" />
+                      <Input type="date" {...field} value={field.value || ""} />
                     </FormControl>
-                    <FormDescription className="text-xs">Wichtig für Altersklassen-Einteilung</FormDescription>
+                    <FormDescription className="text-xs mt-2">Wichtig für Altersklassen-Einteilung</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -196,10 +194,10 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="gender"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Geschlecht</FormLabel>
+                    <FormLabel className={labelClass}>Geschlecht</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-10 bg-background text-base font-medium">
                           <SelectValue placeholder="Wählen..." />
                         </SelectTrigger>
                       </FormControl>
@@ -214,28 +212,25 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 )}
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Chess Information */}
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 rounded-t-lg border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" />
-              Schach-Daten
-            </CardTitle>
-            <CardDescription>DWZ, Elo und Online-Accounts</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+        <div className="bg-card rounded-xl border border-border/60 p-8 shadow-sm">
+          <div className="mb-8 border-b border-border/40 pb-4">
+            <h2 className="text-2xl font-heading tracking-tight">Schach-Daten</h2>
+            <p className="text-sm text-muted-foreground mt-1">DWZ, Elo und Online-Accounts</p>
+          </div>
+          <div className="space-y-6">
             <div className="grid gap-6 sm:grid-cols-2">
               <FormField
                 control={form.control as any}
                 name="dwz"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>DWZ</FormLabel>
+                    <FormLabel className={labelClass}>DWZ</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} value={field.value || ""} className="h-11" />
+                      <Input type="number" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -246,9 +241,9 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="elo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Elo</FormLabel>
+                    <FormLabel className={labelClass}>Elo</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} value={field.value || ""} className="h-11" />
+                      <Input type="number" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -261,9 +256,9 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="lichessUsername"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Lichess-Benutzername</FormLabel>
+                    <FormLabel className={labelClass}>Lichess-Benutzername</FormLabel>
                     <FormControl>
-                      <Input placeholder="Username" {...field} value={field.value || ""} className="h-11" />
+                      <Input placeholder="Username" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -274,9 +269,9 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="chesscomUsername"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Chess.com-Benutzername</FormLabel>
+                    <FormLabel className={labelClass}>Chess.com-Benutzername</FormLabel>
                     <FormControl>
-                      <Input placeholder="Username" {...field} value={field.value || ""} className="h-11" />
+                      <Input placeholder="Username" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -288,38 +283,35 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
               name="dwzId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>DWZ-ID (DeWIS)</FormLabel>
+                  <FormLabel className={labelClass}>DWZ-ID (DeWIS)</FormLabel>
                   <FormControl>
-                    <Input placeholder="z.B. 12345678" {...field} value={field.value || ""} className="h-11" />
+                    <Input placeholder="z.B. 12345678" {...field} value={field.value || ""} />
                   </FormControl>
-                  <FormDescription className="text-xs">Ermöglicht automatische Rating-Updates</FormDescription>
+                  <FormDescription className="text-xs mt-2">Ermöglicht automatische Rating-Updates</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Membership Information */}
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 rounded-t-lg border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              Mitgliedschaft & Einwilligungen
-            </CardTitle>
-            <CardDescription>Rechte-Rolle, Vereinsstatus und DSGVO</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+        <div className="bg-card rounded-xl border border-border/60 p-8 shadow-sm">
+          <div className="mb-8 border-b border-border/40 pb-4">
+            <h2 className="text-2xl font-heading tracking-tight">Mitgliedschaft & Einwilligungen</h2>
+            <p className="text-sm text-muted-foreground mt-1">Rechte-Rolle, Vereinsstatus und DSGVO</p>
+          </div>
+          <div className="space-y-6">
             <div className="grid gap-6 sm:grid-cols-2">
               <FormField
                 control={form.control as any}
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rolle im System</FormLabel>
+                    <FormLabel className={labelClass}>Rolle im System</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-10 bg-background text-base font-medium">
                           <SelectValue placeholder="Wählen..." />
                         </SelectTrigger>
                       </FormControl>
@@ -343,10 +335,10 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mitgliedsstatus</FormLabel>
+                    <FormLabel className={labelClass}>Mitgliedsstatus</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-10 bg-background text-base font-medium">
                           <SelectValue placeholder="Wählen..." />
                         </SelectTrigger>
                       </FormControl>
@@ -363,8 +355,8 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
               />
             </div>
 
-            <div className="space-y-4 rounded-lg bg-slate-50 dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800">
-              <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-2">Einwilligungen (DSGVO)</h4>
+            <div className="space-y-6 pt-6 mt-6 border-t border-border/40">
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Einwilligungen (DSGVO)</h4>
               <FormField
                 control={form.control as any}
                 name="photoConsent"
@@ -374,10 +366,11 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        className="mt-1"
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="cursor-pointer">Foto-Einwilligung</FormLabel>
+                    <div className="space-y-1">
+                      <FormLabel className="cursor-pointer text-base font-medium">Foto-Einwilligung</FormLabel>
                       <FormDescription className="text-xs">Bilder dürfen auf der Website veröffentlicht werden</FormDescription>
                     </div>
                   </FormItem>
@@ -392,10 +385,11 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        className="mt-1"
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="cursor-pointer">Newsletter-Einwilligung</FormLabel>
+                    <div className="space-y-1">
+                      <FormLabel className="cursor-pointer text-base font-medium">Newsletter-Einwilligung</FormLabel>
                       <FormDescription className="text-xs">Zusendung von Vereinsnachrichten per E-Mail</FormDescription>
                     </div>
                   </FormItem>
@@ -410,38 +404,36 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        className="mt-1"
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="cursor-pointer">Ergebnisse veröffentlichen</FormLabel>
+                    <div className="space-y-1">
+                      <FormLabel className="cursor-pointer text-base font-medium">Ergebnisse veröffentlichen</FormLabel>
                       <FormDescription className="text-xs">Turnierergebnisse dürfen online gelistet werden</FormDescription>
                     </div>
                   </FormItem>
                 )}
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Bank & Payment */}
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 rounded-t-lg border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              Bankdaten & Beitrag
-            </CardTitle>
-            <CardDescription>SEPA-Mandat und Beitragsstufe</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+        <div className="bg-card rounded-xl border border-border/60 p-8 shadow-sm">
+          <div className="mb-8 border-b border-border/40 pb-4">
+            <h2 className="text-2xl font-heading tracking-tight">Bankdaten & Beitrag</h2>
+            <p className="text-sm text-muted-foreground mt-1">SEPA-Mandat und Beitragsstufe</p>
+          </div>
+          <div className="space-y-6">
             <FormField
               control={form.control as any}
               name="contributionRateId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Beitragsstufe</FormLabel>
+                  <FormLabel className={labelClass}>Beitragsstufe</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
-                      <SelectTrigger className="h-11">
+                      <SelectTrigger className="h-10 bg-background text-base font-medium">
                         <SelectValue placeholder="Keine Beitragsstufe gewählt" />
                       </SelectTrigger>
                     </FormControl>
@@ -464,9 +456,9 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="sepaIban"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SEPA-IBAN</FormLabel>
+                    <FormLabel className={labelClass}>SEPA-IBAN</FormLabel>
                     <FormControl>
-                      <Input placeholder="DE00 0000 0000 0000 0000 00" {...field} value={field.value || ""} className="h-11" />
+                      <Input placeholder="DE00 0000 0000 0000 0000 00" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -477,9 +469,9 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="sepaBic"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SEPA-BIC</FormLabel>
+                    <FormLabel className={labelClass}>SEPA-BIC</FormLabel>
                     <FormControl>
-                      <Input placeholder="ABCDEF12" {...field} value={field.value || ""} className="h-11" />
+                      <Input placeholder="ABCDEF12" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -492,9 +484,9 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="sepaMandateReference"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mandatsreferenz</FormLabel>
+                    <FormLabel className={labelClass}>Mandatsreferenz</FormLabel>
                     <FormControl>
-                      <Input placeholder="MANDATE-001" {...field} value={field.value || ""} className="h-11" />
+                      <Input placeholder="MANDATE-001" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -505,59 +497,58 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 name="mandateSignedAt"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Datum der Unterschrift</FormLabel>
+                    <FormLabel className={labelClass}>Datum der Unterschrift</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} value={field.value || ""} className="h-11" />
+                      <Input type="date" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Notes */}
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 rounded-t-lg border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Interne Notizen
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <FormField
-              control={form.control as any}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Zusätzliche Informationen (z.B. Mitgliedschaft in Zweitvereinen, Besonderheiten)..." 
-                      className="min-h-[100px] resize-none"
-                      {...field} 
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
+        <div className="bg-card rounded-xl border border-border/60 p-8 shadow-sm">
+          <div className="mb-6">
+            <h2 className="text-2xl font-heading tracking-tight">Interne Notizen</h2>
+          </div>
+          <FormField
+            control={form.control as any}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Zusätzliche Informationen (z.B. Mitgliedschaft in Zweitvereinen, Besonderheiten)..." 
+                    className="min-h-[100px] resize-none"
+                    {...field} 
+                    value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* Submit Buttons */}
-        <div className="flex flex-col sm:flex-row justify-end gap-4 pb-10">
+        <div className="flex flex-col sm:flex-row justify-end gap-6 pt-4">
           <Button 
-            variant="outline" 
+            variant="outline"
             type="button" 
             onClick={() => router.push(isEdit ? `/dashboard/members/${member?.id}` : "/dashboard/members")}
             disabled={isPending}
-            className="h-11 px-8"
+            className="h-12 px-8 uppercase tracking-widest font-semibold"
           >
             Abbrechen
           </Button>
-          <Button type="submit" disabled={isPending} className="h-11 px-8 min-w-[160px]">
+          <Button 
+            type="submit" 
+            disabled={isPending} 
+            className="h-12 px-8 uppercase tracking-widest font-semibold min-w-[200px]"
+          >
             {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

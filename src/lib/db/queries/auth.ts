@@ -32,15 +32,16 @@ export async function getAuthUserWithClub(id: string) {
 
   let role = data.role;
 
-  if (data.member_id) {
-    const { data: member, error: memberError } = await client
-      .from("members")
+  if (data.member_id && data.club_id) {
+    const { data: membership, error: membershipError } = await client
+      .from("club_memberships")
       .select("role")
-      .eq("id", data.member_id)
+      .eq("member_id", data.member_id)
+      .eq("club_id", data.club_id)
       .maybeSingle();
 
-    if (!memberError && member?.role) {
-      role = member.role;
+    if (!membershipError && membership?.role) {
+      role = membership.role;
     }
   }
 
@@ -62,7 +63,7 @@ export async function getAllAuthUsers() {
   const client = createServiceClient();
   const { data, error } = await client
     .from("auth_user")
-    .select("id, name, email, role, is_super_admin, created_at, updated_at")
+    .select("id, name, email, role, is_super_admin, member_id, club_id, created_at, updated_at")
     .order("created_at", { ascending: false });
 
   if (error || !data) {
@@ -70,15 +71,29 @@ export async function getAllAuthUsers() {
     return [];
   }
 
-  return data.map((u: any) => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    isSuperAdmin: u.is_super_admin || false,
-    createdAt: u.created_at,
-    lastLoginAt: u.updated_at,
+  const users = await Promise.all((data || []).map(async (u: any) => {
+    let effectiveRole = u.role;
+    if (u.member_id && u.club_id) {
+      const { data: membership } = await client
+        .from("club_memberships")
+        .select("role")
+        .eq("member_id", u.member_id)
+        .eq("club_id", u.club_id)
+        .maybeSingle();
+      if (membership?.role) effectiveRole = membership.role;
+    }
+    return {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: effectiveRole,
+      isSuperAdmin: u.is_super_admin || false,
+      createdAt: u.created_at,
+      lastLoginAt: u.updated_at,
+    };
   }));
+
+  return users;
 }
 
 export async function updateAuthUser(

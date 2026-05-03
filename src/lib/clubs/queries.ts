@@ -60,12 +60,13 @@ export async function getUserClubs(userId: string) {
   if (userError || !userData?.club_id) return [];
 
   // Then get the club and membership details
-  const [{ data: clubData }, { data: memberData }] = await Promise.all([
+  const [{ data: clubData }, { data: membershipData }] = await Promise.all([
     client.from("clubs").select("*").eq("id", userData.club_id).single(),
     client
-      .from("members")
+      .from("club_memberships")
       .select("role")
-      .eq("id", userData.member_id)
+      .eq("member_id", userData.member_id)
+      .eq("club_id", userData.club_id)
       .single(),
   ]);
 
@@ -79,7 +80,7 @@ export async function getUserClubs(userId: string) {
       logoUrl: clubData.logo_url,
       plan: clubData.plan,
       isActive: clubData.is_active,
-      membershipRole: memberData?.role || "mitglied",
+      membershipRole: membershipData?.role || "mitglied",
       isPrimary: true,
     },
   ];
@@ -132,9 +133,9 @@ export async function isMemberOfClub(memberId: string, clubId: string) {
 export async function getClubRole(memberId: string, clubId: string) {
   const client = createServiceClient();
   const { data, error } = await client
-    .from("members")
+    .from("club_memberships")
     .select("role")
-    .eq("id", memberId)
+    .eq("member_id", memberId)
     .eq("club_id", clubId)
     .single();
 
@@ -149,7 +150,7 @@ export async function getMembersByClub(clubId: string, search?: string) {
   let query = client
     .from("members")
     .select(
-      "id, first_name, last_name, email, phone, status, role, dwz, joined_at"
+      "id, first_name, last_name, email, phone, status, dwz, joined_at"
     )
     .eq("club_id", clubId)
     .order("last_name", { ascending: true });
@@ -305,7 +306,6 @@ export async function createMember(data: {
       last_name: data.lastName,
       email: data.email,
       status: data.status || "active",
-      role: data.role || "mitglied",
       club_id: data.clubId,
     })
     .select()
@@ -322,7 +322,6 @@ export async function createMember(data: {
     lastName: member.last_name,
     email: member.email,
     status: member.status,
-    role: member.role,
     clubId: member.club_id,
   };
 }
@@ -340,7 +339,6 @@ export async function addMemberToClub(
     .from("members")
     .update({
       club_id: clubId,
-      role: role,
       updated_at: new Date().toISOString(),
     })
     .eq("id", memberId);

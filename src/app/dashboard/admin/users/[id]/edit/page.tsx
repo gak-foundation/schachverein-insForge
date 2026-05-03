@@ -9,7 +9,7 @@ async function getUserById(id: string) {
   const client = createServiceClient();
   const { data, error } = await client
     .from("auth_user")
-    .select("id, name, email, role, permissions, member_id, members(first_name, last_name)")
+    .select("id, name, email, role, permissions, member_id, club_id, members(first_name, last_name)")
     .eq("id", id)
     .maybeSingle();
 
@@ -18,15 +18,27 @@ async function getUserById(id: string) {
     return null;
   }
 
+  let effectiveRole = data.role;
+  if (data.member_id && data.club_id) {
+    const { data: membership } = await client
+      .from("club_memberships")
+      .select("role")
+      .eq("member_id", data.member_id)
+      .eq("club_id", data.club_id)
+      .maybeSingle();
+    if (membership?.role) effectiveRole = membership.role;
+  }
+
   const memberData = Array.isArray(data.members) ? data.members[0] : data.members;
 
   return {
     id: data.id,
     name: data.name,
     email: data.email,
-    role: data.role,
+    role: effectiveRole,
     permissions: data.permissions,
     memberId: data.member_id,
+    clubId: data.club_id,
     firstName: memberData?.first_name ?? null,
     lastName: memberData?.last_name ?? null,
   };

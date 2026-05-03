@@ -61,11 +61,11 @@ export async function createClubAction(formData: FormData) {
       lastName: session.user.name?.split(" ").slice(1).join(" ") || "Nachname",
       email: session.user.email || contactEmail || "",
       status: "active",
-      role: "admin",
       clubId: club.id,
     });
     memberId = newMember.id;
 
+    await addMemberToClub(club.id, memberId, "admin", true);
     await updateAuthUser(session.user.id, { memberId: newMember.id, clubId: club.id });
   } else {
     await addMemberToClub(club.id, memberId, "admin", true);
@@ -203,7 +203,7 @@ export async function inviteMemberToClubAction(formData: FormData) {
   if (otherClubMember) {
     const { error } = await client
       .from("members")
-      .update({ club_id: club.id, role })
+      .update({ club_id: club.id })
       .eq("id", otherClubMember.id);
 
     if (error) throw new Error(error.message);
@@ -275,14 +275,6 @@ export async function updateMemberRoleAction(memberId: string, role: string) {
 
   const client = createServiceClient();
 
-  const { error: memberError } = await client
-    .from("members")
-    .update({ role, updated_at: new Date().toISOString() })
-    .eq("id", memberId)
-    .eq("club_id", club.id);
-
-  if (memberError) throw new Error(memberError.message);
-
   const { error: membershipError } = await client
     .from("club_memberships")
     .update({ role, updated_at: new Date().toISOString() })
@@ -339,7 +331,7 @@ export async function importMembersAction(
   for (const memberData of membersToImport) {
     try {
       if (!memberData.email) {
-        const { error } = await client.from("members").insert([
+        const { data: newMember, error } = await client.from("members").insert([
           {
             club_id: club.id,
             first_name: memberData.firstName,
@@ -347,12 +339,23 @@ export async function importMembersAction(
             email: `${memberData.dwzId || "unknown"}@no-email.club`,
             dwz: memberData.dwz,
             dwz_id: memberData.dwzId,
-            role: memberData.role || "mitglied",
             status: "active",
           },
-        ]);
+        ]).select().single();
 
         if (error) throw new Error(error.message);
+
+        const { error: membershipError } = await client
+          .from("club_memberships")
+          .upsert({
+            club_id: club.id,
+            member_id: newMember.id,
+            role: memberData.role || "mitglied",
+            status: "active",
+            updated_at: new Date().toISOString(),
+          });
+
+        if (membershipError) throw new Error(membershipError.message);
         results.success++;
         continue;
       }
@@ -402,7 +405,6 @@ export async function acceptClubInvitationAction(token: string) {
     .from("members")
     .update({
       club_id: invitation.clubId,
-      role: invitation.role,
       updated_at: new Date().toISOString(),
     })
     .eq("id", session.user.memberId!);

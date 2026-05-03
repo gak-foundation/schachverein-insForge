@@ -19,7 +19,6 @@ export const memberSchema = z.object({
   chesscomUsername: z.string().nullable(),
   fideId: z.string().nullable(),
   status: z.enum(["active", "inactive", "resigned", "honorary"]),
-  role: z.enum(["user", "admin", "vorstand", "spielleiter", "jugendwart", "kassenwart", "trainer", "mitglied", "eltern"]),
   joinedAt: z.string().nullable(),
   parentId: z.string().nullable(),
   permissions: z.array(z.string()),
