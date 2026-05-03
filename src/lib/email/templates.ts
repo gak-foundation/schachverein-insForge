@@ -159,3 +159,95 @@ export function dunningEmailTemplate(data: {
     text: `${levelText}\n\nHallo ${data.memberName},\n\nwir konnten für die Rechnung ${data.invoiceNumber} bisher keinen Zahlungseingang feststellen.\n\nBeschreibung: ${data.description}\nOffener Betrag: ${data.amount} EUR\nUrsprünglich fällig am: ${data.dueDate}\n\nBitte überweisen Sie den fälligen Betrag umgehend.\n\nFalls Sie bereits gezahlt haben, ignorieren Sie diese E-Mail.`,
   };
 }
+
+export function welcomeTemplate(clubName: string): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  return {
+    subject: `Willkommen im ${clubName}!`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1a1a1a;">Willkommen im ${clubName}!</h2>
+        <p>Hallo {{Vorname}},</p>
+        <p>wir freuen uns, dich als neues Mitglied in unserem Schachverein begruessen zu duerfen.</p>
+        <p>Hier sind ein paar erste Schritte:</p>
+        <ul>
+          <li>Schau dir unseren <a href="#">Terminkalender</a> an</li>
+          <li>Tritt einer <a href="#">Mannschaft</a> bei</li>
+          <li>Nimm an unserem naechsten <a href="#">Training</a> teil</li>
+        </ul>
+        <p>Bei Fragen melde dich einfach bei deinem Vorstand.</p>
+        <p style="color: #999; font-size: 12px;">Diese E-Mail wurde automatisch generiert.</p>
+      </div>
+    `,
+    text: `Willkommen im ${clubName}!\n\nHallo {{Vorname}},\n\nwir freuen uns, dich als neues Mitglied zu begruessen.`,
+  };
+}
+
+export function paymentReminderTemplate(): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  return {
+    subject: "Erinnerung: Mitgliedsbeitrag faellig",
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1a1a1a;">Zahlungserinnerung</h2>
+        <p>Hallo {{Vorname}} {{Nachname}},</p>
+        <p>dein Mitgliedsbeitrag ist noch offen. Bitte ueberweise den ausstehenden Betrag zeitnah.</p>
+        <p>Bei Fragen zur Zahlung wende dich bitte an den Kassenwart.</p>
+        <p style="color: #999; font-size: 12px;">Diese E-Mail wurde automatisch generiert.</p>
+      </div>
+    `,
+    text: `Zahlungserinnerung\n\nHallo {{Vorname}} {{Nachname}},\n\ndein Mitgliedsbeitrag ist noch offen.`,
+  };
+}
+
+export function tournamentInviteTemplate(tournamentName: string): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  return {
+    subject: `Einladung: ${tournamentName}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1a1a1a;">${tournamentName}</h2>
+        <p>Hallo {{Vorname}},</p>
+        <p>du bist herzlich zum Turnier "${tournamentName}" eingeladen.</p>
+        <p>Deine aktuelle DWZ: {{DWZ}}</p>
+        <p>Weitere Infos findest du auf der Vereinswebsite.</p>
+        <p style="color: #999; font-size: 12px;">Diese E-Mail wurde automatisch generiert.</p>
+      </div>
+    `,
+    text: `Einladung: ${tournamentName}\n\nHallo {{Vorname}},\n\ndu bist herzlich zum Turnier "${tournamentName}" eingeladen.`,
+  };
+}
+
+export function genericAnnouncementTemplate(): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  return {
+    subject: "",
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <p>Hallo {{Vorname}},</p>
+        <p><!-- Nachricht hier einfuegen --></p>
+        <p style="color: #999; font-size: 12px;">Diese E-Mail wurde vom Schachverein versendet.</p>
+      </div>
+    `,
+    text: `Hallo {{Vorname}},\n\n<!-- Nachricht hier einfuegen -->`,
+  };
+}
+
+export const ADMIN_EMAIL_TEMPLATES = [
+  { id: "welcome", label: "Willkommensmail", generator: welcomeTemplate },
+  { id: "payment_reminder", label: "Beitragserinnerung", generator: paymentReminderTemplate },
+  { id: "tournament_invite", label: "Turniereinladung", generator: tournamentInviteTemplate },
+  { id: "generic", label: "Allgemeine Mitteilung", generator: genericAnnouncementTemplate },
+] as const;
