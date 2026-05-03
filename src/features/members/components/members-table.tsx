@@ -43,6 +43,10 @@ interface MembersTableProps {
   statusColors: Record<string, string>;
   statusLabels: Record<string, string>;
   hasWritePermission: boolean;
+  selectedIds: Set<string>;
+  onSelectionChange: (id: string, checked: boolean) => void;
+  onSelectAll: (checked: boolean) => void;
+  allSelected: boolean;
 }
 
 export function MembersTable({
@@ -58,6 +62,10 @@ export function MembersTable({
   statusColors,
   statusLabels,
   hasWritePermission,
+  selectedIds,
+  onSelectionChange,
+  onSelectAll,
+  allSelected,
 }: MembersTableProps) {
   return (
     <Card>
@@ -82,6 +90,17 @@ export function MembersTable({
               <Table aria-labelledby="members-list-title">
                 <TableHeader>
                   <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+                    <TableHead className="w-10">
+                      {hasWritePermission && (
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300"
+                          checked={allSelected}
+                          onChange={(e) => onSelectAll(e.target.checked)}
+                          aria-label="Alle auswaehlen"
+                        />
+                      )}
+                    </TableHead>
                     <TableHead aria-sort={sortBy === "name" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
                       <Link href={buildSortLink("name")} className="flex items-center gap-1 hover:text-primary transition-colors py-2 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">
                         Name {getSortIcon("name")}
@@ -125,6 +144,18 @@ export function MembersTable({
                       key={member.id} 
                       className="group relative hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
                     >
+                      {hasWritePermission && (
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300"
+                            checked={selectedIds.has(member.id)}
+                            onChange={(e) => onSelectionChange(member.id, e.target.checked)}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`${member.firstName} ${member.lastName} auswaehlen`}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
                         <Link 
                           href={`/dashboard/members/${member.id}`}

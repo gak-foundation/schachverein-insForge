@@ -7,13 +7,8 @@ import {
   type MemberSortField,
   type SortOrder as MembersListSortOrder,
 } from "@/features/members/actions";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Upload } from "lucide-react";
-import { PrintButton } from "@/components/print-button";
-import { DwzSyncButton } from "@/features/clubs/components/dwz-sync-button";
-import { MembersFilters } from "@/features/members/components/members-filters";
-import { MembersTable } from "@/features/members/components/members-table";
+import { ArrowUpDown } from "lucide-react";
+import { MembersPageClient } from "./members-page-client";
 
 export const metadata = {
   title: "Mitglieder",
@@ -114,57 +109,24 @@ export default async function MembersPage({
 
   const hasWritePermission = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.MEMBERS_WRITE, session.user.isSuperAdmin);
 
+  const contributionRates: { id: string; name: string }[] = []; // TODO: fetch from DB if needed
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Mitglieder</h1>
-          <p className="text-sm text-gray-500">
-            {totalCount} Mitglieder insgesamt
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.DWZ_SYNC, session.user.isSuperAdmin) && (
-            <DwzSyncButton />
-          )}
-          {hasWritePermission && (
-            <>
-              <Link href="/dashboard/members/import">
-                <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Import/Export
-                </Button>
-              </Link>
-              <PrintButton />
-              <Link href="/dashboard/members/new">
-                <Button size="sm">
-                  <span className="mr-2" aria-hidden="true">+</span> Neues Mitglied
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
-
-      <MembersFilters 
-        filters={filters} 
-        buildMembersLink={buildMembersLink} 
-      />
-
-      <MembersTable 
-        members={members}
-        totalCount={totalCount}
-        totalPages={totalPages}
-        currentPage={currentPage}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        getSortIcon={getSortIcon}
-        buildSortLink={buildSortLink}
-        buildMembersLink={buildMembersLink}
-        statusColors={statusColors}
-        statusLabels={statusLabels}
-        hasWritePermission={hasWritePermission}
-      />
-    </div>
+    <MembersPageClient
+      members={members}
+      totalCount={totalCount}
+      totalPages={totalPages}
+      currentPage={currentPage}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      filters={filters}
+      buildSortLink={buildSortLink as any}
+      buildMembersLink={buildMembersLink}
+      getSortIcon={getSortIcon}
+      statusColors={statusColors}
+      statusLabels={statusLabels}
+      hasWritePermission={hasWritePermission}
+      contributionRates={contributionRates}
+    />
   );
 }
