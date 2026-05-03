@@ -5,7 +5,9 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Plus, 
-  Repeat
+  Repeat,
+  CalendarPlus,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -93,6 +95,20 @@ export default function CalendarGrid({ initialEvents, canWrite }: CalendarGridPr
             </Button>
           </Link>
         )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const url = "/dashboard/calendar/ical";
+              window.open(url, "_blank");
+            }}
+            title="Gesamten Kalender abonnieren"
+          >
+            <CalendarPlus className="h-4 w-4 mr-1" />
+            Abonnieren
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-7 border-t border-l">
