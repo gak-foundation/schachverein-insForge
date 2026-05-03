@@ -1,5 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ROLE_LABELS } from "@/lib/auth/permissions";
 import Link from "next/link";
 
@@ -10,27 +8,29 @@ type MembershipCardProps = {
 
 export function MembershipCard({ role, permissionsCount }: MembershipCardProps) {
   return (
-    <Card className="shadow-lg border-border/50 bg-primary text-primary-foreground overflow-hidden relative">
-      <div className="absolute bottom-[-20%] right-[-10%] opacity-20 pointer-events-none">
-        <span className="text-9xl font-serif">♔</span>
+    <div className="bg-foreground text-background p-8 mt-8 relative overflow-hidden">
+      <div className="absolute -right-8 -bottom-12 opacity-10 pointer-events-none select-none">
+        <span className="text-9xl font-heading text-background">♔</span>
       </div>
-      <CardHeader>
-        <CardTitle className="text-xl">Mitgliedschaft</CardTitle>
-        <CardDescription className="text-primary-foreground/70">Dein Profil-Status</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 relative z-10">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Rolle:</span>
-          <span className="px-2 py-0.5 rounded-md bg-primary-foreground/20 text-xs font-bold uppercase tracking-widest">{ROLE_LABELS[role] || role}</span>
+      <div className="relative z-10">
+        <h3 className="text-2xl font-heading tracking-tight mb-2">Mitgliedschaft</h3>
+        <p className="text-sm text-background/60 mb-8">Dein Profil-Status</p>
+        
+        <div className="space-y-6 mb-8">
+          <div className="flex items-center justify-between border-b border-background/20 pb-2">
+            <span className="text-xs uppercase tracking-widest text-background/60 font-semibold">Rolle</span>
+            <span className="text-sm font-heading">{ROLE_LABELS[role] || role}</span>
+          </div>
+          <div className="flex items-center justify-between border-b border-background/20 pb-2">
+            <span className="text-xs uppercase tracking-widest text-background/60 font-semibold">Berechtigungen</span>
+            <span className="text-sm font-heading">{permissionsCount} Aktiv</span>
+          </div>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Berechtigungen:</span>
-          <span className="text-sm font-bold">{permissionsCount} Aktiv</span>
-        </div>
-        <Link href="/dashboard/profile" className="block pt-2">
-          <Button className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-bold">Profil bearbeiten</Button>
+        
+        <Link href="/dashboard/profile" className="inline-block text-xs uppercase tracking-widest font-semibold border-b border-background hover:text-background/80 transition-colors pb-1">
+          Profil bearbeiten
         </Link>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

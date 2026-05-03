@@ -72,7 +72,7 @@ Das MVP muss **mindestens eines** dieser Probleme deutlich besser lösen, sonst 
 interface Club { id: string; name: string; slug: string }
 interface User { id: string; email: string; name?: string }
 interface Member { id: string; clubId: string; firstName: string; lastName: string; dwz?: number }
-type Role = 'admin' | 'vorstand' | 'sportwart' | 'jugendwart' | 'kassenwart' | 'trainer' | 'mitglied' | 'eltern'
+type Role = 'admin' | 'vorstand' | 'spielleiter' | 'jugendwart' | 'kassenwart' | 'trainer' | 'mitglied' | 'eltern'
 type EventType = 'TRAINING' | 'TOURNAMENT' | 'MEETING' | 'LEAGUE_MATCH' | 'OTHER'
 ```
 
@@ -196,7 +196,7 @@ interface Season { id: string; clubId: string; name: string; startDate: Date; en
 enum Role {
   admin           // Technischer Administrator
   vorstand        // Vorstand (z.B. 1. Vorsitzender, allgemein)
-  sportwart       // Sportwart
+  spielleiter     // Spielleiter
   jugendwart      // Jugendwart
   kassenwart      // Kassenwart
   trainer         // Trainer

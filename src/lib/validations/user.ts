@@ -5,7 +5,7 @@ export const updateUserRoleSchema = z.object({
   role: z.enum([
     "admin",
     "vorstand",
-    "sportwart",
+    "spielleiter",
     "jugendwart",
     "kassenwart",
     "trainer",

@@ -14,7 +14,7 @@ import { createServerClient } from "@/lib/insforge";
 import { createServerAuthClient } from "@/lib/insforge/server-auth";
 
 // Define types used across the file
-type ClubMemberRole = "admin" | "vorstand" | "mitglied" | "jugend" | "passiv";
+type ClubMemberRole = "admin" | "vorstand" | "spielleiter" | "jugendwart" | "kassenwart" | "trainer" | "mitglied" | "eltern" | "user";
 type MemberRecordStatus = "active" | "inactive" | "resigned" | "honorary";
 
 export type MemberSortField = "name" | "email" | "dwz" | "elo" | "role" | "status" | "createdAt";

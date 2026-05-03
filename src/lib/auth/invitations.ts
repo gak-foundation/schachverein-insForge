@@ -2,7 +2,7 @@ import { createServiceClient } from "@/lib/insforge";
 import { randomUUID } from "crypto";
 import { addDays } from "date-fns";
 
-type MemberRole = "user" | "admin" | "vorstand" | "sportwart" | "jugendwart" | "kassenwart" | "trainer" | "mitglied" | "eltern";
+type MemberRole = "user" | "admin" | "vorstand" | "spielleiter" | "jugendwart" | "kassenwart" | "trainer" | "mitglied" | "eltern";
 
 // Create a new invitation
 export async function createInvitation({

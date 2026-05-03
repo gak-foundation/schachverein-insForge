@@ -4,7 +4,7 @@ import { getDashboardStats } from "@/features/audit/actions";
 import { getCurrentClubId } from "@/lib/actions/utils";
 import { getClubById } from "@/lib/clubs/queries";
 import { VorstandDashboard } from "@/features/dashboard/pages/vorstand-dashboard";
-import { SportwartDashboard } from "@/features/dashboard/pages/sportwart-dashboard";
+import { SpielleiterDashboard } from "@/features/dashboard/pages/spielleiter-dashboard";
 import { KassenwartDashboard } from "@/features/dashboard/pages/kassenwart-dashboard";
 import { JugendwartDashboard } from "@/features/dashboard/pages/jugendwart-dashboard";
 import { TrainerDashboard } from "@/features/dashboard/pages/trainer-dashboard";
@@ -47,8 +47,8 @@ export default async function DashboardPage() {
     case "admin":
     case "vorstand":
       return <VorstandDashboard {...dashboardData} />;
-    case "sportwart":
-      return <SportwartDashboard {...dashboardData} />;
+    case "spielleiter":
+      return <SpielleiterDashboard {...dashboardData} />;
     case "kassenwart":
       return <KassenwartDashboard {...dashboardData} />;
     case "jugendwart":

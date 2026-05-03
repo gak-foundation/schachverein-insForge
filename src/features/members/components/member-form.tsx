@@ -197,7 +197,7 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Geschlecht</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder="Wählen..." />
@@ -317,7 +317,7 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Rolle im System</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder="Wählen..." />
@@ -326,7 +326,7 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                       <SelectContent>
                         <SelectItem value="mitglied">Mitglied</SelectItem>
                         <SelectItem value="trainer">Trainer</SelectItem>
-                        <SelectItem value="sportwart">Sportwart</SelectItem>
+                        <SelectItem value="spielleiter">Spielleiter</SelectItem>
                         <SelectItem value="jugendwart">Jugendwart</SelectItem>
                         <SelectItem value="kassenwart">Kassenwart</SelectItem>
                         <SelectItem value="vorstand">Vorstand</SelectItem>
@@ -344,7 +344,7 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Mitgliedsstatus</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder="Wählen..." />
@@ -439,7 +439,7 @@ export function MemberForm({ member, mode = "create", contributionRates = [] }: 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Beitragsstufe</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                       <SelectTrigger className="h-11">
                         <SelectValue placeholder="Keine Beitragsstufe gewählt" />

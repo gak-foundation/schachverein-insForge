@@ -292,7 +292,7 @@ export default function OnboardingPage() {
                         className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       >
                         <option value="vorstand">Vorstand</option>
-                        <option value="sportwart">Sportwart</option>
+                        <option value="spielleiter">Spielleiter</option>
                         <option value="jugendwart">Jugendwart</option>
                         <option value="kassenwart">Kassenwart</option>
                       </select>

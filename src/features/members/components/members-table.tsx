@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -8,14 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, ChevronLeft, ChevronRight, Edit2 } from "lucide-react";
 import { cn, calculateAge } from "@/lib/utils";
 
 interface Member {
@@ -68,161 +61,148 @@ export function MembersTable({
   allSelected,
 }: MembersTableProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle id="members-list-title">Mitgliederliste</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {members.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title="Keine Mitglieder"
-            description="Keine Mitglieder mit diesen Filtern gefunden oder noch keine Mitglieder im System."
-            action={
-              hasWritePermission
-                ? { label: "Erstes Mitglied anlegen", href: "/dashboard/members/new" }
-                : undefined
-            }
-          />
-        ) : (
-          <>
-            <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-slate-800">
-              <Table aria-labelledby="members-list-title">
-                <TableHeader>
-                  <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+    <div className="py-8">
+      {members.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Keine Mitglieder"
+          description="Keine Mitglieder mit diesen Filtern gefunden oder noch keine Mitglieder im System."
+          action={
+            hasWritePermission
+              ? { label: "Erstes Mitglied anlegen", href: "/dashboard/members/new" }
+              : undefined
+          }
+        />
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <Table aria-label="Mitgliederliste">
+              <TableHeader>
+                <TableRow className="border-b border-foreground/10 hover:bg-transparent">
+                  {hasWritePermission && (
                     <TableHead className="w-10">
-                      {hasWritePermission && (
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded-none border-foreground focus:ring-0 focus:ring-offset-0 text-foreground bg-transparent"
+                        checked={allSelected}
+                        onChange={(e) => onSelectAll(e.target.checked)}
+                        aria-label="Alle auswaehlen"
+                      />
+                    </TableHead>
+                  )}
+                  <TableHead className="text-xs uppercase tracking-widest font-semibold text-muted-foreground" aria-sort={sortBy === "name" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                    <Link href={buildSortLink("name")} className="flex items-center gap-2 hover:text-foreground transition-colors">
+                      Name {getSortIcon("name")}
+                    </Link>
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">
+                    Alter
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-widest font-semibold text-muted-foreground" aria-sort={sortBy === "email" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                    <Link href={buildSortLink("email")} className="flex items-center gap-2 hover:text-foreground transition-colors">
+                      E-Mail {getSortIcon("email")}
+                    </Link>
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-widest font-semibold text-muted-foreground text-right" aria-sort={sortBy === "dwz" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                    <Link href={buildSortLink("dwz")} className="flex items-center justify-end gap-2 hover:text-foreground transition-colors">
+                      DWZ {getSortIcon("dwz")}
+                    </Link>
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-widest font-semibold text-muted-foreground" aria-sort={sortBy === "role" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                    <Link href={buildSortLink("role")} className="flex items-center gap-2 hover:text-foreground transition-colors">
+                      Rolle {getSortIcon("role")}
+                    </Link>
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-widest font-semibold text-muted-foreground" aria-sort={sortBy === "status" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
+                    <Link href={buildSortLink("status")} className="flex items-center gap-2 hover:text-foreground transition-colors">
+                      Status {getSortIcon("status")}
+                    </Link>
+                  </TableHead>
+                  <TableHead className="text-right w-16" aria-label="Aktionen"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {members.map((member) => (
+                  <TableRow 
+                    key={member.id} 
+                    className="group hover:bg-muted/10 transition-colors border-b border-border/40"
+                  >
+                    {hasWritePermission && (
+                      <TableCell>
                         <input
                           type="checkbox"
-                          className="h-4 w-4 rounded border-gray-300"
-                          checked={allSelected}
-                          onChange={(e) => onSelectAll(e.target.checked)}
-                          aria-label="Alle auswaehlen"
+                          className="h-4 w-4 rounded-none border-foreground/50 focus:ring-0 focus:ring-offset-0 text-foreground bg-transparent"
+                          checked={selectedIds.has(member.id)}
+                          onChange={(e) => onSelectionChange(member.id, e.target.checked)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`${member.firstName} ${member.lastName} auswaehlen`}
                         />
-                      )}
-                    </TableHead>
-                    <TableHead aria-sort={sortBy === "name" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
-                      <Link href={buildSortLink("name")} className="flex items-center gap-1 hover:text-primary transition-colors py-2 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">
-                        Name {getSortIcon("name")}
+                      </TableCell>
+                    )}
+                    <TableCell className="font-heading text-lg tracking-tight text-foreground">
+                      <Link 
+                        href={`/dashboard/members/${member.id}`}
+                        className="hover:text-primary transition-colors"
+                      >
+                        {member.firstName} <span className="font-bold">{member.lastName}</span>
                       </Link>
-                    </TableHead>
-                    <TableHead>
-                      <span className="flex items-center gap-1 py-2 text-slate-500 font-medium">
-                        Alter
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-medium text-sm">
+                      {calculateAge(member.dateOfBirth) ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm font-medium">{member.email || "—"}</TableCell>
+                    <TableCell className="text-right font-heading text-lg">
+                      {member.dwz ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                        {member.role}
                       </span>
-                    </TableHead>
-                    <TableHead aria-sort={sortBy === "email" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
-                      <Link href={buildSortLink("email")} className="flex items-center gap-1 hover:text-primary transition-colors py-2 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">
-                        E-Mail {getSortIcon("email")}
-                      </Link>
-                    </TableHead>
-                    <TableHead className="text-right" aria-sort={sortBy === "dwz" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
-                      <Link href={buildSortLink("dwz")} className="flex items-center justify-end gap-1 hover:text-primary transition-colors py-2 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">
-                        DWZ {getSortIcon("dwz")}
-                      </Link>
-                    </TableHead>
-                    <TableHead className="text-right" aria-sort={sortBy === "elo" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
-                      <Link href={buildSortLink("elo")} className="flex items-center justify-end gap-1 hover:text-primary transition-colors py-2 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">
-                        Elo {getSortIcon("elo")}
-                      </Link>
-                    </TableHead>
-                    <TableHead aria-sort={sortBy === "role" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
-                      <Link href={buildSortLink("role")} className="flex items-center gap-1 hover:text-primary transition-colors py-2 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">
-                        Rolle {getSortIcon("role")}
-                      </Link>
-                    </TableHead>
-                    <TableHead aria-sort={sortBy === "status" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}>
-                      <Link href={buildSortLink("status")} className="flex items-center gap-1 hover:text-primary transition-colors py-2 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">
-                        Status {getSortIcon("status")}
-                      </Link>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {members.map((member) => (
-                    <TableRow 
-                      key={member.id} 
-                      className="group relative hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
-                    >
+                    </TableCell>
+                    <TableCell>
+                      <span className={cn(
+                        "text-[10px] uppercase tracking-widest font-semibold",
+                        member.status === "active" ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {statusLabels[member.status] ?? member.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
                       {hasWritePermission && (
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300"
-                            checked={selectedIds.has(member.id)}
-                            onChange={(e) => onSelectionChange(member.id, e.target.checked)}
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label={`${member.firstName} ${member.lastName} auswaehlen`}
-                          />
-                        </TableCell>
-                      )}
-                      <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
-                        <Link 
-                          href={`/dashboard/members/${member.id}`}
-                          className="after:absolute after:inset-0 after:z-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset rounded-sm"
-                        >
-                          {member.firstName} {member.lastName}
+                        <Link href={`/dashboard/members/${member.id}/edit`} className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-all focus:opacity-100" aria-label="Bearbeiten">
+                          <Edit2 className="h-4 w-4" />
                         </Link>
-                      </TableCell>
-                      <TableCell className="text-slate-600 dark:text-slate-400 tabular-nums">
-                        {calculateAge(member.dateOfBirth) ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-slate-500 dark:text-slate-400">{member.email}</TableCell>
-                      <TableCell className="text-right tabular-nums font-medium text-slate-700 dark:text-slate-300">
-                        {member.dwz ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-slate-500 dark:text-slate-400">
-                        {member.elo ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 shadow-sm">
-                          {member.role}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border shadow-sm",
-                            statusColors[member.status] ?? "bg-slate-100 text-slate-800 border-slate-200"
-                          )}
-                        >
-                          {statusLabels[member.status] ?? member.status}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-            {totalPages > 1 && (
-              <nav className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4 pt-4 border-t border-slate-200 dark:border-slate-800" aria-label="Pagination">
-                <p className="text-sm text-slate-500 font-medium">
-                  Seite <span className="text-slate-900 dark:text-slate-100">{currentPage}</span> von <span className="text-slate-900 dark:text-slate-100">{totalPages}</span> ({totalCount} Einträge)
-                </p>
-                <div className="flex gap-3">
-                  {currentPage > 1 && (
-                    <Link href={buildMembersLink({ page: String(currentPage - 1) })}>
-                      <Button variant="outline" size="default" className="h-10 px-4">
-                        <ChevronLeft className="h-4 w-4 mr-2" aria-hidden="true" />
-                        Vorherige
-                      </Button>
-                    </Link>
-                  )}
-                  {currentPage < totalPages && (
-                    <Link href={buildMembersLink({ page: String(currentPage + 1) })}>
-                      <Button variant="outline" size="default" className="h-10 px-4">
-                        Nächste
-                        <ChevronRight className="h-4 w-4 ml-2" aria-hidden="true" />
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </nav>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+          {totalPages > 1 && (
+            <nav className="flex flex-col sm:flex-row items-center justify-between mt-12 gap-4" aria-label="Pagination">
+              <p className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">
+                Seite <span className="text-foreground">{currentPage}</span> von <span className="text-foreground">{totalPages}</span>
+              </p>
+              <div className="flex gap-6">
+                {currentPage > 1 && (
+                  <Link href={buildMembersLink({ page: String(currentPage - 1) })} className="text-xs uppercase tracking-widest font-semibold flex items-center hover:text-primary transition-colors">
+                    <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
+                    Vorherige
+                  </Link>
+                )}
+                {currentPage < totalPages && (
+                  <Link href={buildMembersLink({ page: String(currentPage + 1) })} className="text-xs uppercase tracking-widest font-semibold flex items-center hover:text-primary transition-colors">
+                    Nächste
+                    <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
+                  </Link>
+                )}
+              </div>
+            </nav>
+          )}
+        </>
+      )}
+    </div>
   );
 }

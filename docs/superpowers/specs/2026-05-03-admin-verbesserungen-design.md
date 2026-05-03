@@ -284,7 +284,7 @@ Template-Daten in Formularfelder schreiben (setValue) → User bearbeitet + spei
 - `src/features/dashboard/pages/mitglied-dashboard.tsx` — Inline-Availability + "Nächstes Spiel ansehen"
 - `src/features/dashboard/pages/trainer-dashboard.tsx` — "Training heute: Teilnehmerliste" Link + "Neues Training anlegen"
 - `src/features/dashboard/pages/kassenwart-dashboard.tsx` — "Offene Zahlungen anmahnen" Button (1-Klick) + "Zahlung erfassen"
-- `src/features/dashboard/pages/sportwart-dashboard.tsx` — DWZ-Sync Button (bestehend, prominent) + "Neuen Spieltag ansetzen"
+- `src/features/dashboard/pages/spielleiter-dashboard.tsx` — DWZ-Sync Button (bestehend, prominent) + "Neuen Spieltag ansetzen"
 - `src/features/dashboard/pages/vorstand-dashboard.tsx` — "Neue Mitteilung an alle" Link + "Neue Veranstaltung"
 - `src/features/dashboard/pages/jugendwart-dashboard.tsx` — "Eltern benachrichtigen" + "Jugend-Training planen"
 - `src/features/dashboard/pages/eltern-dashboard.tsx` — "Mein Kind: Verfügbarkeit melden"

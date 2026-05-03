@@ -12,9 +12,9 @@ import { MembershipCard } from "../components/membership-card";
 import { ClubStrengthCard } from "../components/club-strength-card";
 import { QuickActionsBar } from "../components/quick-actions-bar";
 
-export function SportwartDashboard({ stats, user }: DashboardData) {
-  const firstName = user?.name?.split(" ")[0] ?? "Sportwart";
-  const role = (user?.role as string) ?? "sportwart";
+export function SpielleiterDashboard({ stats, user }: DashboardData) {
+  const firstName = user?.name?.split(" ")[0] ?? "Spielleiter";
+  const role = (user?.role as string) ?? "spielleiter";
   const permissions = (user?.permissions as string[]) ?? [];
 
   const todayItems = [
@@ -46,7 +46,7 @@ export function SportwartDashboard({ stats, user }: DashboardData) {
 
   return (
     <div className="space-y-10">
-      <WelcomeHeader firstName={firstName} subtitle="Sportlicher Überblick – Mannschaften, Turniere und Partien." roleLabel="Sportwart" />
+      <WelcomeHeader firstName={firstName} subtitle="Sportlicher Überblick – Mannschaften, Turniere und Partien." roleLabel="Spielleiter" />
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard label="Mannschaften" value={stats.teamCount} desc="Aktuelle Saison" icon={Swords} href="/dashboard/teams" />

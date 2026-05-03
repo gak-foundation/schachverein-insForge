@@ -21,7 +21,7 @@ export async function getMailingLists() {
         roles: [
             { id: "mitglied", label: "Alle Mitglieder" },
             { id: "vorstand", label: "Vorstand" },
-            { id: "sportwart", label: "Sportwart" },
+            { id: "spielleiter", label: "Spielleiter" },
             { id: "jugendwart", label: "Jugendwart" },
             { id: "kassenwart", label: "Kassenwart" },
             { id: "trainer", label: "Trainer" },

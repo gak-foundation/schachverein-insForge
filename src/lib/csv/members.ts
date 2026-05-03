@@ -232,7 +232,7 @@ function parseRole(value?: string): CreateMemberInput["role"] {
   const roles: Record<string, CreateMemberInput["role"]> = {
     admin: "admin",
     vorstand: "vorstand",
-    sportwart: "sportwart",
+    spielleiter: "spielleiter",
     jugendwart: "jugendwart",
     kassenwart: "kassenwart",
     trainer: "trainer",

@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
 import { Providers } from "@/providers";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-heading",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://schach.studio"),
@@ -70,7 +81,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className="h-full antialiased"
+      className={`${inter.variable} ${playfair.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

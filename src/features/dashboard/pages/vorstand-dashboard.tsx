@@ -62,7 +62,7 @@ export function VorstandDashboard({ stats, user, club, onboardingCompleted }: Da
 
       {!hasData && onboardingCompleted && <EmptyState memberCount={stats.memberCount} />}
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 py-8 border-b border-border">
         <StatsCard label="Mitglieder" value={stats.memberCount} desc="Aktive Mitglieder" icon={Users} href="/dashboard/members" />
         <StatsCard label="Mannschaften" value={stats.teamCount} desc="Aktuelle Saison" icon={Swords} href="/dashboard/teams" />
         <StatsCard label="Aktive Turniere" value={stats.activeTournaments} desc="Laufende Events" icon={Trophy} href="/dashboard/tournaments" />

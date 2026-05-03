@@ -37,7 +37,7 @@ Das System implementiert eine mehrschichtige Sicherheitsstrategie:
    - **InsForge Auth**: JWT-basiert mit E-Mail/Passwort und OAuth-Optionen.
    - RBAC-Logik in Next.js Server Actions und Datenbank-Policies (RLS).
 2. **Autorisierung (RBAC)**:
-   - Rollen: `admin`, `vorstand`, `sportwart`, `jugendwart`, `kassenwart`, `trainer`, `mitglied`, `eltern`.
+   - Rollen: `admin`, `vorstand`, `spielleiter`, `jugendwart`, `kassenwart`, `trainer`, `mitglied`, `eltern`.
    - Berechtigungen: Feingranular (z.B. `finance.sepa`, `tournaments.results`).
    - Per-User Overrides möglich.
 3. **Schutzmaßnahmen**:

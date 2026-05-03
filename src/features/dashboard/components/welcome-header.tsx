@@ -1,5 +1,3 @@
-import { LayoutDashboard } from "lucide-react";
-
 type WelcomeHeaderProps = {
   firstName: string;
   subtitle: string;
@@ -8,16 +6,13 @@ type WelcomeHeaderProps = {
 
 export function WelcomeHeader({ firstName, subtitle, roleLabel }: WelcomeHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">
-          Willkommen, {firstName}!
+        <span className="uppercase tracking-widest text-[10px] text-muted-foreground font-semibold mb-2 block">{roleLabel}</span>
+        <h1 className="text-5xl md:text-6xl font-heading tracking-tight text-foreground">
+          Guten Tag, {firstName}.
         </h1>
-        <p className="mt-2 text-muted-foreground text-lg">{subtitle}</p>
-      </div>
-      <div className="flex items-center gap-2 px-4 py-2 bg-accent rounded-full text-accent-foreground text-sm font-bold shadow-sm border border-border/50">
-        <LayoutDashboard className="h-4 w-4" />
-        <span className="uppercase tracking-widest text-[10px]">{roleLabel}</span>
+        <p className="mt-4 text-muted-foreground text-lg font-light max-w-2xl">{subtitle}</p>
       </div>
     </div>
   );

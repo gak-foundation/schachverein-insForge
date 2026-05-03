@@ -105,26 +105,22 @@ export function MembersPageClient({
   const allSelected = members.length > 0 && selectedIds.size === members.length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-12">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 pb-6 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Mitglieder</h1>
-          <p className="text-sm text-gray-500">{totalCount} Mitglieder insgesamt</p>
+          <h1 className="text-4xl font-heading tracking-tight">Mitglieder</h1>
+          <p className="text-sm text-muted-foreground uppercase tracking-widest font-semibold mt-2">{totalCount} Mitglieder insgesamt</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-6">
           {hasWritePermission && (
             <>
-              <Link href="/dashboard/members/import">
-                <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import/Export
-                </Button>
+              <Link href="/dashboard/members/import" className="text-xs uppercase tracking-widest font-semibold text-muted-foreground hover:text-foreground transition-colors pb-1 border-b border-transparent hover:border-foreground flex items-center">
+                <Upload className="h-3 w-3 mr-2" />
+                Import/Export
               </Link>
               <PrintButton />
-              <Link href="/dashboard/members/new">
-                <Button size="sm">
-                  <span className="mr-2">+</span> Neues Mitglied
-                </Button>
+              <Link href="/dashboard/members/new" className="text-xs uppercase tracking-widest font-semibold bg-foreground text-background px-4 py-2 hover:bg-foreground/80 transition-colors">
+                <span className="mr-2 font-serif">+</span> Neues Mitglied
               </Link>
             </>
           )}

@@ -71,7 +71,7 @@ export const dividerBlockSchema = z.object({
 // 7. Contact Form Block
 export const contactFormBlockSchema = z.object({
   title: z.string().optional(),
-  recipientRole: z.enum(["admin", "vorstand", "jugendwart", "sportwart"]).default("vorstand"),
+  recipientRole: z.enum(["admin", "vorstand", "jugendwart", "spielleiter"]).default("vorstand"),
   showPhoneField: z.boolean().default(false),
   submitButtonLabel: z.string().default("Nachricht senden"),
   successMessage: z.string().default("Vielen Dank! Ihre Nachricht wurde gesendet."),

@@ -12,7 +12,7 @@ Basierend auf den drei bereitgestellten Konzeptdokumenten folgt eine konsolidier
 |-------|-------------------|
 | `admin` | System- & Plattform-Administration |
 | `vorstand` | Vereinsleitung, rechtliche Protokolle, Mitgliederversammlungen |
-| `sportwart` / Turnierleiter | Auslosungen, Ergebnisse, Verbandsexporte |
+| `spielleiter` / Turnierleiter | Auslosungen, Ergebnisse, Verbandsexporte |
 | `jugendwart` | Jugendarbeit, Eltern-Kommunikation |
 | `kassenwart` | Beiträge, SEPA, Mahnwesen, Finanzberichte |
 | `trainer` | Jugendtraining, Lichess-Archiv, Fortschrittsanalyse |

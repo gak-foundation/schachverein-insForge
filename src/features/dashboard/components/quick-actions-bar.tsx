@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 interface QuickAction {
@@ -16,22 +15,30 @@ interface QuickActionsBarProps {
 
 export function QuickActionsBar({ actions }: QuickActionsBarProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-x-8 gap-y-4 py-8">
       {actions.map((action, i) => {
         const Icon = action.icon;
+        
+        const content = (
+          <>
+            {Icon && <Icon className="h-4 w-4 mr-2" />}
+            {action.label}
+          </>
+        );
+
+        const className = "flex items-center text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors border-b border-transparent hover:border-foreground pb-1";
+
         if (action.href) {
           return (
-            <Button key={i} variant="outline" size="sm" nativeButton={false} render={<Link href={action.href} />}>
-              {Icon && <Icon className="h-4 w-4 mr-2" />}
-              {action.label}
-            </Button>
+            <Link key={i} href={action.href} className={className}>
+              {content}
+            </Link>
           );
         }
         return (
-          <Button key={i} variant="outline" size="sm" onClick={action.onClick}>
-            {Icon && <Icon className="h-4 w-4 mr-2" />}
-            {action.label}
-          </Button>
+          <button key={i} onClick={action.onClick} className={className}>
+            {content}
+          </button>
         );
       })}
     </div>

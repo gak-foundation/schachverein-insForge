@@ -61,7 +61,7 @@ export interface Club {
 export type MemberRole =
   | "admin"
   | "vorstand"
-  | "sportwart"
+  | "spielleiter"
   | "jugendwart"
   | "kassenwart"
   | "trainer"

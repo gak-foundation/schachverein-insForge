@@ -232,7 +232,7 @@ export default function MemberImportPage() {
                 <li>Trennzeichen: Semikolon (;)</li>
                 <li>Kodierung: UTF-8 empfohlen</li>
                 <li>Datum: YYYY-MM-DD oder DD.MM.YYYY</li>
-                <li>Rolle: admin, vorstand, sportwart, jugendwart, kassenwart, trainer, mitglied, eltern</li>
+                <li>Rolle: admin, vorstand, spielleiter, jugendwart, kassenwart, trainer, mitglied, eltern</li>
                 <li>Status: active, inactive, resigned, honorary</li>
                 <li>Boolesche Werte: ja/nein, yes/no, true/false</li>
                 <li>Existierende E-Mails werden übersprungen (kein Update)</li>

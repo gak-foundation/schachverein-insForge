@@ -1,5 +1,5 @@
 import { VorstandDashboard } from "./pages/vorstand-dashboard";
-import { SportwartDashboard } from "./pages/sportwart-dashboard";
+import { SpielleiterDashboard } from "./pages/spielleiter-dashboard";
 import { KassenwartDashboard } from "./pages/kassenwart-dashboard";
 import { JugendwartDashboard } from "./pages/jugendwart-dashboard";
 import { TrainerDashboard } from "./pages/trainer-dashboard";
@@ -54,7 +54,7 @@ export type DashboardData = {
 
 const ROLE_DASHBOARD_MAP: Record<string, React.ComponentType<DashboardData>> = {
   vorstand: VorstandDashboard,
-  sportwart: SportwartDashboard,
+  spielleiter: SpielleiterDashboard,
   jugendwart: JugendwartDashboard,
   kassenwart: KassenwartDashboard,
   trainer: TrainerDashboard,

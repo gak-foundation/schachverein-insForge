@@ -61,30 +61,30 @@ export default async function DashboardLayout({
           isSuperAdmin={user.isSuperAdmin}
           clubSwitcher={<ClubSwitcher />}
         />
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden bg-background">
           {/* Top Header */}
-          <header className="flex h-16 items-center justify-between border-b px-8 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+          <header className="flex h-20 items-center justify-between px-10 sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
             <div className="flex items-center gap-4">
               <Breadcrumbs />
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end mr-2">
-                <span className="text-sm font-semibold">{user.name}</span>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{ROLE_LABELS[role] || role}</span>
+            <div className="flex items-center gap-5">
+              <div className="flex flex-col items-end">
+                <span className="text-sm font-semibold tracking-tight">{user.name}</span>
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{ROLE_LABELS[role] || role}</span>
               </div>
-              <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center border shadow-sm overflow-hidden relative">
+              <div className="h-9 w-9 rounded-none bg-primary flex items-center justify-center overflow-hidden relative">
                  {user.image ? (
-                   <Image src={user.image} alt={user.name} fill className="object-cover" />
+                   <Image src={user.image} alt={user.name} fill className="object-cover grayscale hover:grayscale-0 transition-all duration-500" />
                  ) : (
-                   <span className="text-sm font-bold text-accent-foreground">{user.name.substring(0, 2).toUpperCase()}</span>
+                   <span className="text-xs font-bold text-primary-foreground font-heading">{user.name.substring(0, 2).toUpperCase()}</span>
                  )}
               </div>
             </div>
           </header>
 
           <main className="flex-1 overflow-y-auto custom-scrollbar">
-            <div className="mx-auto max-w-7xl px-8 py-10">
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mx-auto max-w-6xl px-10 py-12">
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
                 {children}
               </div>
             </div>

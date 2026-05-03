@@ -22,7 +22,7 @@ export type MemberRole =
   | "user"
   | "admin"
   | "vorstand"
-  | "sportwart"
+  | "spielleiter"
   | "jugendwart"
   | "kassenwart"
   | "trainer"

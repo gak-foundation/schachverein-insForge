@@ -33,7 +33,7 @@ export default async function ClubInvitationsPage() {
     { value: "mitglied", label: "Mitglied" },
     { value: "admin", label: "Admin" },
     { value: "vorstand", label: "Vorstand" },
-    { value: "sportwart", label: "Sportwart" },
+    { value: "spielleiter", label: "Spielleiter" },
     { value: "jugendwart", label: "Jugendwart" },
     { value: "kassenwart", label: "Kassenwart" },
     { value: "trainer", label: "Trainer" },

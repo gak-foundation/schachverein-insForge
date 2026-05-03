@@ -372,7 +372,7 @@ Der Block-Katalog ist in **4 Kategorien** organisiert. Jeder Block hat eine **fe
 <summary><b>👔 Vorstands-Team (`boardTeam`)</b></summary>
 
 - **Zweck:** Vorstandsmitglieder mit Rolle, Foto, Kontakt
-- **Datenquelle:** `members` mit Rolle `vorstand`/`sportwart`/etc.
+- **Datenquelle:** `members` mit Rolle `vorstand`/`spielleiter`/etc.
 - **Consent-Pflicht:** Nur wer Foto+Name veröffentlichen erlaubt hat
 - **Kontakt-Optionen:** E-Mail (mit JS-Obfuscation gegen Spam), Kontaktformular
 - **Layout:** Grid 2/3/4 Spalten oder Liste

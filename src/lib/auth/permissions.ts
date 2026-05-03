@@ -107,7 +107,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.CLUB_SETTINGS,
   ],
 
-  sportwart: [
+  spielleiter: [
     PERMISSIONS.MEMBERS_READ,
     PERMISSIONS.TOURNAMENTS_READ,
     PERMISSIONS.TOURNAMENTS_WRITE,
@@ -179,7 +179,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
 export const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
   vorstand: "Vorstand",
-  sportwart: "Sportwart",
+  spielleiter: "Spielleiter",
   jugendwart: "Jugendwart",
   kassenwart: "Kassenwart",
   trainer: "Trainer",

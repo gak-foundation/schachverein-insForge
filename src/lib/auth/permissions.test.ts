@@ -30,8 +30,8 @@ describe("hasPermission", () => {
   });
 
   it("sollte alle Rollen korrekt abbilden", () => {
-    expect(hasPermission("sportwart", [], PERMISSIONS.TOURNAMENTS_MANAGE)).toBe(true);
-    expect(hasPermission("sportwart", [], PERMISSIONS.FINANCE_READ)).toBe(false);
+    expect(hasPermission("spielleiter", [], PERMISSIONS.TOURNAMENTS_MANAGE)).toBe(true);
+    expect(hasPermission("spielleiter", [], PERMISSIONS.FINANCE_READ)).toBe(false);
     expect(hasPermission("kassenwart", [], PERMISSIONS.FINANCE_MANAGE)).toBe(true);
     expect(hasPermission("kassenwart", [], PERMISSIONS.TOURNAMENTS_WRITE)).toBe(false);
     expect(hasPermission("jugendwart", [], PERMISSIONS.YOUTH_CONSENT)).toBe(true);

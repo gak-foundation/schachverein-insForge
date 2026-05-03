@@ -58,7 +58,7 @@ Begrüßung mit Übersicht über die anstehenden Schritte. Keine Änderungen zum
 
 - Der gesamte Flow bleibt als eine Client-Component in `src/app/onboarding/page.tsx`
 - Der neue Einladungs-Step nutzt das existierende `createInvitation` aus `invitations.ts`
-- Das Rollen-Dropdown ist auf die Rollen `admin`, `vorstand`, `sportwart`, `jugendwart`, `kassenwart` beschränkt
+- Das Rollen-Dropdown ist auf die Rollen `admin`, `vorstand`, `spielleiter`, `jugendwart`, `kassenwart` beschränkt
 - Der Progress-Bar und Schritt-Zähler wird automatisch an die 5 Schritte angepasst
 
 ## Datenfluss
