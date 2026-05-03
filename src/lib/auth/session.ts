@@ -191,3 +191,28 @@ export async function requirePermission(permission: Permission) {
 
   throw new Error("FORBIDDEN");
 }
+
+export async function getImpersonationTarget(): Promise<string | null> {
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  const payload = cookieStore.get("impersonation_payload")?.value;
+  const sig = cookieStore.get("impersonation_sig")?.value;
+  if (!payload || !sig) return null;
+
+  // Verify signature
+  const secret = process.env.IMPERSONATION_SECRET || process.env.NEXT_PUBLIC_ROOT_DOMAIN || "fallback";
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]
+  );
+  const expectedSig = Array.from(
+    new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(payload)))
+  ).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  if (sig !== expectedSig) return null;
+
+  const data = JSON.parse(payload);
+  if (Date.now() - data.ts > 3600000) return null; // expired
+
+  return data.targetClubId;
+}
