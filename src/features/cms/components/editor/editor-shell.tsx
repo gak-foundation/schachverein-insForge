@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import { useEditorStore, Block } from "@/lib/store/editor-store";
 import { BlockList } from "./block-list";
 import { BlockInspector } from "./block-inspector";
+import { PreviewPanel } from "./preview-panel";
 import { Button } from "@/components/ui/button";
-import { Save, Eye, Send, ChevronLeft, Loader2, Plus } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Save, Eye, Send, ChevronLeft, Loader2, Plus, Settings } from "lucide-react";
 import Link from "next/link";
 import { savePageBlocks } from "@/features/cms/actions";
 import { useToast } from "@/components/ui/use-toast";
@@ -151,10 +153,21 @@ export function EditorShell({ page, initialBlocks }: EditorShellProps) {
           </div>
         </div>
 
-        {/* Right Sidebar: Inspector */}
-        <div className="w-80 border-l bg-background overflow-y-auto shrink-0">
-          <BlockInspector />
+        {/* Right: Preview Panel */}
+        <div className="flex-1 border-l bg-background overflow-hidden shrink-0 hidden xl:block">
+          <PreviewPanel />
         </div>
+        {/* Inspector as slide-over on smaller screens */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="sm" className="xl:hidden fixed right-4 top-20 z-50">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-80">
+            <BlockInspector />
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );
