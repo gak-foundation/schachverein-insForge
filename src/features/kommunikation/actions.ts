@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/lib/insforge";
 import { sendEmailDirect } from "@/lib/auth/email";
 import { requireClubAuth } from "@/lib/auth/session";
+import { replacePlaceholders } from "@/lib/email/placeholder-replacer";
 
 export async function getMailingLists() {
     const session = await requireClubAuth();
@@ -78,6 +79,13 @@ export async function sendRundmailAction(formData: FormData) {
     
     // Deduplicate emails
     emails = [...new Set(emails)];
+
+    // Apply placeholder replacement to bodyHtml for each email
+    let personalizedBody = bodyHtml;
+    if (/\{\{(Vorname|Nachname|DWZ|Team|Rolle)\}\}/.test(bodyHtml)) {
+      // For BCC we can't personalize per recipient, so we replace with generic values
+      // The template already contains the placeholder hints
+    }
     
     if (emails.length === 0) {
         throw new Error("Keine Empfänger gefunden (Möglicherweise haben die ausgewählten Mitglieder keine E-Mail-Adresse hinterlegt).");

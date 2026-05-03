@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { sendRundmailAction } from "@/features/kommunikation/actions";
+import { TemplateSelector } from "@/features/kommunikation/components/template-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,13 +24,22 @@ interface MailFormProps {
     roles: { id: string; label: string }[];
     teams: { id: string; name: string }[];
   };
+  templates: {
+    id: string;
+    label: string;
+    getSubject: () => string;
+    getBody: () => string;
+  }[];
 }
 
-export function MailForm({ lists }: MailFormProps) {
+export function MailForm({ lists, templates }: MailFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [targetType, setTargetType] = useState<"all" | "role" | "team">("all");
   const [targetId, setTargetId] = useState<string>("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [subjectValue, setSubjectValue] = useState("");
+  const [bodyValue, setBodyValue] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,6 +51,10 @@ export function MailForm({ lists }: MailFormProps) {
       formData.set("targetId", targetId);
     }
 
+    // Ensure controlled values are in formData
+    formData.set("subject", subjectValue);
+    formData.set("bodyHtml", bodyValue);
+
     try {
       const result = await sendRundmailAction(formData);
       if (result.success) {
@@ -51,6 +65,9 @@ export function MailForm({ lists }: MailFormProps) {
         (e.target as HTMLFormElement).reset();
         setTargetType("all");
         setTargetId("");
+        setSubjectValue("");
+        setBodyValue("");
+        setSelectedTemplate(null);
       }
     } catch (error: any) {
       toast({
@@ -61,6 +78,10 @@ export function MailForm({ lists }: MailFormProps) {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function hasPlaceholders(): boolean {
+    return /\{\{(Vorname|Nachname|DWZ|Team|Rolle)\}\}/.test(subjectValue + bodyValue);
   }
 
   return (
@@ -106,77 +127,89 @@ export function MailForm({ lists }: MailFormProps) {
                   checked={targetType === "team"}
                   onChange={() => { setTargetType("team"); setTargetId(lists.teams[0]?.id || ""); }}
                 />
-                <span className="font-medium">Mannschaft</span>
+                <span className="font-medium">Bestimmte Mannschaft</span>
               </label>
             </div>
-          </div>
 
-          {targetType === "role" && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-              <Label htmlFor="roleSelect">Rolle auswählen</Label>
-              <select
-                id="roleSelect"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                value={targetId}
-                onChange={(e) => setTargetId(e.target.value)}
-                required
-              >
-                <option value="" disabled>Bitte wählen...</option>
-                {lists.roles.map((r) => (
-                  <option key={r.id} value={r.id}>{r.label}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {targetType === "team" && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-              <Label htmlFor="teamSelect">Mannschaft auswählen</Label>
-              {lists.teams.length > 0 ? (
+            {targetType === "role" && (
+              <div className="mt-4">
+                <Label htmlFor="targetRole">Rolle auswählen</Label>
                 <select
-                  id="teamSelect"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  id="targetRole"
+                  className="mt-1 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                   value={targetId}
                   onChange={(e) => setTargetId(e.target.value)}
-                  required
                 >
-                  <option value="" disabled>Bitte wählen...</option>
-                  {lists.teams.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                  {lists.roles.map((role) => (
+                    <option key={role.id} value={role.id}>{role.label}</option>
                   ))}
                 </select>
-              ) : (
-                <div className="text-sm text-destructive">Keine Mannschaften vorhanden.</div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          <div className="space-y-2 pt-2">
+            {targetType === "team" && (
+              <div className="mt-4">
+                <Label htmlFor="targetTeam">Mannschaft auswählen</Label>
+                <select
+                  id="targetTeam"
+                  className="mt-1 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                  value={targetId}
+                  onChange={(e) => setTargetId(e.target.value)}
+                >
+                  {lists.teams.map((team) => (
+                    <option key={team.id} value={team.id}>{team.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          <TemplateSelector
+            value={selectedTemplate}
+            onChange={(subject, body) => {
+              setSubjectValue(subject);
+              setBodyValue(body);
+              setSelectedTemplate(selectedTemplate);
+            }}
+            templates={templates}
+          />
+
+          <div className="space-y-2">
             <Label htmlFor="subject">Betreff</Label>
-            <Input id="subject" name="subject" placeholder="z.B. Einladung zur Mitgliederversammlung" required />
+            <Input
+              id="subject"
+              name="subject"
+              placeholder="Betreff der E-Mail"
+              required
+              value={subjectValue}
+              onChange={(e) => setSubjectValue(e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bodyHtml">Nachricht</Label>
-            <Textarea 
-              id="bodyHtml" 
-              name="bodyHtml" 
-              placeholder="Schreibe hier deine Nachricht (unterstützt HTML)..." 
-              required 
+            <Label htmlFor="bodyHtml">Inhalt (HTML unterstützt)</Label>
+            <Textarea
+              id="bodyHtml"
+              name="bodyHtml"
               rows={12}
-              className="resize-y"
+              placeholder="E-Mail Inhalt..."
+              required
+              value={bodyValue}
+              onChange={(e) => setBodyValue(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">Hinweis: Momentan wird reines HTML unterstützt. Ein Editor-Update folgt bald.</p>
           </div>
+
+          {hasPlaceholders() && (
+            <div className="rounded-md bg-muted p-3 text-sm text-amber-600">
+              Platzhalter wie {"{{Vorname}}"} werden beim Senden durch die tatsächlichen Werte ersetzt.
+            </div>
+          )}
         </CardContent>
-        <CardFooter className="bg-slate-50 dark:bg-slate-900 border-t px-6 py-4">
-          <Button type="submit" disabled={isLoading} className="ml-auto">
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="mr-2 h-4 w-4" />
-            )}
-            Nachricht senden
+        <CardFooter className="flex justify-end gap-3">
+          <Button type="submit" disabled={isLoading}>
+            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Send className="h-4 w-4 mr-2" />
+            Senden
           </Button>
         </CardFooter>
       </form>

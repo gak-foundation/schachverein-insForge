@@ -2,6 +2,11 @@ import { Metadata } from "next";
 import { getMailingLists } from "@/features/kommunikation/actions";
 import { MailForm } from "./mail-form";
 import { Mail } from "lucide-react";
+import {
+  welcomeTemplate,
+  paymentReminderTemplate,
+  tournamentInviteTemplate,
+} from "@/lib/email/templates";
 
 export const metadata: Metadata = {
   title: "Kommunikation",
@@ -10,6 +15,33 @@ export const metadata: Metadata = {
 
 export default async function KommunikationPage() {
   const lists = await getMailingLists();
+
+  const templateDefinitions = [
+    {
+      id: "welcome",
+      label: "Willkommensmail",
+      getSubject: () => welcomeTemplate("dein Verein").subject,
+      getBody: () => welcomeTemplate("dein Verein").html,
+    },
+    {
+      id: "payment_reminder",
+      label: "Beitragserinnerung",
+      getSubject: () => paymentReminderTemplate().subject,
+      getBody: () => paymentReminderTemplate().html,
+    },
+    {
+      id: "tournament_invite",
+      label: "Turniereinladung",
+      getSubject: () => tournamentInviteTemplate("").subject,
+      getBody: () => tournamentInviteTemplate("").html,
+    },
+    {
+      id: "generic",
+      label: "Allgemeine Mitteilung",
+      getSubject: () => "",
+      getBody: () => "<p>Hallo {{Vorname}},</p><p></p>",
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -26,7 +58,7 @@ export default async function KommunikationPage() {
       </div>
 
       <div className="max-w-3xl">
-        <MailForm lists={lists} />
+        <MailForm lists={lists} templates={templateDefinitions} />
       </div>
     </div>
   );
