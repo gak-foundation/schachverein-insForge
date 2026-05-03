@@ -11,7 +11,8 @@ export type BlockType =
   | "columns" 
   | "divider" 
   | "contactForm" 
-  | "tournamentCard";
+  | "tournamentCard"
+  | "announcement";
 
 export interface Block {
   id: string;

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { getActiveAnnouncements } from "@/lib/actions/announcements";
+import { AnnouncementBar } from "@/features/dashboard/components/announcement-bar";
 
 interface ClubPageProps {
   params: Promise<{ slug: string }>;
@@ -27,6 +29,8 @@ export default async function ClubPage({ params }: ClubPageProps) {
     notFound();
   }
 
+  const announcements = await getActiveAnnouncements(rawClub.id);
+
   const club = {
     ...rawClub,
     logoUrl: rawClub.logo_url,
@@ -34,6 +38,14 @@ export default async function ClubPage({ params }: ClubPageProps) {
 
   return (
     <div className="flex flex-col">
+      {announcements.length > 0 && (
+        <div className="container mx-auto px-4 pt-4">
+          {announcements.map((a: any) => (
+            <AnnouncementBar key={a.id} announcement={a} />
+          ))}
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="relative py-20 bg-linear-to-b from-primary/5 to-background border-b">
         <div className="container mx-auto px-4 text-center">
