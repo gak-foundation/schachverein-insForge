@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { getTeamById, getTeamMembers } from "@/lib/actions/teams";
+import { getTeamById, getTeamMembers, getBoardOrders } from "@/lib/actions/teams";
 import { getMemberById } from "@/lib/actions/members";
 import { createServiceClient } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
@@ -58,7 +58,7 @@ export default async function TeamDetailPage({
   const canEdit = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.TEAMS_WRITE, session.user.isSuperAdmin);
 
   const client = createServiceClient();
-  const [teamMembers, captain, matchesResult] = await Promise.all([
+  const [teamMembers, captain, matchesResult, boardOrders] = await Promise.all([
     getTeamMembers(id),
     team.captainId ? getMemberById(team.captainId) : Promise.resolve(null),
     client
@@ -67,6 +67,7 @@ export default async function TeamDetailPage({
       .or(`home_team_id.eq.${id},away_team_id.eq.${id}`)
       .order("match_date", { ascending: false })
       .limit(10),
+    team.season_id ? getBoardOrders(id, team.season_id) : Promise.resolve([]),
   ]);
 
   const teamMatches = (matchesResult.data || []).map((match: any) => ({
@@ -82,6 +83,17 @@ export default async function TeamDetailPage({
   const avgDwz = teamMembers.length > 0
     ? Math.round(teamMembers.filter(m => m.member.dwz).reduce((sum, m) => sum + (m.member.dwz || 0), 0) / teamMembers.filter(m => m.member.dwz).length) || 0
     : 0;
+
+  const boardAvg: Record<number, { total: number; count: number }> = {};
+  boardOrders?.forEach((bo: any) => {
+    const board = bo.boardNumber || 1;
+    const dwz = bo.member?.dwz;
+    if (!boardAvg[board]) boardAvg[board] = { total: 0, count: 0 };
+    if (dwz) {
+      boardAvg[board].total += dwz;
+      boardAvg[board].count++;
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -238,6 +250,23 @@ export default async function TeamDetailPage({
                       ))}
                   </TableBody>
                 </Table>
+              )}
+              {Object.keys(boardAvg).length > 0 && (
+                <div className="mt-6 p-4 bg-slate-50 rounded-lg border">
+                  <h3 className="text-sm font-semibold mb-3">DWZ-Schnitt pro Brett</h3>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                    {Object.entries(boardAvg)
+                      .sort(([a], [b]) => Number(a) - Number(b))
+                      .map(([board, data]) => (
+                        <div key={board} className="text-center">
+                          <div className="text-xs text-gray-500">Brett {board}</div>
+                          <div className="font-mono font-bold">
+                            {data.count > 0 ? Math.round(data.total / data.count) : "—"}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
