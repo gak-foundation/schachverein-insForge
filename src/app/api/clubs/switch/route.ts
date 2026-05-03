@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { switchClubAction } from "@/lib/clubs/actions";
-import { createClient } from "@/lib/supabase/server";
+import { createServerAuthClient } from "@/lib/insforge";
 
 export async function POST(request: Request) {
   try {
-    // Authentifizierung prüfen (Defense in Depth)
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+  const client = await createServerAuthClient();
+  const { data, error } = await client.auth.getCurrentUser();
 
-    if (error || !user) {
+    if (error || !data?.user) {
       return NextResponse.json(
         { error: "Nicht autorisiert" },
         { status: 401 }

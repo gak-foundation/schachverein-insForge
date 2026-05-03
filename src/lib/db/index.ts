@@ -3,20 +3,14 @@ import postgres from "postgres";
 import * as schema from "./schema";
 
 /**
- * RADIKALER FIX FÜR SUPABASE POOLER & NEXT.JS HMR
+ * FIX FÜR NEXT.JS HMR
  * 
  * Wir deaktivieren Prepared Statements in der Entwicklung UNBEDINGT.
- * Dies ist notwendig, da der Supabase-Pooler (Port 6543) im Transaction Mode 
- * keine benannten Statements ($1, $2) unterstützt und Next.js HMR oft 
- * veraltete Client-Instanzen im Speicher hält.
+ * Next.js HMR hält oft veraltete Client-Instanzen im Speicher.
  */
 
 /**
  * DATABASE CONNECTION CONFIGURATION
- * 
- * We prefer DIRECT_URL (Port 5432) for the application to avoid Supavisor Pooler issues
- * (like "Tenant or user not found") when using Drizzle on the server.
- * DATABASE_URL (usually Port 6543) is used as fallback.
  */
 const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL || "";
 
@@ -26,11 +20,8 @@ if (!connectionString) {
 
 const isServerless = !!process.env.VERCEL || !!process.env.NEXT_PUBLIC_VERCEL_ENV;
 
-// Robust Supabase detection
-const isSupabase = connectionString.includes("supabase.co") || 
-                   connectionString.includes("supabase.com") || 
-                   connectionString.includes("pooler.supabase.com") ||
-                   connectionString.includes(":6543");
+// Robust InsForge detection
+const isInsForge = connectionString.includes("insforge.dev");
 
 // Singleton-Pattern for Next.js HMR
 const globalForDb = globalThis as unknown as {
@@ -41,16 +32,15 @@ const globalForDb = globalThis as unknown as {
 function createClient() {
   const isDev = process.env.NODE_ENV === "development";
   
-  // Supabase Pooler (Port 6543) does NOT support Prepared Statements in Transaction Mode.
-  // We disable them for all Supabase connections to be safe.
-  const prepare = !isSupabase && !isDev;
+  // We disable prepared statements in development to be safe with HMR
+  const prepare = !isDev;
 
   if (isDev) {
     try {
       const urlObj = new URL(connectionString.replace('postgresql://', 'http://')); 
-      console.log(`🔌 DB-Verbindung: ${prepare ? "PREPARED" : "SIMPLE (No-$1)"} | SSL: ${isSupabase ? "YES" : "NO"} | Host: ${urlObj.host} | User: ${urlObj.username}`);
+      console.log(`🔌 DB-Verbindung: ${prepare ? "PREPARED" : "SIMPLE (No-$1)"} | SSL: ${isInsForge ? "YES" : "NO"} | Host: ${urlObj.host} | User: ${urlObj.username}`);
     } catch (e) {
-      console.log(`🔌 DB-Verbindung: ${prepare ? "PREPARED" : "SIMPLE (No-$1)"} | SSL: ${isSupabase ? "YES" : "NO"} | Malformed URL`);
+      console.log(`🔌 DB-Verbindung: ${prepare ? "PREPARED" : "SIMPLE (No-$1)"} | SSL: ${isInsForge ? "YES" : "NO"} | Malformed URL`);
     }
   }
 
@@ -60,21 +50,64 @@ function createClient() {
     connect_timeout: 10,
     max_lifetime: 60 * 30, 
     prepare: prepare,
-    // Use rejectUnauthorized: false for better compatibility with Supabase/Vercel
-    ssl: isSupabase ? { rejectUnauthorized: false } : false,
+    // Use rejectUnauthorized: false for better compatibility with cloud providers
+    ssl: isInsForge ? { rejectUnauthorized: false } : false,
     onnotice: () => {},
   });
 }
 
-if (!globalForDb._dbClient) {
-  globalForDb._dbClient = createClient();
+function getClient() {
+  if (!globalForDb._dbClient) {
+    globalForDb._dbClient = createClient();
+  }
+  return globalForDb._dbClient;
 }
 
-const client = globalForDb._dbClient;
-
-if (!globalForDb._db) {
-  globalForDb._db = drizzle(client, { schema });
+function getDb() {
+  if (!globalForDb._db) {
+    try {
+      globalForDb._db = drizzle(getClient(), { schema });
+    } catch (e) {
+      console.warn("Failed to initialize Drizzle:", (e as Error).message);
+      return null as any;
+    }
+  }
+  return globalForDb._db;
 }
 
-export const db = globalForDb._db;
+function createBuildTimeProxy(): any {
+  const chainable: Record<string, unknown> = {};
+
+  const chainHandler: ProxyHandler<any> = {
+    get(_, prop) {
+      if (prop === 'then') {
+        return (resolve: (v: any) => void) => resolve([]);
+      }
+      return new Proxy(chainable, chainHandler);
+    },
+    apply() {
+      return new Proxy(chainable, chainHandler);
+    },
+  };
+
+  return new Proxy(chainable, chainHandler);
+}
+
+const isBuildTime = process.env.NEXT_PHASE === "phase-production-build" || process.env.NEXT_PHASE === "phase-development-build";
+
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  get(_, prop) {
+    if ((isBuildTime || !connectionString) && typeof prop === 'string') {
+      return createBuildTimeProxy();
+    }
+    try {
+      const instance = getDb();
+      if (!instance) return createBuildTimeProxy();
+      return (instance as any)[prop];
+    } catch (e) {
+      return createBuildTimeProxy();
+    }
+  },
+}) as unknown as ReturnType<typeof drizzle<typeof schema>>;
+
 export type Database = typeof db;

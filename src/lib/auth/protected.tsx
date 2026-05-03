@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@/lib/insforge";
 import { redirect } from "next/navigation";
 
 interface ProtectedPageProps {
@@ -7,20 +7,10 @@ interface ProtectedPageProps {
 
 /**
  * Server Component Wrapper für geschützte Seiten
- * Verwendung: In einer page.tsx einfach um den Content legen
- * 
- * Beispiel:
- * export default async function DashboardPage() {
- *   return (
- *     <ProtectedPage>
- *       <DashboardContent />
- *     </ProtectedPage>
- *   );
- * }
  */
 export async function ProtectedPage({ children }: ProtectedPageProps) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const client = createServerClient();
+  const { data: { user } } = await client.auth.getCurrentUser();
 
   if (!user) {
     redirect("/auth/login");
@@ -34,22 +24,22 @@ export async function ProtectedPage({ children }: ProtectedPageProps) {
  * Gibt den User zurück oder redirected zum Login
  */
 export async function requireAuth() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const client = createServerClient();
+  const { data: { user }, error } = await client.auth.getCurrentUser();
 
   if (error || !user) {
     redirect("/auth/login");
   }
 
-  return { user, supabase };
+  return { user, client };
 }
 
 /**
  * Optional Auth - gibt User zurück wenn eingeloggt, sonst null
  */
 export async function optionalAuth() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const client = createServerClient();
+  const { data: { user } } = await client.auth.getCurrentUser();
   
-  return { user, supabase };
+  return { user, client };
 }

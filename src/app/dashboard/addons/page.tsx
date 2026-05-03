@@ -4,7 +4,7 @@ import { getClubPlan, getClubAddons } from "@/lib/billing/queries";
 import { AddonGrid } from "@/features/billing/components/addon-grid";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Sparkles } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createServerAuthClient } from "@/lib/insforge";
 
 export const metadata: Metadata = {
   title: "Addons & Erweiterungen",
@@ -16,9 +16,9 @@ export default async function AddonsPage({
 }: {
   searchParams: Promise<{ clubId?: string; success?: string; canceled?: string }>;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/signin");
+  const client = await createServerAuthClient();
+  const { data, error } = await client.auth.getCurrentUser();
+  if (error || !data?.user) redirect("/auth/signin");
 
   const params = await searchParams;
   const clubId = params.clubId;

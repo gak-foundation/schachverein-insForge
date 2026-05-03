@@ -6,7 +6,7 @@ import { eq, and, sql, gte } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "@/lib/actions/utils";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/insforge";
 
 export async function getUpcomingMatchesForAvailability() {
   const clubId = await requireClubId();
@@ -31,19 +31,19 @@ export async function getUpcomingMatchesForAvailability() {
       .orderBy(matches.matchDate);
   } catch (error) {
     // 2. Fallback to REST API (Service Role)
-    const supabase = createServiceClient();
+    const client = createServiceClient();
     
     // Complex join via REST is hard, so we fetch teams first then matches
-    const { data: clubTeams, error: teamsError } = await supabase
+    const { data: clubTeams, error: teamsError } = await client
       .from('teams')
       .select('id, name')
       .eq('club_id', clubId);
     
     if (teamsError || !clubTeams?.length) return [];
     
-    const teamIds = clubTeams.map(t => t.id);
+    const teamIds = clubTeams.map((t: any) => t.id);
     
-    const { data: upcomingMatches, error: matchesError } = await supabase
+    const { data: upcomingMatches, error: matchesError } = await client
       .from('matches')
       .select('*')
       .or(`home_team_id.in.(${teamIds.join(',')}),away_team_id.in.(${teamIds.join(',')})`)
@@ -52,8 +52,8 @@ export async function getUpcomingMatchesForAvailability() {
       
     if (matchesError || !upcomingMatches) return [];
     
-    return upcomingMatches.map(m => {
-      const team = clubTeams.find(t => t.id === m.home_team_id || t.id === m.away_team_id);
+    return upcomingMatches.map((m: any) => {
+      const team = clubTeams.find((t: any) => t.id === m.home_team_id || t.id === m.away_team_id);
       return {
         id: m.id,
         date: m.match_date,

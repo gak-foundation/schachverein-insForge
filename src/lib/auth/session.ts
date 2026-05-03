@@ -1,4 +1,4 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServerAuthClient, createServiceClient } from "@/lib/insforge";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { ROLE_PERMISSIONS, Permission } from "./permissions";
@@ -13,24 +13,29 @@ import { getClubById, getClubBySlug } from "@/lib/clubs/queries";
 // Cached session getter for server components
 export const getSession = cache(async () => {
   try {
-    const supabase = await createClient();
+    const client = await createServerAuthClient();
     let user = null;
 
     try {
-      const { data, error } = await supabase.auth.getUser();
+      const { data, error } = await client.auth.getCurrentUser();
       if (error) {
+        const errorMessage = (error as any).message?.toLowerCase() || '';
+        const errorCode = (error as any).code;
         const isMissingSession =
-          error.code === 'refresh_token_not_found' ||
-          error.code === 'session_not_found' ||
-          error.message?.toLowerCase().includes('session missing');
+          errorCode === 'refresh_token_not_found' ||
+          errorCode === 'session_not_found' ||
+          errorMessage.includes('session missing');
 
         if (!isMissingSession) {
           console.error("Auth error in getSession:", error.message);
         }
         return null;
       }
-      user = data.user;
+      user = data?.user;
     } catch (error: any) {
+      if (error?.digest === 'DYNAMIC_SERVER_USAGE' || error?.message?.includes('dynamic-server-error')) {
+        throw error;
+      }
       const isMissingSession =
         error?.code === 'refresh_token_not_found' ||
         error?.code === 'session_not_found' ||
@@ -59,14 +64,14 @@ export const getSession = cache(async () => {
       user: {
         id: user.id,
         email: user.email,
-        name: userData?.name || user.user_metadata?.name || user.email?.split("@")[0],
+        name: userData?.name || user.profile?.name || user.email?.split("@")[0],
         role: userData?.role || (isHardcodedAdmin ? "admin" : "mitglied"),
         permissions: userData?.permissions || [],
         memberId: userData?.memberId,
         clubId: userData?.clubId,
         isSuperAdmin: userData?.isSuperAdmin || isHardcodedAdmin || false,
         emailVerified: userData?.emailVerified || false,
-        image: userData?.image || user.user_metadata?.avatar_url,
+        image: userData?.image || user.profile?.avatar_url,
       },
       session: {
         user,

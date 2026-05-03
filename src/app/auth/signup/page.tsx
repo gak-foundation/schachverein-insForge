@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/insforge";
 import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +22,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
-  const supabase = createClient();
+  const client = createClient();
 
   // Extract subdomain slug for tenant binding (used by both email and OAuth signup)
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "schach.studio";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || hostname;
   let slug = "";
   if (hostname.endsWith(`.${rootDomain}`)) {
     const parts = hostname.split(".");
@@ -69,7 +69,7 @@ export default function SignupPage() {
       if (error) {
         setError(error.message || "Ein Fehler ist aufgetreten");
       } else if (data?.user) {
-        // Bind user to tenant immediately after Supabase signup
+        // Bind user to tenant immediately after signup
         if (slug) {
           try {
             await fetch("/api/auth/bind-tenant", {
@@ -101,10 +101,10 @@ export default function SignupPage() {
     return {
       id: provider,
       onClick: () => {
-        const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent("/dashboard")}&action=signup&slug=${encodeURIComponent(slug)}`;
-        void supabase.auth.signInWithOAuth({
+        const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/dashboard")}&action=signup&slug=${encodeURIComponent(slug)}`;
+        void client.auth.signInWithOAuth({
           provider,
-          options: { redirectTo },
+          redirectTo,
         });
       },
     };

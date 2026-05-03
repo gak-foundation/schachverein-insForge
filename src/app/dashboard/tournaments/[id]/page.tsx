@@ -71,7 +71,7 @@ export default async function TournamentDetailPage({
 
   // Fetch player details for games
   const gamePlayerIds = new Set<string>();
-  allGames.forEach(game => {
+  allGames.forEach((game: any) => {
     if (game.whiteId) gamePlayerIds.add(game.whiteId);
     if (game.blackId) gamePlayerIds.add(game.blackId);
   });
@@ -100,14 +100,14 @@ export default async function TournamentDetailPage({
   // Generate cross table data for round-robin tournaments
   let crossTableData = null;
   if ((tournament.type === "round_robin" || tournament.type === "club_championship") && allGames.length > 0) {
-    const rrParticipants = participants.map(p => ({
+    const rrParticipants = participants.map((p: any) => ({
       id: p.memberId,
       name: `${p.member.firstName} ${p.member.lastName}`,
     }));
     
     const gamesWithResults = allGames
-      .filter(g => g.result && g.whiteId && g.blackId)
-      .map(g => ({
+      .filter((g: any) => g.result && g.whiteId && g.blackId)
+      .map((g: any) => ({
         whiteId: g.whiteId!,
         blackId: g.blackId!,
         result: g.result as "1-0" | "0-1" | "1/2-1/2" | null,
@@ -127,7 +127,7 @@ export default async function TournamentDetailPage({
     "+/+": "+/+ (beide kampflos)",
   };
 
-  const gamesByRound = allGames.reduce((acc, game) => {
+  const gamesByRound = allGames.reduce((acc: any, game: any) => {
     if (game.round === null) return acc;
     if (!acc[game.round]) acc[game.round] = [];
     acc[game.round].push(game);
@@ -182,7 +182,7 @@ export default async function TournamentDetailPage({
                 {crossTableData && (
                   <CrossTableDialog 
                     entries={crossTableData} 
-                    participantNames={participants.map(p => `${p.member.firstName} ${p.member.lastName}`)}
+                    participantNames={participants.map((p: any) => `${p.member.firstName} ${p.member.lastName}`)}
                   />
                 )}
               </>
@@ -402,8 +402,8 @@ export default async function TournamentDetailPage({
                       </h4>
                       <div className="space-y-2">
                         {gamesByRound[round]
-                          .sort((a, b) => (a.boardNumber || 0) - (b.boardNumber || 0))
-                          .map((game) => (
+                          .sort((a: any, b: any) => (a.boardNumber || 0) - (b.boardNumber || 0))
+                          .map((game: any) => (
                           <div key={game.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
                             <div className="flex items-center gap-4 flex-1">
                               <span className="text-xs text-gray-400 font-medium w-8">Brett {game.boardNumber ?? "—"}</span>
@@ -492,7 +492,7 @@ export default async function TournamentDetailPage({
                       required
                     >
                       <option value="">Spieler auswaehlen...</option>
-                      {allMembers.map((m) => (
+                      {allMembers.map((m: any) => (
                         <option key={m.id} value={m.id}>{m.firstName} {m.lastName} {m.dwz ? `(DWZ ${m.dwz})` : ""}</option>
                       ))}
                     </select>
@@ -518,7 +518,7 @@ export default async function TournamentDetailPage({
                       </tr>
                     </thead>
                     <tbody>
-                      {participants.map((p) => (
+                      {participants.map((p: any) => (
                         <tr key={p.id} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-4">
                             <Link href={`/dashboard/members/${p.memberId}`} className="hover:underline font-medium">

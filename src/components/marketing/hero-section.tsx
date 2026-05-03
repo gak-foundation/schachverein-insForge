@@ -5,8 +5,6 @@ import { ArrowRight, Shield, Zap, Sparkles, Lock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-import { APP_URL } from "@/lib/urls";
-
 const container = {
   hidden: { opacity: 0 },
   show: {
@@ -68,7 +66,7 @@ export function HeroSection() {
             className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20"
           >
             <a
-              href={`${APP_URL}/auth/signup`}
+              href="/auth/signup"
               className={cn(
                 buttonVariants({ size: "lg" }),
                 "h-16 px-10 text-xl font-bold w-full sm:w-auto gap-2 inline-flex items-center justify-center rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-1"

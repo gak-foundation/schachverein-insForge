@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowLeft, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/insforge";
 
 export default function AuthErrorPage() {
   return (
@@ -81,8 +81,8 @@ function ErrorContent() {
 
 function getErrorContent(reason: string | null) {
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    const client = createClient();
+    await client.auth.signOut();
     window.location.href = "/";
   };
 

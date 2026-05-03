@@ -1,54 +1,53 @@
-# Vercel + Supabase Deployment Guide
+# Vercel + InsForge Deployment Guide
 
-Diese Anleitung beschreibt das Deployment der Schachverein-Plattform auf Vercel mit Supabase als Backend.
+Diese Anleitung beschreibt das Deployment der Schachverein-Plattform auf Vercel mit InsForge als Backend.
 
 ## Übersicht
 
 - **Frontend**: Vercel (Next.js 16)
-- **Backend/Database**: Supabase Cloud (PostgreSQL + Auth + Storage)
+- **Backend/Database**: InsForge (PostgreSQL + Auth + Storage)
 - **Migrationen**: Drizzle ORM mit `DIRECT_URL`
 
 ---
 
-## Schritt 1: Supabase Projekt erstellen
+## Schritt 1: InsForge Projekt erstellen
 
-1. Gehe zu [https://supabase.com](https://supabase.com)
+1. Gehe zu [https://insforge.ai](https://insforge.ai)
 2. Erstelle einen neuen Account oder melde dich an
-3. Klicke "New Project"
-4. Wähle als **Region**: `EU (Frankfurt)` für DSGVO-Konformität
-5. Warte bis das Projekt bereit ist (ca. 2-3 Minuten)
+3. Erstelle ein neues Projekt
+4. Wähle als **Region**: `EU (Central)` für DSGVO-Konformität
+5. Warte bis das Projekt bereit ist
 
 ---
 
-## Schritt 2: ENV-Variablen aus Supabase kopieren
+## Schritt 2: ENV-Variablen aus InsForge kopieren
 
 Nach dem Erstellen des Projekts:
 
-### 2.1 Supabase URL & API Keys
+### 2.1 InsForge URL & API Keys
 
 1. Gehe zu **Project Settings** → **API**
 2. Kopiere folgende Werte:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://[dein-project-ref].supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=[anon-key-hier-einfuegen]
-SUPABASE_SERVICE_ROLE_KEY=[service-role-key-hier-einfuegen]
+NEXT_PUBLIC_INSFORGE_URL=https://[dein-projekt].eu-central.insforge.app
+NEXT_PUBLIC_INSFORGE_ANON_KEY=[anon-key-hier-einfuegen]
+INSFORGE_SERVICE_ROLE_KEY=[service-role-key-hier-einfuegen]
 ```
 
-⚠️ **WICHTIG**: `SUPABASE_SERVICE_ROLE_KEY` ist geheim und hat Admin-Rechte!
+⚠️ **WICHTIG**: `INSFORGE_SERVICE_ROLE_KEY` ist geheim und hat Admin-Rechte!
 
 ### 2.2 Database Connection URLs
 
 1. Gehe zu **Project Settings** → **Database**
-2. Wähle **Connection Pooling** (Session Mode)
-3. Kopiere die URLs:
+2. Kopiere die URLs:
 
 ```
 # Connection Pooling (Port 6543) - für App/Next.js
-DATABASE_URL=postgresql://postgres.[project-ref]:[password]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+DATABASE_URL=postgresql://postgres:[password]@pooler.insforge.dev:6543/postgres
 
 # Direct Connection (Port 5432) - für Migrations
-DIRECT_URL=postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
+DIRECT_URL=postgresql://postgres:[password]@db.insforge.dev:5432/postgres
 ```
 
 ---
@@ -85,9 +84,9 @@ Gehe zu **Settings** → **Environment Variables** und füge alle Variablen hinz
 
 | Variable | Wert | Environment |
 |----------|------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://[ref].supabase.co` | Production, Preview, Development |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `[anon-key]` | Production, Preview, Development |
-| `SUPABASE_SERVICE_ROLE_KEY` | `[service-role-key]` | Production, Preview, Development |
+| `NEXT_PUBLIC_INSFORGE_URL` | `https://[projekt].insforge.app` | Production, Preview, Development |
+| `NEXT_PUBLIC_INSFORGE_ANON_KEY` | `[anon-key]` | Production, Preview, Development |
+| `INSFORGE_SERVICE_ROLE_KEY` | `[service-role-key]` | Production, Preview, Development |
 | `DATABASE_URL` | `postgresql://...:6543/...` | Production, Preview, Development |
 | `DIRECT_URL` | `postgresql://...:5432/...` | Production, Preview, Development |
 | `ENCRYPTION_KEY` | `[32-byte-hex]` | Production, Preview, Development |
@@ -104,20 +103,21 @@ Gehe zu **Settings** → **Environment Variables** und füge alle Variablen hinz
 | `SMTP_PORT` | z.B. `587` |
 | `SMTP_USER` | E-Mail-Adresse |
 | `SMTP_PASS` | App-Password |
-| `EMAIL_FROM` | Absender-Adresse |
+| `SMTP_FROM` | Absender-Adresse |
 
 ### Optionale OAuth Provider
 
 | Variable | Beschreibung |
 |----------|--------------|
 | `GITHUB_ID` / `GITHUB_SECRET` | GitHub OAuth App |
+| `GOOGLE_ID` / `GOOGLE_SECRET` | Google OAuth |
 | `LICHESS_CLIENT_ID` / `LICHESS_CLIENT_SECRET` | Lichess OAuth |
 
 ---
 
 ## Schritt 6: Datenbank-Migrationen ausführen
 
-Lokal ausführen (verbindet sich mit Supabase):
+Lokal ausführen (verbindet sich mit InsForge DB):
 
 ```bash
 # ENV-Variablen prüfen
@@ -135,9 +135,9 @@ vercel --prod
 
 ---
 
-## Schritt 7: Supabase Auth konfigurieren
+## Schritt 7: InsForge Auth konfigurieren
 
-In Supabase Dashboard → **Authentication** → **URL Configuration**:
+Im InsForge Dashboard → **Authentication** → **URL Configuration**:
 
 1. **Site URL**: `https://[dein-projekt].vercel.app`
 2. **Redirect URLs** hinzufügen:
@@ -168,7 +168,7 @@ Oder pushe auf den `main` Branch für automatisches Deploy.
 
 ### Datenbank-Verbindung schlägt fehl
 
-→ Prüfe ob die IP erlaubt ist in Supabase → Database → Network Restrictions
+→ Prüfe ob die IP erlaubt ist in InsForge → Database → Network Restrictions
 
 ### Migrationen schlagen fehl
 
@@ -179,14 +179,14 @@ Oder pushe auf den `main` Branch für automatisches Deploy.
 ## Zusammenfassung ENV-Datei (Production)
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://XXXX.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=XXXX
-SUPABASE_SERVICE_ROLE_KEY=XXXX
+# InsForge
+NEXT_PUBLIC_INSFORGE_URL=https://XXXX.insforge.app
+NEXT_PUBLIC_INSFORGE_ANON_KEY=XXXX
+INSFORGE_SERVICE_ROLE_KEY=XXXX
 
 # Database
-DATABASE_URL=postgresql://XXXX:XXXX@pooler.supabase.com:6543/postgres
-DIRECT_URL=postgresql://XXXX:XXXX@db.XXXX.supabase.co:5432/postgres
+DATABASE_URL=postgresql://XXXX:XXXX@pooler.insforge.dev:6543/postgres
+DIRECT_URL=postgresql://XXXX:XXXX@db.insforge.dev:5432/postgres
 
 # App
 NEXT_PUBLIC_APP_URL=https://dein-projekt.vercel.app
@@ -202,6 +202,8 @@ RESEND_FROM_EMAIL=kontakt@deine-domain.de
 # Optional: OAuth
 GITHUB_ID=XXXX
 GITHUB_SECRET=XXXX
+GOOGLE_ID=XXXX
+GOOGLE_SECRET=XXXX
 LICHESS_CLIENT_ID=XXXX
 LICHESS_CLIENT_SECRET=XXXX
 ```

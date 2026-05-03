@@ -13,7 +13,7 @@ import { AuthCard } from "@/features/auth/components/auth-card";
 import { AuthHeader } from "@/features/auth/components/auth-header";
 import { ErrorMessage } from "@/features/auth/components/error-message";
 
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/insforge";
 
 const PASSWORD_REQUIREMENTS = [
   { test: (p: string) => p.length >= 8, label: "Mindestens 8 Zeichen" },
@@ -46,12 +46,12 @@ function ResetPasswordContent() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const supabase = createClient();
+  const client = createClient();
 
   const strength = calculateStrength(password);
 
   useEffect(() => {
-    // Supabase handled die Session automatisch via URL params
+    // The session is handled automatically via URL params
     // Wir müssen hier nichts weiter tun
   }, [searchParams]);
 
@@ -72,17 +72,28 @@ function ResetPasswordContent() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
+      const token = searchParams.get('token');
+      
+      if (!token) {
+        setError('Invalid reset token');
+        return;
+      }
+
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword: password }),
       });
 
-      if (error) {
-        setError(error.message || "Passwort-Zurücksetzen fehlgeschlagen");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Password reset failed');
       } else {
         setSuccess(true);
       }
     } catch {
-      setError("Ein Fehler ist aufgetreten");
+      setError('An error occurred');
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,40 @@
+# Sensitive environment files
+.env
+.env.*
+!.env.example
+
+# Certificates and keys
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Authentication secrets
+credentials.json
+credentials.*.json
+secrets.json
+api-keys.json
+service-account.json
+service-account.*.json
+
+# SSH keys
+id_rsa
+id_ed25519
+id_ecdsa
+*.ppk
+
+# Build artifacts
+**/node_modules/**
+**/.next/**
+**/dist/**
+**/build/**
+
+# Cache and generated
+**/.cache/**
+**/.drizzle/**
+
+# Private data dumps
+*.sql.gz
+*.dump
+backup-*

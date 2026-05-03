@@ -1,5 +1,7 @@
 # schach.studio: Der digitale Heimathafen für Ihren Schachverein
 
+> **Migration zu https://github.com/InsForge/InsForge https://docs.insforge.dev/introductionlink erfolgreich**
+
 **Die einzige All-in-One Plattform für Schachvereine, bei der die interne Verwaltung automatisch Ihre öffentliche Website befüllt.**
 
 schach.studio vereint Mitgliederverwaltung, Finanzwesen, Turnierleitung, Mannschaftsbetrieb und Trainingstools in einem modernen System. Der entscheidende Vorteil: Jede Aktion in der Verwaltung (Turniererstellung, Ergebniseingabe, Terminplanung) wird in Echtzeit auf Ihrer öffentlichen Vereins-Website sichtbar — ohne Doppeltpflege, ohne WordPress-Chaos.
@@ -23,10 +25,10 @@ schach.studio vereint Mitgliederverwaltung, Finanzwesen, Turnierleitung, Mannsch
 ## Tech Stack
 
 - **Framework**: Next.js 16.2 (App Router)
-- **Database**: PostgreSQL (via Drizzle ORM + Supabase/Neon)
-- **Authentication**: Supabase Auth (JWT, E-Mail, OAuth)
+- **Database**: PostgreSQL (via Drizzle ORM + InsForge)
+- **Authentication**: InsForge Auth (JWT, E-Mail, OAuth)
 - **Styling**: Tailwind CSS 4 (OKLCH Themes)
-- **Storage**: Supabase Storage (S3-kompatibel)
+- **Storage**: InsForge Storage (S3-kompatibel)
 - **Background Jobs**: Asynchrone Funktionen (vereinfacht, kein Redis nötig)
 - **Security**: AES-256-GCM Encryption für Finanzdaten
 

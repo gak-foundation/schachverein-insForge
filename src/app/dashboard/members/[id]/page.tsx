@@ -390,9 +390,8 @@ export default async function MemberDetailPage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dwzHistory.slice(0, 10).map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="pl-6 font-medium text-slate-600 dark:text-slate-400">
+                  {dwzHistory.slice(0, 10).map((entry: any) => (
+                    <TableRow key={entry.id}>                      <TableCell className="pl-6 font-medium text-slate-600 dark:text-slate-400">
                         {new Date(entry.recordedAt).toLocaleDateString("de-DE")}
                       </TableCell>
                       <TableCell className="text-right tabular-nums font-bold text-slate-900 dark:text-slate-100">
@@ -432,7 +431,7 @@ export default async function MemberDetailPage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {statusHistory.map((entry) => (
+                  {statusHistory.map((entry: any) => (
                     <TableRow key={entry.id}>
                       <TableCell className="pl-6 whitespace-nowrap text-slate-600 dark:text-slate-400">
                         {new Date(entry.changedAt).toLocaleDateString("de-DE")}

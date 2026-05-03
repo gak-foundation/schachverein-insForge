@@ -1,75 +1,137 @@
-# AGENTS.md
+---
+description: Instructions building apps with MCP
+globs: *
+alwaysApply: true
+---
 
-Project-specific rules for OpenCode. See also [CLAUDE.md](./CLAUDE.md) for behavioral guidelines.
+# InsForge SDK Documentation - Overview
 
-## Commands
+## What is InsForge?
 
-| Task | Command |
-|---|---|
-| Dev server | `npm run dev` |
-| Build (incl. prod migrate script) | `npm run build && npm run build:migrate` |
-| Lint | `npm run lint` |
-| Unit tests | `npm run test` (watch) / `npm run test:ci` (single run) |
-| E2E tests | `npm run test:e2e` (starts dev server automatically) |
-| DB push (dev) | `npm run db:push` |
-| DB migrations (prod) | `npm run db:generate` then `npm run prod:migrate` |
-| DB seed | `npm run db:seed` |
-| Docker (Redis for jobs) | `npm run docker:up` |
-| TypeScript check | `npx tsc --noEmit` |
+Backend-as-a-service (BaaS) platform providing:
 
-## Architecture
+- **Database**: PostgreSQL with PostgREST API
+- **Authentication**: Email/password + OAuth (Google, GitHub)
+- **Storage**: File upload/download
+- **AI**: Chat completions and image generation (OpenAI-compatible)
+- **Functions**: Serverless function deployment
+- **Realtime**: WebSocket pub/sub (database + client events)
 
-- **Framework**: Next.js 16.2 (App Router), `output: "standalone"`
-- **Auth**: Supabase Auth via `@supabase/ssr` (3 client types: browser, server, service-role)
-- **DB**: PostgreSQL via Drizzle ORM. Connection prefers `DIRECT_URL` (non-pooled) over `DATABASE_URL`
-- **Styling**: Tailwind CSS v4 with `@tailwindcss/postcss` (PostCSS plugin, no `tailwind.config`)
-- **UI**: shadcn/ui (base-nova style), Lucide icons, Radix primitives
-- **Path alias**: `@/` → `./src/`
+## Installation
 
-## Route Architecture (Critical)
+The following is a step-by-step guide to installing and using the InsForge TypeScript SDK for Web applications. If you are building other types of applications, please refer to:
+- [Swift SDK documentation](/sdks/swift/overview) for iOS, macOS, tvOS, and watchOS applications.
+- [Kotlin SDK documentation](/sdks/kotlin/overview) for Android applications.
+- [REST API documentation](/sdks/rest/overview) for direct HTTP API access.
 
-`src/proxy.ts` is the Next.js middleware. It implements multi-tenant routing:
+### 🚨 CRITICAL: Follow these steps in order
 
-- **Root domain** (`schach.studio`) → serves `(marketing)` and `(admin)` route groups
-- **Subdomains** (`{club-slug}.schach.studio`) → serve `(tenant)` route group, inject `x-club-slug` header
-- **app.schach.studio** → served as tenant subdomain
+### Step 1: Download Template
 
-When adding routes, update `marketingRoutes`, `adminRoutes`, or `tenantAppRoutes` in `src/proxy.ts:9-30`.
+Use the `download-template` MCP tool to create a new project with your backend URL and anon key pre-configured.
 
-## Multi-Tenant Pattern
+### Step 2: Install SDK
 
-Subdomain routing injects `x-club-slug` header via middleware. Server components in `(tenant)` resolve the club from that header. Do NOT query the club directly in shared layout — use the club context from `@/lib/club-context`.
+```bash
+npm install @insforge/sdk@latest
+```
 
-## Database Quirks
+### Step 3: Create SDK Client
 
-- **HMR singleton** (`src/lib/db/index.ts:17-42`): The DB client lives on `globalThis` to survive Next.js HMR. Without this, each hot reload creates a new pool, exhausting Supabase pooler connections.
-- **Prepared statements**: Disabled when using Supabase pooler (`prepare: false`), enabled otherwise.
-- **Schema**: Flat barrel export at `src/lib/db/schema/index.ts` — 17 schema files. Add new tables there.
+You must create a client instance using `createClient()` with your base URL and anon key:
 
-## Encryption (Mandatory)
+```javascript
+import { createClient } from '@insforge/sdk';
 
-- IBAN and BIC stored in DB MUST be encrypted via `@/lib/crypto` (`encrypt()`/`decrypt()`)
-- `ENCRYPTION_KEY` is a 64-char hex string (32 bytes). Generate with `openssl rand -hex 32`
-- Never store IBANs in plaintext. `maskIban()` for display.
+const client = createClient({
+  baseUrl: 'https://your-app.region.insforge.app',  // Your InsForge backend URL
+  anonKey: 'your-anon-key-here'       // Get this from backend metadata
+});
 
-## Environment
+```
 
-- `.env.local` takes precedence over `.env` (loaded in `drizzle.config.ts` and `src/env.ts`)
-- CI (GitHub Actions) uses placeholder env values — real Supabase credentials never needed for lint/unit-test/build
-- E2E tests need a real Postgres (CI provides via service container)
+**API BASE URL**: Your API base URL is `https://your-app.region.insforge.app`.
 
-## Testing
+## Getting Detailed Documentation
 
-- **Vitest** for unit tests. Test files: `*.test.ts`. Setup mocks `@/lib/db`, `next/headers`, `next/cache`, `@/lib/auth/session`, `@/lib/audit` at module level.
-- **Playwright** for E2E. Tests in `e2e/`. Auto-starts dev server on `127.0.0.1:3000`.
-- **Pre-commit** hook runs `npm test` (vitest). Commits block on test failure.
+### 🚨 CRITICAL: Always Fetch Documentation Before Writing Code
 
-## Docker / Production
+InsForge provides official SDKs and REST APIs, use them to interact with InsForge services from your application code.
 
-- Build runs `npm run build:migrate` (esbuild bundles `src/lib/db/migrate.ts` to `dist-migrate/`)
-- `bbpPairings` is a native Linux binary for Swiss-system pairings, installed at `/usr/local/bin/bbpPairings` in the Docker image
-- `node server.js` is the production entrypoint (standalone output)
+- [TypeScript SDK](/sdks/typescript/overview) - JavaScript/TypeScript
+- [Swift SDK](/sdks/swift/overview) - iOS, macOS, tvOS, and watchOS
+- [Kotlin SDK](/sdks/kotlin/overview) - Android and Kotlin Multiplatform
+- [REST API](/sdks/rest/overview) - Direct HTTP API access
 
-## A11y/Compliance
+Before writing or editing any InsForge integration code, you **MUST** call the `fetch-docs` or `fetch-sdk-docs` MCP tool to get the latest SDK documentation. This ensures you have accurate, up-to-date implementation patterns.
 
-All UI must meet WCAG 2.2 AA / BFSG 2025: minimum 4.5:1 contrast ratio, 40px+ touch targets. Target audience is 55+.
+### Use the InsForge `fetch-docs` MCP tool to get specific SDK documentation:
+
+Available documentation types:
+
+- `"instructions"` - Essential backend setup (START HERE)
+- `"real-time"` - Real-time pub/sub (database + client events) via WebSockets
+- `"db-sdk-typescript"` - Database operations with TypeScript SDK
+- **Authentication** - Choose based on implementation:
+  - `"auth-sdk-typescript"` - TypeScript SDK methods for custom auth flows
+  - `"auth-components-react"` - Pre-built auth UI for React+Vite (singlepage App)
+  - `"auth-components-react-router"` - Pre-built auth UI for React(Vite+React Router) (Multipage App)
+  - `"auth-components-nextjs"` - Pre-built auth UI for Nextjs (SSR App)
+- `"storage-sdk"` - File storage operations
+- `"functions-sdk"` - Serverless functions invocation
+- `"ai-integration-sdk"` - AI chat and image generation
+- `"real-time"` - Real-time pub/sub (database + client events) via WebSockets
+- `"deployment"` - Deploy frontend applications via MCP tool
+
+These documentations are mostly for TypeScript SDK. For other languages, you can also use `fetch-sdk-docs` mcp tool to get specific documentation.
+
+### Use the InsForge `fetch-sdk-docs` MCP tool to get specific SDK documentation
+
+You can fetch sdk documentation using the `fetch-sdk-docs` MCP tool with specific feature type and language.
+
+Available feature types:
+- db - Database operations
+- storage - File storage operations
+- functions - Serverless functions invocation
+- auth - User authentication
+- ai - AI chat and image generation
+- realtime - Real-time pub/sub (database + client events) via WebSockets
+
+Available languages:
+- typescript - JavaScript/TypeScript SDK
+- swift - Swift SDK (for iOS, macOS, tvOS, and watchOS)
+- kotlin - Kotlin SDK (for Android and JVM applications)
+- rest-api - REST API
+
+## When to Use SDK vs MCP Tools
+
+### Always SDK for Application Logic:
+
+- Authentication (register, login, logout, profiles)
+- Database CRUD (select, insert, update, delete)
+- Storage operations (upload, download files)
+- AI operations (chat, image generation)
+- Serverless function invocation
+
+### Use MCP Tools for Infrastructure:
+
+- Project scaffolding (`download-template`) - Download starter templates with InsForge integration
+- Backend setup and metadata (`get-backend-metadata`)
+- Database schema management (`run-raw-sql`, `get-table-schema`)
+- Storage bucket creation (`create-bucket`, `list-buckets`, `delete-bucket`)
+- Serverless function deployment (`create-function`, `update-function`, `delete-function`)
+- Frontend deployment (`create-deployment`) - Deploy frontend apps to InsForge hosting
+
+## Important Notes
+
+- For auth: use `auth-sdk` for custom UI, or framework-specific components for pre-built UI
+- SDK returns `{data, error}` structure for all operations
+- Database inserts require array format: `[{...}]`
+- Serverless functions have single endpoint (no subpaths)
+- Storage: Upload files to buckets, store URLs in database
+- AI operations are OpenAI-compatible
+- **EXTRA IMPORTANT**: Use the latest Tailwind CSS (currently v4.2+). Lock these dependencies in `package.json`
+- **CRITICAL**: ONLY use InsForge SDK for all database operations. Drizzle ORM and direct PostgreSQL connections are FORBIDDEN. All CRUD must go through `client.database.from('table')`.
+- **CRITICAL**: ONLY use InsForge Auth. No custom auth_user tables, no JWT wrappers, no session cookies. Use `client.auth.*` methods exclusively.
+- When fetching related data, use `client.database.from('table').select('*, related(*)')` for joins.
+- All database schema changes must be done via InsForge MCP tools (`run-raw-sql`, `get-table-schema`).

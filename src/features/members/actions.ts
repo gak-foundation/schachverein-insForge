@@ -20,7 +20,7 @@ import { PERMISSIONS, getPermissionsForRole, hasPermission } from "@/lib/auth/pe
 import { fetchLichessProfile, getBestLichessRating } from "@/lib/lichess";
 import { requireClubId } from "@/lib/actions/utils";
 import { encrypt, decrypt } from "@/lib/crypto";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServerClient, createServiceClient } from "@/lib/insforge";
 
 type ClubMemberRole = typeof clubMemberships.$inferSelect.role;
 type MemberRecordStatus = typeof members.$inferSelect.status;
@@ -139,10 +139,10 @@ export async function getMembers(
     };
   } catch (error) {
     // 2. Fallback to REST API (Service Role)
-    const supabase = createServiceClient();
+    const client = createServiceClient();
     
     // We fetch memberships first for the club filter
-    let membersQuery = supabase
+    let membersQuery = client
       .from('club_memberships')
       .select('role, members(*)', { count: 'exact' })
       .eq('club_id', clubId);
@@ -224,9 +224,9 @@ export async function getMemberById(id: string) {
       detail: error.detail,
     });
 
-    // Fallback auf Supabase REST API für kritische Read-Operation
-    const supabase = await createClient();
-    const { data: membership, error: membershipError } = await supabase
+    // Fallback auf InsForge REST API für kritische Read-Operation
+    const client = createServerClient();
+    const { data: membership, error: membershipError } = await client
       .from('club_memberships')
       .select('*')
       .eq('member_id', id)
@@ -240,7 +240,7 @@ export async function getMemberById(id: string) {
 
     if (!membership) return null;
 
-    const { data: memberData, error: memberError } = await supabase
+    const { data: memberData, error: memberError } = await client
       .from('members')
       .select('*')
       .eq('id', id)
@@ -290,8 +290,8 @@ export async function getMemberStatusHistory(memberId: string) {
       .orderBy(desc(memberStatusHistory.changedAt));
   } catch (error: any) {
     console.error("❌ Drizzle getMemberStatusHistory failed, falling back to REST API");
-    const supabase = await createClient();
-    const { data, error: restError } = await supabase
+    const client = createServerClient();
+    const { data, error: restError } = await client
       .from('member_status_history')
       .select('*')
       .eq('member_id', memberId)
@@ -559,8 +559,8 @@ export async function getDWZHistory(memberId: string) {
       .orderBy(desc(dwzHistory.recordedAt));
   } catch (error: any) {
     console.error("❌ Drizzle getDWZHistory failed, falling back to REST API");
-    const supabase = await createClient();
-    const { data, error: restError } = await supabase
+    const client = createServerClient();
+    const { data, error: restError } = await client
       .from('dwz_history')
       .select('*')
       .eq('member_id', memberId)

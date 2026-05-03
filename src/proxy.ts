@@ -1,4 +1,4 @@
-import { updateSession } from "@/lib/supabase/middleware";
+import { updateSession } from "@/lib/insforge/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -62,9 +62,9 @@ const SECURITY_HEADERS = {
 };
 
 const SHARED_CSP_DEV =
-  "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
+  "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.insforge.app https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
 const SHARED_CSP_PROD =
-  "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.supabase.co https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+  "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.insforge.app https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
 // =============================================================================
 // Helpers
@@ -241,11 +241,11 @@ export default async function proxy(request: NextRequest) {
     (isSubdomain && pathname === "/"); // Allow subdomain root if desired
 
   // ---------------------------------------------------------------------------
-  // Update session via Supabase (with subdomain-scoped cookies if on subdomain)
+  // Update session via InsForge (with subdomain-scoped cookies if on subdomain)
   // ---------------------------------------------------------------------------
   const cookieOptions = isSubdomain ? { domain: hostname } : undefined;
 
-  const { supabaseResponse, user } = await updateSession(request, cookieOptions);
+  const { authResponse, user } = await updateSession(request, cookieOptions);
 
   // ---------------------------------------------------------------------------
   // Auth guards
@@ -253,28 +253,28 @@ export default async function proxy(request: NextRequest) {
   if (!user && !isPublicRoute) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("next", pathname);
-    return redirectWithCookies(loginUrl, supabaseResponse, request);
+    return redirectWithCookies(loginUrl, authResponse, request);
   }
 
   if (user && (pathname === "/auth/login" || pathname === "/auth/signup")) {
     const next = sanitizeNext(request.nextUrl.searchParams.get("next"));
-    return redirectWithCookies(new URL(next, request.url), supabaseResponse, request);
+    return redirectWithCookies(new URL(next, request.url), authResponse, request);
   }
 
   // ---------------------------------------------------------------------------
   // Security headers & CSP
   // ---------------------------------------------------------------------------
   Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
-    supabaseResponse.headers.set(key, value);
+    authResponse.headers.set(key, value);
   });
 
   const isDev = process.env.NODE_ENV === "development";
-  supabaseResponse.headers.set(
+  authResponse.headers.set(
     "Content-Security-Policy",
     isDev ? SHARED_CSP_DEV : SHARED_CSP_PROD,
   );
 
-  return supabaseResponse;
+  return authResponse;
 }
 
 export const config = {

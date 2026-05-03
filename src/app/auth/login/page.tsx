@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/insforge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,7 +54,7 @@ function LoginPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const supabase = createClient();
+  const client = createClient();
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -66,7 +66,7 @@ function LoginPageContent() {
     const password = formData.get("password") as string;
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await client.auth.signInWithPassword({
         email,
         password,
       });
@@ -83,13 +83,13 @@ function LoginPageContent() {
         return;
       }
 
-      // Tenant verification after successful Supabase login
+      // Tenant verification after successful login
       const verifyRes = await fetch("/api/auth/verify-tenant");
       const verifyData = await verifyRes.json();
 
       if (!verifyData.ok) {
         // Tenant mismatch or other issue: sign out and show error
-        await supabase.auth.signOut();
+        await client.auth.signOut();
         setError(verifyData.error || "Tenant-Verifikation fehlgeschlagen");
         return;
       }
@@ -107,10 +107,10 @@ function LoginPageContent() {
     return {
       id: provider,
       onClick: () => {
-        const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(callbackURL)}`;
-        void supabase.auth.signInWithOAuth({
+        const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
+        void client.auth.signInWithOAuth({
           provider,
-          options: { redirectTo },
+          redirectTo,
         });
       },
     };

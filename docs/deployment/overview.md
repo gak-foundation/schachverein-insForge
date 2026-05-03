@@ -1,6 +1,6 @@
 # Deployment Übersicht
 
-Die Schachvereins-Plattform nutzt eine moderne, serverlose Architektur basierend auf **Next.js auf Vercel** und **Supabase Cloud**. Dies reduziert den Wartungsaufwand für die Infrastruktur erheblich und ermöglicht automatisches Skalieren bei hoher Last.
+Die Schachvereins-Plattform nutzt eine moderne, serverlose Architektur basierend auf **Next.js auf Vercel** und **InsForge Cloud**. Dies reduziert den Wartungsaufwand für die Infrastruktur erheblich und ermöglicht automatisches Skalieren bei hoher Last.
 
 ## Infrastruktur-Komponenten
 
@@ -13,11 +13,11 @@ Das System ist für ein vollständiges Cloud-Deployment konzipiert.
    - Automatisches Edge-Caching und globales CDN.
    - ISR (Incremental Static Regeneration) für optimale Performance.
 
-2. **Supabase (Backend-as-a-Service):**
-   - **Datenbank:** PostgreSQL 17 (Supabase Cloud EU-Region Frankfurt).
-   - **Authentifizierung:** Supabase Auth (JWT-basiert).
-   - **Storage:** Supabase Storage (S3-kompatibel) für Bilder und Dokumente.
-   - **Realtime:** Supabase Realtime für Live-Turnierergebnisse.
+2. **InsForge (Backend-as-a-Service):**
+   - **Datenbank:** PostgreSQL 17 (InsForge Cloud EU-Region).
+   - **Authentifizierung:** InsForge Auth (JWT-basiert).
+   - **Storage:** InsForge Storage für Bilder und Dokumente.
+   - **Realtime:** InsForge Realtime für Live-Turnierergebnisse.
 
 3. **Background Tasks:**
    - Serverless Functions für E-Mail-Versand und Datenverarbeitung.
@@ -33,8 +33,7 @@ Das System ist für ein vollständiges Cloud-Deployment konzipiert.
 ### Voraussetzungen
 
 - Ein Vercel-Konto (vercel.com)
-- Ein Supabase-Projekt in der EU-Region (Frankfurt)
-- Eine Domain (optional, für Custom Domains)
+- Ein InsForge-Projekt in der EU-Region
 
 ### Schritt 1: Projekt auf Vercel anlegen
 
@@ -46,9 +45,9 @@ Das System ist für ein vollständiges Cloud-Deployment konzipiert.
 
 Setze alle Variablen aus `.env.example` in den Vercel Project Settings:
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_INSFORGE_URL`
+- `NEXT_PUBLIC_INSFORGE_ANON_KEY`
+- `INSFORGE_SERVICE_ROLE_KEY`
 - `DATABASE_URL` (mit Connection Pooler)
 - `DIRECT_URL` (für Migrations)
 - `RESEND_API_KEY`

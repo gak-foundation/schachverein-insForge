@@ -40,8 +40,8 @@ export default async function AdminInvitationsPage() {
   );
 
   const clubsForSelect = allClubs
-    .filter((c) => c.isActive)
-    .map((c) => ({ value: c.id, label: c.name }));
+    .filter((c: any) => c.isActive)
+    .map((c: any) => ({ value: c.id, label: c.name }));
 
   return (
     <div className="space-y-8">

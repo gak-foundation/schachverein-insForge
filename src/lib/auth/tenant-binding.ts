@@ -16,7 +16,7 @@ interface SignupTenantBindInput {
 
 /**
  * Bind a newly signed-up user to a tenant (club) identified by subdomain slug.
- * This is called immediately after Supabase signUp on the client.
+ * This is called immediately after InsForge signUp on the client.
  */
 export async function bindUserToTenant(input: SignupTenantBindInput) {
   const { userId, email, name, invitationToken, slug } = input;

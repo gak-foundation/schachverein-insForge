@@ -1,0 +1,13 @@
+{
+  "name": "opencode-plugins",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@kilocode/plugin": "7.2.31",
+    "@opencode-ai/plugin": "1.14.31"
+  },
+  "devDependencies": {
+    "detect-terminal": "2.0.0",
+    "node-notifier": "10.0.1"
+  }
+}

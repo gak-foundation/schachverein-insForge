@@ -8,6 +8,8 @@ import { getUserClubs } from "@/lib/clubs/queries";
 import Image from "next/image";
 import type { PlanId } from "@/lib/billing/addons";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children,
 }: {
