@@ -159,10 +159,8 @@ export function EditorShell({ page, initialBlocks }: EditorShellProps) {
         </div>
         {/* Inspector as slide-over on smaller screens */}
         <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="sm" className="xl:hidden fixed right-4 top-20 z-50">
-              <Settings className="h-4 w-4" />
-            </Button>
+          <SheetTrigger render={<Button variant="ghost" size="sm" className="xl:hidden fixed right-4 top-20 z-50" />}>
+            <Settings className="h-4 w-4" />
           </SheetTrigger>
           <SheetContent side="right" className="w-80">
             <BlockInspector />

@@ -1,11 +1,10 @@
 "use client";
 
-import { Suspense, useState, useActionState } from "react";
+import { Suspense, useState, useActionState, useTransition } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/insforge";
-import { loginAction } from "@/features/auth/actions";
+import { loginAction, initiateOAuthAction } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,18 +49,24 @@ function LoginPageContent() {
   };
   const [error, formAction, isPending] = useActionState(loginFormAction, null);
   const [showPassword, setShowPassword] = useState(false);
-  const [client] = useState(() => createClient());
+  const [oauthPending, startOAuth] = useTransition();
+
+  function initiateOAuth(provider: string) {
+    startOAuth(async () => {
+      const formData = new FormData();
+      formData.append("provider", provider);
+      formData.append("redirectTo", callbackURL);
+      const result = await initiateOAuthAction(formData);
+      if ((result as any)?.url) {
+        window.location.href = (result as any).url;
+      }
+    });
+  }
 
   function buildOAuthProvider(provider: "github" | "google") {
     return {
       id: provider,
-      onClick: () => {
-        const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
-        void client.auth.signInWithOAuth({
-          provider,
-          redirectTo,
-        });
-      },
+      onClick: () => initiateOAuth(provider),
     };
   }
 

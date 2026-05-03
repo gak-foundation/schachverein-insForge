@@ -122,7 +122,7 @@ export default async function MembersPage({
       filters={filters}
       buildSortLink={buildSortLink as any}
       buildMembersLink={buildMembersLink}
-      getSortIcon={getSortIcon}
+       getSortIcon={getSortIcon as any}
       statusColors={statusColors}
       statusLabels={statusLabels}
       hasWritePermission={hasWritePermission}

@@ -10,7 +10,8 @@ import { PERMISSIONS, getPermissionsForRole, hasPermission } from "@/lib/auth/pe
 import { fetchLichessProfile, getBestLichessRating } from "@/lib/lichess";
 import { requireClubId } from "@/lib/actions/utils";
 import { encrypt, decrypt } from "@/lib/crypto";
-import { createServerClient, createServiceClient } from "@/lib/insforge";
+import { createServerClient } from "@/lib/insforge";
+import { getAuthTokensFromCookies } from "@/lib/insforge/server-auth";
 
 // Define types used across the file
 type ClubMemberRole = "admin" | "vorstand" | "mitglied" | "jugend" | "passiv";
@@ -31,12 +32,13 @@ export async function getMembers(
   const clubId = await requireClubId();
   const offset = (page - 1) * pageSize;
 
-  const client = createServiceClient();
+  // Use auth token from cookies for authenticated RLS access
+  const { accessToken } = await getAuthTokensFromCookies();
+  const client = createServerClient(accessToken);
 
-  // We fetch memberships with joined members for the club filter
   let query = client
     .from('club_memberships')
-    .select('role, members(*)', { count: 'exact' })
+    .select('role, members(*)')
     .eq('club_id', clubId);
 
   if (role) {
@@ -47,44 +49,6 @@ export async function getMembers(
     query = query.eq('members.status', status);
   }
 
-  if (search) {
-    // Use or filter for search across first_name, last_name, email
-    // InsForge supports or as a separate method in some versions, but let's use a simple approach
-    // If or is not directly chainable, we may need to fetch and filter client-side for complex OR
-    // However, InsForge supports `.or()` method
-    query = query.or(`members.first_name.ilike.%${search}%,members.last_name.ilike.%${search}%,members.email.ilike.%${search}%`);
-  }
-
-  // Ordering
-  const ascending = sortOrder === "asc";
-  switch (sortBy) {
-    case "name":
-      query = query.order('last_name', { ascending }).order('first_name', { ascending });
-      break;
-    case "email":
-      query = query.order('members.email', { ascending });
-      break;
-    case "dwz":
-      query = query.order('members.dwz', { ascending });
-      break;
-    case "elo":
-      query = query.order('members.elo', { ascending });
-      break;
-    case "role":
-      query = query.order('role', { ascending });
-      break;
-    case "status":
-      query = query.order('members.status', { ascending });
-      break;
-    case "createdAt":
-      query = query.order('members.created_at', { ascending });
-      break;
-    default:
-      query = query.order('members.created_at', { ascending: false });
-  }
-
-  query = query.range(offset, offset + pageSize - 1);
-
   const { data, count, error } = await query;
 
   if (error || !data) {
@@ -92,7 +56,7 @@ export async function getMembers(
     return { members: [], totalCount: 0, totalPages: 0 };
   }
 
-  const membersList = data.map((item: any) => ({
+  let membersList = data.map((item: any) => ({
     id: item.members.id,
     firstName: item.members.first_name,
     lastName: item.members.last_name,
@@ -113,10 +77,54 @@ export async function getMembers(
     createdAt: item.members.created_at,
   }));
 
+  // Client-side search filter (InsForge SDK does not support .or() for cross-column search)
+  if (search) {
+    const q = search.toLowerCase();
+    membersList = membersList.filter(m =>
+      m.firstName.toLowerCase().includes(q) ||
+      m.lastName.toLowerCase().includes(q) ||
+      (m.email && m.email.toLowerCase().includes(q))
+    );
+  }
+
+  // Client-side sort
+  const ascending = sortOrder === "asc";
+  membersList.sort((a: any, b: any) => {
+    let cmp = 0;
+    switch (sortBy) {
+      case "name":
+        cmp = (a.lastName || "").localeCompare(b.lastName || "");
+        if (cmp === 0) cmp = (a.firstName || "").localeCompare(b.firstName || "");
+        break;
+      case "email":
+        cmp = (a.email || "").localeCompare(b.email || "");
+        break;
+      case "dwz":
+        cmp = (a.dwz || 0) - (b.dwz || 0);
+        break;
+      case "elo":
+        cmp = (a.elo || 0) - (b.elo || 0);
+        break;
+      case "role":
+        cmp = (a.role || "").localeCompare(b.role || "");
+        break;
+      case "status":
+        cmp = (a.status || "").localeCompare(b.status || "");
+        break;
+      case "createdAt":
+        cmp = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+        break;
+    }
+    return ascending ? cmp : -cmp;
+  });
+
+  const totalCount = membersList.length;
+  const paginatedMembers = membersList.slice(offset, offset + pageSize);
+
   return {
-    members: membersList,
-    totalCount: count || 0,
-    totalPages: Math.ceil((count || 0) / pageSize),
+    members: paginatedMembers,
+    totalCount,
+    totalPages: Math.ceil(totalCount / pageSize),
   };
 }
 

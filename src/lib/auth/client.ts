@@ -12,6 +12,27 @@ function getAppUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }
 
+async function fetchSession() {
+  const res = await fetch("/api/auth/session");
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.user ?? null;
+}
+
+async function fetchProfile() {
+  try {
+    const response = await fetch("/api/user/profile");
+    if (response.status === 401) {
+      return null;
+    }
+    if (!response.ok) return null;
+    const { profile } = await response.json();
+    return profile;
+  } catch {
+    return null;
+  }
+}
+
 // Client-side auth client
 export const authClient = {
   useSession: () => {
@@ -31,56 +52,17 @@ export const authClient = {
     const [isPending, setIsPending] = useState(true);
 
     useEffect(() => {
-      const client = createClient();
-
-      const fetchProfile = async () => {
-        try {
-          const response = await fetch("/api/user/profile");
-          if (response.status === 401) {
-            // User exists in Auth but not in our DB (or session is invalid)
-            // Clear local session to force re-login
-            await client.auth.signOut();
-            return null;
-          }
-          if (!response.ok) return null;
-          const { profile } = await response.json();
-          return profile;
-        } catch (error) {
-          console.error("Error fetching profile:", error);
-          return null;
-        }
-      };
-
-      // Get initial session
-      client.auth.getCurrentUser().then(async ({ data, error }: any) => {
-        if (error) {
-          const isIgnorableError =
-            error.code === "refresh_token_not_found" ||
-            error.message?.toLowerCase().includes("sub claim in jwt does not exist") ||
-            error.message?.toLowerCase().includes("no refresh token") ||
-            error.message?.toLowerCase().includes("invalid csrf token");
-
-          if (isIgnorableError) {
-            await client.auth.signOut();
-          } else {
-            console.error("Error getting session:", error.message);
-          }
-          setSession(null);
-          setIsPending(false);
-          return;
-        }
-
-        if (data?.user) {
+      const checkSession = async () => {
+        const user = await fetchSession();
+        if (user) {
           const profile = await fetchProfile();
-          if (!profile) {
-            setSession(null);
-          } else {
+          if (profile) {
             setSession({
               user: {
-                id: data.user.id,
-                email: data.user.email,
-                name: profile.name || data.user.profile?.name,
-                image: profile.image || data.user.profile?.avatar_url,
+                id: user.id,
+                email: user.email,
+                name: profile.name || user.profile?.name,
+                image: profile.image || user.profile?.avatar_url,
                 role: profile.role || "mitglied",
                 permissions: profile.permissions || [],
                 memberId: profile.memberId,
@@ -88,22 +70,20 @@ export const authClient = {
                 isSuperAdmin: profile.isSuperAdmin || false,
               },
             });
+            setIsPending(false);
+            return;
           }
-        } else {
-          setSession(null);
         }
+        setSession(null);
         setIsPending(false);
-      });
+      };
 
-      // Check for changes periodically (InsForge doesn't have onAuthStateChange)
+      checkSession();
+
       const interval = setInterval(async () => {
-        try {
-          const { data } = await client.auth.getCurrentUser();
-          if (!data?.user) {
-            setSession(null);
-          }
-        } catch {
-          // Ignore errors
+        const user = await fetchSession();
+        if (!user) {
+          setSession(null);
         }
       }, 60000);
 

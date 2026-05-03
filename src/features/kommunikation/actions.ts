@@ -109,12 +109,12 @@ export async function sendRundmailAction(formData: FormData) {
           throw new Error(`Fehler beim Hochladen von "${file.name}": ${uploadError.message}`);
         }
 
-        const { data: publicUrl } = client
+        const publicUrl = client
           .storage
           .from("attachments")
           .getPublicUrl(path);
 
-        attachmentUrls.push(publicUrl?.publicUrl || "");
+        attachmentUrls.push(publicUrl || "");
       }
     }
 

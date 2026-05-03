@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useTransition } from "react";
 import Link from "next/link";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/insforge";
-import { signupAction } from "@/features/auth/actions";
+import { signupAction, initiateOAuthAction } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,17 +21,7 @@ export default function SignupPage() {
   const [error, formAction, isPending] = useActionState(signupFormAction, null);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
-  const [client] = useState(() => createClient());
-
-  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || hostname;
-  let slug = "";
-  if (hostname.endsWith(`.${rootDomain}`)) {
-    const parts = hostname.split(".");
-    if (parts.length > rootDomain.split(".").length) {
-      slug = parts.slice(0, -rootDomain.split(".").length).join(".");
-    }
-  }
+  const [oauthPending, startOAuth] = useTransition();
 
   const passwordStrength = {
     length: password.length >= 8,
@@ -47,16 +36,22 @@ export default function SignupPage() {
     strengthCount <= 3 ? "bg-amber-500" : 
     "bg-green-500";
 
+  function initiateOAuth(provider: string) {
+    startOAuth(async () => {
+      const formData = new FormData();
+      formData.append("provider", provider);
+      formData.append("redirectTo", "/onboarding");
+      const result = await initiateOAuthAction(formData);
+      if ((result as any)?.url) {
+        window.location.href = (result as any).url;
+      }
+    });
+  }
+
   function buildOAuthProvider(provider: "github" | "google") {
     return {
       id: provider,
-      onClick: () => {
-        const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/dashboard")}&action=signup&slug=${encodeURIComponent(slug)}`;
-        void client.auth.signInWithOAuth({
-          provider,
-          redirectTo,
-        });
-      },
+      onClick: () => initiateOAuth(provider),
     };
   }
 

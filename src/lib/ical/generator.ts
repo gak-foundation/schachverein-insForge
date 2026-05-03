@@ -65,17 +65,19 @@ export function generateCalendarFeed(
     "X-WR-CALDESC:Schachverein Eventkalender",
   ];
   for (const event of events) {
-    lines.push(
-      "BEGIN:VEVENT",
-      `UID:${event.uid}`,
-      `DTSTART:${formatDate(event.dtstart)}`,
-      `DTEND:${formatDate(event.dtend)}`,
-      `SUMMARY:${escapeText(event.summary)}`,
-      event.description ? `DESCRIPTION:${escapeText(event.description)}` : null,
-      event.location ? `LOCATION:${escapeText(event.location)}` : null,
-      "END:VEVENT"
-    );
+    lines.push("BEGIN:VEVENT");
+    lines.push(`UID:${event.uid}`);
+    lines.push(`DTSTART:${formatDate(event.dtstart)}`);
+    lines.push(`DTEND:${formatDate(event.dtend)}`);
+    lines.push(`SUMMARY:${escapeText(event.summary)}`);
+    if (event.description) {
+      lines.push(`DESCRIPTION:${escapeText(event.description)}`);
+    }
+    if (event.location) {
+      lines.push(`LOCATION:${escapeText(event.location)}`);
+    }
+    lines.push("END:VEVENT");
   }
   lines.push("END:VCALENDAR");
-  return lines.filter(Boolean).join("\r\n");
+  return lines.join("\r\n");
 }

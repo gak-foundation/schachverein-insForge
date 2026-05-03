@@ -27,7 +27,8 @@ export function TemplateSelector({
   onChange,
   templates,
 }: TemplateSelectorProps) {
-  const handleChange = (templateId: string) => {
+  const handleChange = (templateId: string | null) => {
+    if (!templateId) return;
     const template = templates.find((t) => t.id === templateId);
     if (template) {
       onChange(template.getSubject(), template.getBody());

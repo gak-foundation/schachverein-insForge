@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/insforge";
 import { setAuthCookies, clearAuthCookies } from "@/lib/insforge/server-auth";
 import { ensureAuthUser, getAuthUserWithClub } from "@/lib/db/queries/auth";
@@ -142,6 +143,48 @@ export async function verifyEmailAction(formData: FormData) {
     });
 
     return { success: true };
+  } catch (error: any) {
+    if (error?.digest?.startsWith("NEXT_REDIRECT")) throw error;
+    return { error: "Ein Fehler ist aufgetreten" };
+  }
+}
+
+export async function initiateOAuthAction(formData: FormData) {
+  const provider = formData.get("provider") as string;
+  const redirectTo = formData.get("redirectTo") as string || "/onboarding";
+
+  if (!provider) {
+    return { error: "Provider ist erforderlich" };
+  }
+
+  try {
+    const client = createServerClient();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const callbackUrl = new URL("/api/auth/oauth-callback", appUrl);
+    callbackUrl.searchParams.set("next", redirectTo);
+
+    const { data, error } = await client.auth.signInWithOAuth({
+      provider,
+      redirectTo: callbackUrl.toString(),
+      skipBrowserRedirect: true,
+    });
+
+    if (error || !data?.url) {
+      return { error: error?.message || "OAuth konnte nicht gestartet werden" };
+    }
+
+    const cookieStore = await cookies();
+    if (data.codeVerifier) {
+      cookieStore.set("insforge_code_verifier", data.codeVerifier, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 600,
+      });
+    }
+
+    return { url: data.url };
   } catch (error: any) {
     if (error?.digest?.startsWith("NEXT_REDIRECT")) throw error;
     return { error: "Ein Fehler ist aufgetreten" };

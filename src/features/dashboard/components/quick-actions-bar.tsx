@@ -21,11 +21,9 @@ export function QuickActionsBar({ actions }: QuickActionsBarProps) {
         const Icon = action.icon;
         if (action.href) {
           return (
-            <Button key={i} variant="outline" size="sm" asChild>
-              <Link href={action.href}>
-                {Icon && <Icon className="h-4 w-4 mr-2" />}
-                {action.label}
-              </Link>
+            <Button key={i} variant="outline" size="sm" render={<Link href={action.href} />}>
+              {Icon && <Icon className="h-4 w-4 mr-2" />}
+              {action.label}
             </Button>
           );
         }

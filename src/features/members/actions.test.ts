@@ -36,6 +36,12 @@ vi.mock("@/lib/auth/session", () => ({
   getSession: mockGetSession,
 }));
 
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(() => ({
+    get: vi.fn(() => ({ value: "test-token" })),
+  })),
+}));
+
 vi.mock("@/lib/crypto", () => ({
   encrypt: vi.fn((v: string) => `encrypted:${v}`),
   decrypt: vi.fn((v: string) => v.replace("encrypted:", "")),
@@ -145,6 +151,7 @@ describe("Member Actions", () => {
 
   describe("getMembers", () => {
     it("sollte leere Mitgliederliste zurückgeben", async () => {
+      setupTable("club_memberships", []);
       const result = await members.getMembers();
       expect(result.members).toEqual([]);
       expect(result.totalCount).toBe(0);
