@@ -28,12 +28,15 @@ import {
   Hash,
   TrendingUp,
   ChevronLeft,
+  Zap,
 } from "lucide-react";
 import { TRFImportDialog } from "@/features/tournaments/components/trf-import-dialog";
 import { TRFExportButton } from "@/features/tournaments/components/trf-export-button";
 import { GameResultDialog } from "@/features/tournaments/components/game-result-dialog";
 import { GenerateRoundsDialog } from "@/features/tournaments/components/generate-rounds-dialog";
 import { CrossTableDialog } from "@/features/tournaments/components/cross-table-dialog";
+import { MatrixResultEntry } from "@/features/tournaments/components/matrix-result-entry";
+import { saveAllRoundResults } from "@/features/tournaments/actions";
 import { generateCrossTable } from "@/lib/pairings/round-robin";
 
 const typeLabels: Record<string, string> = {
@@ -311,6 +314,10 @@ export default async function TournamentDetailPage({
             <Users className="h-4 w-4" />
             Teilnehmer
           </TabsTrigger>
+          <TabsTrigger value="quick-entry" className="flex items-center gap-1 rounded-full border bg-white px-4 py-2">
+            <Zap className="h-4 w-4" />
+            Schnelleingabe
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="standings">
@@ -541,6 +548,47 @@ export default async function TournamentDetailPage({
                     </tbody>
                   </table>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="quick-entry">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-yellow-500" />
+                Schnelleingabe
+              </CardTitle>
+              <CardDescription>
+                Trage alle Ergebnisse einer Runde in der Matrix ein.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {participants.length < 2 ? (
+                <div className="rounded-lg border border-dashed px-4 py-8 text-center text-gray-500">
+                  <p>Mindestens 2 Teilnehmer erforderlich.</p>
+                </div>
+              ) : (
+                <MatrixResultEntry
+                  tournamentId={id}
+                  participants={participants.map((p: any) => ({
+                    memberId: p.memberId,
+                    firstName: p.member?.firstName || p.firstName || "",
+                    lastName: p.member?.lastName || p.lastName || "",
+                    dwz: p.member?.dwz ?? null,
+                  }))}
+                  round={allGames.length > 0 ? Math.max(...allGames.map((g: any) => g.round || 1)) + 1 : 1}
+                  existingPairings={allGames.map((g: any) => ({
+                    whiteId: g.whiteId || g.white_id,
+                    blackId: g.blackId || g.black_id,
+                    result: g.result,
+                  }))}
+                  onSave={async (results) => {
+                    "use server";
+                    await saveAllRoundResults(tournamentId || id, results);
+                  }}
+                />
               )}
             </CardContent>
           </Card>
