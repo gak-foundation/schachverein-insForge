@@ -263,3 +263,28 @@ function parseBoolean(value?: string): boolean {
   const lower = value.toLowerCase().trim();
   return ["ja", "yes", "true", "1", "wahr", "an"].includes(lower);
 }
+
+export function findDuplicateCandidates(
+  imported: { firstName: string; lastName: string; dateOfBirth?: string | null }[],
+  existing: { id: string; first_name: string; last_name: string; date_of_birth?: string | null }[]
+): { imported: { firstName: string; lastName: string }; existing: { id: string; firstName: string; lastName: string } }[] {
+  const duplicates: { imported: { firstName: string; lastName: string }; existing: { id: string; firstName: string; lastName: string } }[] = [];
+
+  for (const imp of imported) {
+    for (const ex of existing) {
+      const nameMatch =
+        imp.firstName.toLowerCase() === ex.first_name?.toLowerCase() &&
+        imp.lastName.toLowerCase() === ex.last_name?.toLowerCase();
+
+      if (nameMatch) {
+        duplicates.push({
+          imported: { firstName: imp.firstName, lastName: imp.lastName },
+          existing: { id: ex.id, firstName: ex.first_name || "", lastName: ex.last_name || "" },
+        });
+        break;
+      }
+    }
+  }
+
+  return duplicates;
+}

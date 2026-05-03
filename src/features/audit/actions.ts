@@ -115,9 +115,9 @@ export async function getDashboardStats() {
     // Average DWZ of active members
     const { data: dwzData, error: avgError } = await client
       .from("members")
-      .select("dwz, club_memberships!inner(club_id, status)")
-      .eq("club_memberships.club_id", clubId)
-      .eq("club_memberships.status", "active")
+      .select("dwz")
+      .eq("club_id", clubId)
+      .eq("status", "active")
       .gt("dwz", 0);
 
     if (avgError) console.error("avgDwz error:", avgError);
@@ -142,7 +142,7 @@ export async function getDashboardStats() {
     // Upcoming matches
     const { data: matchesData, error: matchesError } = await client
       .from("matches")
-      .select("id, match_date, location, status, home_team_id, teams!inner(name, club_id)")
+      .select("id, match_date, location, status, home_team_id, teams!matches_home_team_id_teams_id_fk(name, club_id)")
       .eq("teams.club_id", clubId)
       .gte("match_date", todayStr)
       .eq("status", "scheduled")
@@ -180,6 +180,7 @@ export async function getDashboardStats() {
         title: e.title,
         startDate: new Date(e.start_date),
       })),
+      children: [],
     };
   } catch (error: any) {
     console.error(
@@ -197,6 +198,7 @@ export async function getDashboardStats() {
       gamesThisMonth: 0,
       upcomingMatches: [],
       upcomingEvents: [],
+      children: [],
     };
   }
 }
