@@ -64,16 +64,19 @@ export function sanitizeHtml(html: string): string {
   // Schritt 2: Alle erlaubten Tags temporär markieren
   allowedTagsArray.forEach((tag) => {
     // Öffnende Tags mit Attributen
+    // nosemgrep: tag stammt aus hardcodierter ALLOWED_TAGS-Whitelist
     cleaned = cleaned.replace(
       new RegExp(`<(${tag})\\b([^/>]*)>`, "gi"),
       `%%SAFE_${tag.toUpperCase()}_START%%$2%%SAFE_ATTR_END%%`
     );
     // Schließende Tags
+    // nosemgrep: tag stammt aus hardcodierter ALLOWED_TAGS-Whitelist
     cleaned = cleaned.replace(
       new RegExp(`<\\/(${tag})>`, "gi"),
       `%%SAFE_${tag.toUpperCase()}_END%%`
     );
     // Self-closing Tags
+    // nosemgrep: tag stammt aus hardcodierter ALLOWED_TAGS-Whitelist
     cleaned = cleaned.replace(
       new RegExp(`<(${tag})\\b([^/>]*)/>`, "gi"),
       `%%SAFE_${tag.toUpperCase()}_EMPTY%%$2%%SAFE_ATTR_END%%`
@@ -87,6 +90,7 @@ export function sanitizeHtml(html: string): string {
   allowedTagsArray.forEach((tag) => {
     const tagAttrs = ALLOWED_ATTRIBUTES[tag] || [];
 
+    // nosemgrep: tag stammt aus hardcodierter ALLOWED_TAGS-Whitelist
     cleaned = cleaned.replace(
       new RegExp(
         `%%SAFE_${tag.toUpperCase()}_START%%([^%]*?)%%SAFE_ATTR_END%%`,
@@ -97,10 +101,12 @@ export function sanitizeHtml(html: string): string {
         return `<${tag}${safeAttrs}>`;
       }
     );
+    // nosemgrep: tag stammt aus hardcodierter ALLOWED_TAGS-Whitelist
     cleaned = cleaned.replace(
       new RegExp(`%%SAFE_${tag.toUpperCase()}_END%%`, "gi"),
       `</${tag}>`
     );
+    // nosemgrep: tag stammt aus hardcodierter ALLOWED_TAGS-Whitelist
     cleaned = cleaned.replace(
       new RegExp(
         `%%SAFE_${tag.toUpperCase()}_EMPTY%%([^%]*?)%%SAFE_ATTR_END%%`,

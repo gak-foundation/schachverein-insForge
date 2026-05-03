@@ -50,8 +50,8 @@ function createClient() {
     connect_timeout: 10,
     max_lifetime: 60 * 30, 
     prepare: prepare,
-    // Use rejectUnauthorized: false for better compatibility with cloud providers
-    ssl: isInsForge ? { rejectUnauthorized: false } : false,
+    // Use SSL for cloud providers (verification enabled)
+    ssl: isInsForge ? true : false,
     onnotice: () => {},
   });
 }

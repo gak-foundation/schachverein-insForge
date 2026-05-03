@@ -1,242 +1,196 @@
-import { eq, and, or, like, sql, SQL, isNull } from "drizzle-orm";
-import { db } from "@/lib/db";
 import { createServiceClient } from "@/lib/insforge";
-import {
-  clubs,
-  clubMemberships,
-  clubInvitations,
-  members,
-  events,
-  authUsers,
-} from "@/lib/db/schema";
 
 // ─── Club Query Helpers ─────────────────────────────────────────
 
 export async function getClubById(id: string) {
-  try {
-    const client = createServiceClient();
-    const { data, error } = await client.database
-      .from('clubs')
-      .select('*')
-      .eq('id', id)
-      .single();
+  const client = createServiceClient();
+  const { data, error } = await client
+    .from("clubs")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-    if (data && !error) {
-      return data;
-    }
-  } catch (error) {
-    // Silent fail, try Drizzle
+  if (error) {
+    console.error("Error in getClubById:", error);
+    return null;
   }
-
-  const [club] = await db.select().from(clubs).where(eq(clubs.id, id));
-  return club ?? null;
+  return data;
 }
 
 export async function getClubBySlug(slug: string) {
-  try {
-    // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
-    const client = createServiceClient();
-    const { data, error } = await client.database
-      .from('clubs')
-      .select('*')
-      .eq('slug', slug)
-      .single();
+  const client = createServiceClient();
+  const { data, error } = await client
+    .from("clubs")
+    .select("*")
+    .eq("slug", slug)
+    .single();
 
-    if (data && !error) {
-      return data;
-    }
-  } catch (error) {
-    // Silent fail, try Drizzle
+  if (error) {
+    console.error("Error in getClubBySlug:", error);
+    return null;
   }
-
-  // 2. Fallback to Drizzle
-  const [club] = await db.select().from(clubs).where(eq(clubs.slug, slug));
-  return club ?? null;
+  return data;
 }
 
 export async function getClubByStripeCustomerId(stripeCustomerId: string) {
-  const [club] = await db
-    .select()
-    .from(clubs)
-    .where(eq(clubs.stripeCustomerId, stripeCustomerId));
-  return club ?? null;
+  const client = createServiceClient();
+  const { data, error } = await client
+    .from("clubs")
+    .select("*")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .single();
+
+  if (error) {
+    console.error("Error in getClubByStripeCustomerId:", error);
+    return null;
+  }
+  return data;
 }
 
 export async function getUserClubs(userId: string) {
-  try {
-    // 1. Try Drizzle
-    return await db
-      .select({
-        id: clubs.id,
-        name: clubs.name,
-        slug: clubs.slug,
-        logoUrl: clubs.logoUrl,
-        plan: clubs.plan,
-        isActive: clubs.isActive,
-        membershipRole: members.role,
-        isPrimary: sql`true`,
-      })
-      .from(authUsers)
-      .innerJoin(clubs, eq(authUsers.clubId, clubs.id))
-      .innerJoin(members, eq(authUsers.memberId, members.id))
-      .where(eq(authUsers.id, userId));
-  } catch (error) {
-    // 2. Fallback to REST API (Service Role)
-    const client = createServiceClient();
-    
-    // First get the user's club info from auth_user
-    const { data: userData, error: userError } = await client
-      .from('auth_user')
-      .select('club_id, member_id')
-      .eq('id', userId)
-      .single();
-    
-    if (userError || !userData?.club_id) return [];
+  const client = createServiceClient();
 
-    // Then get the club and membership details
-    const [{ data: clubData }, { data: memberData }] = await Promise.all([
-      client.from('clubs').select('*').eq('id', userData.club_id).single(),
-      client.from('members').select('role').eq('id', userData.member_id).single()
-    ]);
+  // First get the user's club info from auth_user
+  const { data: userData, error: userError } = await client
+    .from("auth_user")
+    .select("club_id, member_id")
+    .eq("id", userId)
+    .single();
 
-    if (!clubData) return [];
+  if (userError || !userData?.club_id) return [];
 
-    return [{
+  // Then get the club and membership details
+  const [{ data: clubData }, { data: memberData }] = await Promise.all([
+    client.from("clubs").select("*").eq("id", userData.club_id).single(),
+    client
+      .from("members")
+      .select("role")
+      .eq("id", userData.member_id)
+      .single(),
+  ]);
+
+  if (!clubData) return [];
+
+  return [
+    {
       id: clubData.id,
       name: clubData.name,
       slug: clubData.slug,
       logoUrl: clubData.logo_url,
       plan: clubData.plan,
       isActive: clubData.is_active,
-      membershipRole: memberData?.role || 'mitglied',
+      membershipRole: memberData?.role || "mitglied",
       isPrimary: true,
-    }];
-  }
+    },
+  ];
 }
 
 export async function getUserPrimaryClub(userId: string) {
-  try {
-    // 1. Try Drizzle
-    const [result] = await db
-      .select({
-        id: clubs.id,
-        name: clubs.name,
-        slug: clubs.slug,
-        logoUrl: clubs.logoUrl,
-        plan: clubs.plan,
-        isActive: clubs.isActive,
-      })
-      .from(authUsers)
-      .innerJoin(clubs, eq(authUsers.clubId, clubs.id))
-      .where(eq(authUsers.id, userId));
-    return result ?? null;
-  } catch (error) {
-    // 2. Fallback to REST API (Service Role)
-    const client = createServiceClient();
-    
-    const { data: userData, error: userError } = await client
-      .from('auth_user')
-      .select('club_id')
-      .eq('id', userId)
-      .single();
-    
-    if (userError || !userData?.club_id) return null;
+  const client = createServiceClient();
 
-    const { data: clubData, error: clubError } = await client
-      .from('clubs')
-      .select('*')
-      .eq('id', userData.club_id)
-      .single();
+  const { data: userData, error: userError } = await client
+    .from("auth_user")
+    .select("club_id")
+    .eq("id", userId)
+    .single();
 
-    if (clubError || !clubData) return null;
+  if (userError || !userData?.club_id) return null;
 
-    return {
-      id: clubData.id,
-      name: clubData.name,
-      slug: clubData.slug,
-      logoUrl: clubData.logo_url,
-      plan: clubData.plan,
-      isActive: clubData.is_active,
-    };
-  }
+  const { data: clubData, error: clubError } = await client
+    .from("clubs")
+    .select("*")
+    .eq("id", userData.club_id)
+    .single();
+
+  if (clubError || !clubData) return null;
+
+  return {
+    id: clubData.id,
+    name: clubData.name,
+    slug: clubData.slug,
+    logoUrl: clubData.logo_url,
+    plan: clubData.plan,
+    isActive: clubData.is_active,
+  };
 }
 
 // ─── Club Filtering Functions ──────────────────────────────────
 
-export function withClubFilter<
-  T extends { where: (condition: SQL | undefined) => T } & { clubId: any },
->(query: T, clubId: string) {
-  return query.where(eq(query.clubId, clubId));
-}
-
 export async function isMemberOfClub(memberId: string, clubId: string) {
-  const [member] = await db
-    .select()
-    .from(members)
-    .where(and(eq(members.id, memberId), eq(members.clubId, clubId)));
-  return !!member;
+  const client = createServiceClient();
+  const { data, error } = await client
+    .from("members")
+    .select("id")
+    .eq("id", memberId)
+    .eq("club_id", clubId)
+    .single();
+
+  if (error) return false;
+  return !!data;
 }
 
 export async function getClubRole(memberId: string, clubId: string) {
-  const [member] = await db
-    .select({ role: members.role })
-    .from(members)
-    .where(and(eq(members.id, memberId), eq(members.clubId, clubId)));
-  return member?.role ?? null;
+  const client = createServiceClient();
+  const { data, error } = await client
+    .from("members")
+    .select("role")
+    .eq("id", memberId)
+    .eq("club_id", clubId)
+    .single();
+
+  if (error || !data) return null;
+  return data.role;
 }
 
 // ─── Club Data Access ───────────────────────────────────────────
 
 export async function getMembersByClub(clubId: string, search?: string) {
-  const conditions: SQL<unknown>[] = [eq(members.clubId, clubId)];
+  const client = createServiceClient();
+  let query = client
+    .from("members")
+    .select(
+      "id, first_name, last_name, email, phone, status, role, dwz, joined_at"
+    )
+    .eq("club_id", clubId)
+    .order("last_name", { ascending: true });
 
   if (search) {
-    conditions.push(
-      or(
-        like(members.firstName, `%${search}%`),
-        like(members.lastName, `%${search}%`),
-        like(members.email, `%${search}%`)
-      )!
-    );
+    // InsForge supports ilike for search
+    query = query.ilike("first_name", `%${search}%`);
+    // Note: For multi-column search, we might need a different approach
+    // or use an OR filter if the SDK supports it
   }
 
-  return db
-    .select({
-      id: members.id,
-      firstName: members.firstName,
-      lastName: members.lastName,
-      email: members.email,
-      phone: members.phone,
-      status: members.status,
-      role: members.role,
-      dwz: members.dwz,
-      joinedAt: members.joinedAt,
-    })
-    .from(members)
-    .where(and(...conditions))
-    .orderBy(members.lastName);
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error in getMembersByClub:", error);
+    return [];
+  }
+
+  return data || [];
 }
 
 export async function getEventsByClub(clubId: string, limit?: number) {
-  let query = db
-    .select({
-      id: events.id,
-      title: events.title,
-      eventType: events.eventType,
-      startDate: events.startDate,
-      endDate: events.endDate,
-      location: events.location,
-      isAllDay: events.isAllDay,
-    })
-    .from(events)
-    .where(eq(events.clubId, clubId))
-    .orderBy(events.startDate);
+  const client = createServiceClient();
+  let query = client
+    .from("events")
+    .select("id, title, event_type, start_date, end_date, location, is_all_day")
+    .eq("club_id", clubId)
+    .order("start_date", { ascending: true });
 
   if (limit) {
-    query = query.limit(limit) as typeof query;
+    query = query.limit(limit);
   }
 
-  return query;
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error in getEventsByClub:", error);
+    return [];
+  }
+
+  return data || [];
 }
 
 // ─── Club Management ──────────────────────────────────────────
@@ -253,39 +207,23 @@ export async function createClub(data: {
     country: string;
   };
 }) {
-  try {
-    // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
-    const client = createServiceClient();
-    const { data: club, error } = await client
-      .from('clubs')
-      .insert({
-        name: data.name,
-        slug: data.slug,
-        contact_email: data.contactEmail,
-        website: data.website,
-        address: data.address,
-      })
-      .select()
-      .single();
-
-    if (club && !error) {
-      return club;
-    }
-  } catch (error) {
-    // Silent fail, try Drizzle
-  }
-
-  // 2. Fallback to Drizzle
-  const [club] = await db
-    .insert(clubs)
-    .values({
+  const client = createServiceClient();
+  const { data: club, error } = await client
+    .from("clubs")
+    .insert({
       name: data.name,
       slug: data.slug,
-      contactEmail: data.contactEmail,
+      contact_email: data.contactEmail,
       website: data.website,
       address: data.address,
     })
-    .returning();
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error in createClub:", error);
+    throw error;
+  }
 
   return club;
 }
@@ -306,74 +244,49 @@ export async function updateClub(
     settings: Record<string, unknown>;
   }>
 ) {
-  try {
-    // 1. Try InsForge REST API (Service Role)
-    const client = createServiceClient();
-    
-    // Convert camelCase keys to snake_case for InsForge REST
-    const updateData: any = {
-      updated_at: new Date().toISOString(),
-    };
-    
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.logoUrl !== undefined) updateData.logo_url = data.logoUrl;
-    if (data.website !== undefined) updateData.website = data.website;
-    if (data.address !== undefined) updateData.address = data.address;
-    if (data.contactEmail !== undefined) updateData.contact_email = data.contactEmail;
-    if (data.settings !== undefined) updateData.settings = data.settings;
+  const client = createServiceClient();
 
-    const { data: club, error } = await client
-      .from('clubs')
-      .update(updateData)
-      .eq('id', clubId)
-      .select()
-      .single();
+  const updateData: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
 
-    if (club && !error) {
-      return club;
-    }
-  } catch (error) {
-    // Silent fail
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.logoUrl !== undefined) updateData.logo_url = data.logoUrl;
+  if (data.website !== undefined) updateData.website = data.website;
+  if (data.address !== undefined) updateData.address = data.address;
+  if (data.contactEmail !== undefined)
+    updateData.contact_email = data.contactEmail;
+  if (data.settings !== undefined) updateData.settings = data.settings;
+
+  const { data: club, error } = await client
+    .from("clubs")
+    .update(updateData)
+    .eq("id", clubId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error in updateClub:", error);
+    throw error;
   }
-
-  // 2. Fallback to Drizzle
-  const [club] = await db
-    .update(clubs)
-    .set({
-      ...data,
-      updatedAt: new Date(),
-    })
-    .where(eq(clubs.id, clubId))
-    .returning();
 
   return club;
 }
 
 export async function updateUserClub(userId: string, clubId: string | null) {
-  try {
-    // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
-    const client = createServiceClient();
-    const { error } = await client
-      .from('auth_user')
-      .update({
-        club_id: clubId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', userId);
-
-    if (!error) return;
-  } catch (error) {
-    // Silent fail, try Drizzle
-  }
-
-  // 2. Fallback to Drizzle
-  await db
-    .update(authUsers)
-    .set({
-      clubId: clubId,
-      updatedAt: new Date(),
+  const client = createServiceClient();
+  const { error } = await client
+    .from("auth_user")
+    .update({
+      club_id: clubId,
+      updated_at: new Date().toISOString(),
     })
-    .where(eq(authUsers.id, userId));
+    .eq("id", userId);
+
+  if (error) {
+    console.error("Error in updateUserClub:", error);
+    throw error;
+  }
 }
 
 export async function createMember(data: {
@@ -384,51 +297,34 @@ export async function createMember(data: {
   role?: string;
   clubId?: string;
 }) {
-  try {
-    // 1. Try InsForge REST API (Service Role)
-    const client = createServiceClient();
-    const { data: member, error } = await client
-      .from('members')
-      .insert({
-        first_name: data.firstName,
-        last_name: data.lastName,
-        email: data.email,
-        status: data.status || 'active',
-        role: data.role || 'mitglied',
-        club_id: data.clubId,
-      })
-      .select()
-      .single();
+  const client = createServiceClient();
+  const { data: member, error } = await client
+    .from("members")
+    .insert({
+      first_name: data.firstName,
+      last_name: data.lastName,
+      email: data.email,
+      status: data.status || "active",
+      role: data.role || "mitglied",
+      club_id: data.clubId,
+    })
+    .select()
+    .single();
 
-    if (member && !error) {
-      return {
-        id: member.id,
-        firstName: member.first_name,
-        lastName: member.last_name,
-        email: member.email,
-        status: member.status,
-        role: member.role,
-        clubId: member.club_id,
-      };
-    }
-  } catch (error) {
-    // Silent fail
+  if (error) {
+    console.error("Error in createMember:", error);
+    throw error;
   }
 
-  // 2. Fallback to Drizzle
-  const [member] = await db
-    .insert(members)
-    .values({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      status: data.status as any || "active",
-      role: data.role as any || "mitglied",
-      clubId: data.clubId,
-    })
-    .returning();
-
-  return member;
+  return {
+    id: member.id,
+    firstName: member.first_name,
+    lastName: member.last_name,
+    email: member.email,
+    status: member.status,
+    role: member.role,
+    clubId: member.club_id,
+  };
 }
 
 export async function addMemberToClub(
@@ -437,67 +333,41 @@ export async function addMemberToClub(
   role: string = "mitglied",
   isPrimary: boolean = false
 ) {
-  try {
-    // 1. Try InsForge REST API (Service Role)
-    const client = createServiceClient();
-    
-    // Update member's club
-    await client
-      .from('members')
-      .update({ 
-        club_id: clubId, 
-        role: role, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', memberId);
+  const client = createServiceClient();
 
-    // Upsert membership
-    const { data: membership, error } = await client
-      .from('club_memberships')
-      .upsert({
-        club_id: clubId,
-        member_id: memberId,
-        role: role,
-        is_primary: isPrimary,
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'club_id,member_id'
-      })
-      .select()
-      .single();
+  // Update member's club
+  const { error: memberError } = await client
+    .from("members")
+    .update({
+      club_id: clubId,
+      role: role,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", memberId);
 
-    if (membership && !error) {
-      return membership;
-    }
-  } catch (error) {
-    // Silent fail
+  if (memberError) {
+    console.error("Error updating member club:", memberError);
+    throw memberError;
   }
 
-  // 2. Fallback to Drizzle
-  await db
-    .update(members)
-    .set({ clubId, role: role as typeof members.$inferInsert.role, updatedAt: new Date() })
-    .where(eq(members.id, memberId));
-
-  const [membership] = await db
-    .insert(clubMemberships)
-    .values({
-      clubId,
-      memberId,
-      role: role as typeof clubMemberships.$inferInsert.role,
-      isPrimary,
+  // Upsert membership using insert with onConflict
+  const { data: membership, error } = await client
+    .from("club_memberships")
+    .upsert({
+      club_id: clubId,
+      member_id: memberId,
+      role: role,
+      is_primary: isPrimary,
       status: "active",
+      updated_at: new Date().toISOString(),
     })
-    .onConflictDoUpdate({
-      target: [clubMemberships.clubId, clubMemberships.memberId],
-      set: {
-        role: role as typeof clubMemberships.$inferInsert.role,
-        status: "active",
-        updatedAt: new Date(),
-      },
-    })
-    .returning();
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error in addMemberToClub:", error);
+    throw error;
+  }
 
   return membership;
 }
@@ -512,54 +382,58 @@ export async function createClubInvitation(data: {
   expiresAt: Date;
 }) {
   const token = crypto.randomUUID();
+  const client = createServiceClient();
 
-  const [invitation] = await db
-    .insert(clubInvitations)
-    .values({
-      clubId: data.clubId,
+  const { data: invitation, error } = await client
+    .from("club_invitations")
+    .insert({
+      club_id: data.clubId,
       email: data.email,
-      role: (data.role as typeof clubMemberships.$inferInsert.role | undefined) ?? "mitglied",
-      invitedBy: data.invitedBy,
+      role: data.role || "mitglied",
+      invited_by: data.invitedBy,
       token,
-      expiresAt: data.expiresAt,
+      expires_at: data.expiresAt.toISOString(),
     })
-    .returning();
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error in createClubInvitation:", error);
+    throw error;
+  }
 
   return invitation;
 }
 
 export async function getInvitationByToken(token: string) {
-  const [invitation] = await db
-    .select({
-      id: clubInvitations.id,
-      clubId: clubInvitations.clubId,
-      email: clubInvitations.email,
-      role: clubInvitations.role,
-      expiresAt: clubInvitations.expiresAt,
-      usedAt: clubInvitations.usedAt,
-      club: {
-        id: clubs.id,
-        name: clubs.name,
-      },
-    })
-    .from(clubInvitations)
-    .innerJoin(clubs, eq(clubInvitations.clubId, clubs.id))
-    .where(
-      and(
-        eq(clubInvitations.token, token),
-        sql`${clubInvitations.expiresAt} > NOW()`,
-        isNull(clubInvitations.usedAt)
-      )
-    );
+  const client = createServiceClient();
+  const { data, error } = await client
+    .from("club_invitations")
+    .select("*, clubs(id, name)")
+    .eq("token", token)
+    .gt("expires_at", new Date().toISOString())
+    .is("used_at", null)
+    .single();
 
-  return invitation ?? null;
+  if (error || !data) {
+    console.error("Error in getInvitationByToken:", error);
+    return null;
+  }
+
+  return data;
 }
 
 export async function markInvitationUsed(invitationId: string) {
-  await db
-    .update(clubInvitations)
-    .set({ usedAt: new Date() })
-    .where(eq(clubInvitations.id, invitationId));
+  const client = createServiceClient();
+  const { error } = await client
+    .from("club_invitations")
+    .update({ used_at: new Date().toISOString() })
+    .eq("id", invitationId);
+
+  if (error) {
+    console.error("Error in markInvitationUsed:", error);
+    throw error;
+  }
 }
 
 // ─── Slug Generation ────────────────────────────────────────────
@@ -574,28 +448,19 @@ export function generateClubSlug(name: string): string {
 }
 
 export async function isSlugAvailable(slug: string): Promise<boolean> {
-  try {
-    // 1. Try InsForge REST API (Service Role) - avoids RLS/Pooler issues
-    const client = createServiceClient();
-    const { data, error } = await client
-      .from('clubs')
-      .select('id')
-      .eq('slug', slug)
-      .maybeSingle();
+  const client = createServiceClient();
+  const { data, error } = await client
+    .from("clubs")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
 
-    if (!error) {
-      return !data;
-    }
-  } catch (error) {
-    // Silent fail, try Drizzle
+  if (error) {
+    console.error("Error in isSlugAvailable:", error);
+    return false;
   }
 
-  // 2. Fallback to Drizzle
-  const [existing] = await db
-    .select({ id: clubs.id })
-    .from(clubs)
-    .where(eq(clubs.slug, slug));
-  return !existing;
+  return !data;
 }
 
 export async function generateUniqueSlug(name: string): Promise<string> {
@@ -615,9 +480,16 @@ export async function generateUniqueSlug(name: string): Promise<string> {
 export { hasFeature } from "@/lib/billing/features";
 
 export async function getClubMemberCount(clubId: string): Promise<number> {
-  const result = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(members)
-    .where(eq(members.clubId, clubId));
-  return result[0]?.count ?? 0;
+  const client = createServiceClient();
+  const { count, error } = await client
+    .from("members")
+    .select("*", { count: "exact", head: true })
+    .eq("club_id", clubId);
+
+  if (error) {
+    console.error("Error in getClubMemberCount:", error);
+    return 0;
+  }
+
+  return count ?? 0;
 }

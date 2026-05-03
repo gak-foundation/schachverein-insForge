@@ -4,7 +4,7 @@ import { getClubPlan, getClubAddons } from "@/lib/billing/queries";
 import { AddonGrid } from "@/features/billing/components/addon-grid";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Sparkles } from "lucide-react";
-import { createServerAuthClient } from "@/lib/insforge";
+import { createServerAuthClient } from "@/lib/insforge/server-auth";
 
 export const metadata: Metadata = {
   title: "Addons & Erweiterungen",

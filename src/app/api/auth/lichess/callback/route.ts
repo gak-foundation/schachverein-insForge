@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { exchangeLichessCode, fetchLichessAuthUser } from "@/lib/auth/lichess";
 import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { members } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { encrypt } from "@/lib/crypto";
 
 export async function GET(request: Request) {
@@ -19,13 +17,17 @@ export async function GET(request: Request) {
 
   // 1. Validate state and error
   if (error || !code || state !== savedState || !verifier) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/profile?error=lichess_auth_failed`);
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/profile?error=lichess_auth_failed`
+    );
   }
 
   try {
     const session = await getSession();
     if (!session || !session.user.memberId) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/auth/login`);
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`
+      );
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -38,24 +40,34 @@ export async function GET(request: Request) {
     const lichessUser = await fetchLichessAuthUser(tokenData.access_token);
 
     // 4. Update member in DB
-    await db
-      .update(members)
-      .set({
-        lichessUsername: lichessUser.username,
-        lichessId: lichessUser.id,
-        isLichessVerified: true,
-        lichessAccessToken: encrypt(tokenData.access_token),
-        updatedAt: new Date(),
+    const client = createServiceClient();
+    const { error: updateError } = await client
+      .from("members")
+      .update({
+        lichess_username: lichessUser.username,
+        lichess_id: lichessUser.id,
+        is_lichess_verified: true,
+        lichess_access_token: encrypt(tokenData.access_token),
+        updated_at: new Date().toISOString(),
       })
-      .where(eq(members.id, session.user.memberId));
+      .eq("id", session.user.memberId);
+
+    if (updateError) {
+      console.error("Error updating member lichess data:", updateError);
+      throw new Error("Failed to update member");
+    }
 
     // Cleanup cookies
     cookieStore.delete("lichess_oauth_verifier");
     cookieStore.delete("lichess_oauth_state");
 
-    return NextResponse.redirect(`${appUrl}/dashboard/profile?success=lichess_connected`);
+    return NextResponse.redirect(
+      `${appUrl}/dashboard/profile?success=lichess_connected`
+    );
   } catch (err) {
     console.error("Lichess OAuth Callback Error:", err);
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/profile?error=lichess_callback_error`);
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/profile?error=lichess_callback_error`
+    );
   }
 }

@@ -13,6 +13,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

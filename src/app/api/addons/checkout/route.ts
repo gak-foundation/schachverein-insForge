@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import { createCheckoutSession, createStripeCustomer } from "@/lib/billing/stripe";
 import { getClubById } from "@/lib/clubs/queries";
 import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { clubs } from "@/lib/db/schema/clubs";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { z } from "zod";
 
 const checkoutSchema = z.object({
@@ -46,10 +44,19 @@ export async function POST(request: Request) {
         name: club.name,
       });
       stripeCustomerId = customer.id;
-      await db
-        .update(clubs)
-        .set({ stripeCustomerId: customer.id, updatedAt: new Date() })
-        .where(eq(clubs.id, clubId));
+      const client = createServiceClient();
+      const { error } = await client
+        .from("clubs")
+        .update({
+          stripe_customer_id: customer.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", clubId);
+
+      if (error) {
+        console.error("Error updating club stripe customer id:", error);
+        throw new Error("Failed to update club");
+      }
     }
 
     const checkoutSession = await createCheckoutSession({

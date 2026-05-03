@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().url("Muss eine gültige URL sein").optional(),
+  DATABASE_URL: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   // InsForge
   NEXT_PUBLIC_INSFORGE_URL: z.string().url().default("https://4d3rbpyx.eu-central.insforge.app"),

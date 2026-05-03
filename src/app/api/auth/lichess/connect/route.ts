@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { generateCodeVerifier, generateCodeChallenge } from "@/lib/auth/lichess";
-import { createServerAuthClient } from "@/lib/insforge";
+import { createServerAuthClient } from "@/lib/insforge/server-auth";
 
 export async function GET() {
   const client = await createServerAuthClient();

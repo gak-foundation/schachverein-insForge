@@ -76,7 +76,7 @@ const PLAYER_FIELDS = {
 };
 
 export function parseTRF(content: string): ParsedTRF {
-  const lines = content.split("\n").map((line) => line.replace("\r", ""));
+  const lines = content.split("\n").map((line) => line.replace(/\r/g, ""));
 
   const tournament: Partial<TRFTournament> = {
     numberOfRounds: 0,

@@ -1,10 +1,7 @@
 import { createClient as createInsForgeClient, type InsForgeClient } from '@insforge/sdk';
-import { cookies } from 'next/headers';
 
 const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL ?? 'https://4d3rbpyx.eu-central.insforge.app';
 const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
-
-const SESSION_COOKIE = "insforge_session";
 
 function getAnonKey(): string | undefined {
   if (typeof window !== 'undefined') {
@@ -13,7 +10,7 @@ function getAnonKey(): string | undefined {
   return INSFORGE_ANON_KEY;
 }
 
-type InsForgeClientWithFrom = InsForgeClient & {
+export type InsForgeClientWithFrom = InsForgeClient & {
   from: InsForgeClient['database']['from'];
 };
 
@@ -57,28 +54,6 @@ export function createServerClient(accessToken?: string): InsForgeClientWithFrom
     (client as any).http.setAuthToken(accessToken);
     (client as any).tokenManager.setAccessToken(accessToken);
   }
-  return client;
-}
-
-/**
- * Server-side auth client that reads the `insforge_session` cookie and
- * refreshes the session with InsForge to obtain an authenticated client.
- *
- * Use this in server components and API routes to get the current user
- * or make authenticated database calls.
- */
-export async function createServerAuthClient(): Promise<InsForgeClientWithFrom> {
-  const cookieStore = await cookies();
-  const refreshToken = cookieStore.get(SESSION_COOKIE)?.value;
-  const client = createServerClient();
-
-  if (refreshToken) {
-    const { data: refreshed, error } = await client.auth.refreshSession({ refreshToken });
-    if (refreshed?.accessToken && !error) {
-      return client;
-    }
-  }
-
   return client;
 }
 

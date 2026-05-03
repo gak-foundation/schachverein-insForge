@@ -8,6 +8,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { useEditorStore } from "@/lib/store/editor-store";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface TextBlockProps {
   data: any;
@@ -61,7 +62,7 @@ export function TextBlock({ data, blockId, mode }: TextBlockProps) {
       {mode === "editor" ? (
         <EditorContent editor={editor} />
       ) : (
-        <div dangerouslySetInnerHTML={{ __html: data.contentHtml || "" }} />
+        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.contentHtml || "") }} />
       )}
     </div>
   );

@@ -1,6 +1,4 @@
-import { db } from "@/lib/db";
-import { members, dwzHistory } from "@/lib/db/schema";
-import { sql, eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { fetchDwzData } from "@/lib/dwz";
 import { NextResponse } from "next/server";
 
@@ -13,51 +11,66 @@ export async function GET(request: Request) {
   }
 
   try {
-    const allMembersWithId = await db
-      .select({
-        id: members.id,
-        dwzId: members.dwzId,
-        dwz: members.dwz,
-        elo: members.elo,
-      })
-      .from(members)
-      .where(sql`${members.dwzId} IS NOT NULL`);
+    const client = createServiceClient();
+    const { data: allMembersWithId, error } = await client
+      .from("members")
+      .select("id, dwz_id, dwz, elo")
+      .not("dwz_id", "is", null);
+
+    if (error) {
+      console.error("Error fetching members:", error);
+      throw error;
+    }
 
     let updatedCount = 0;
 
-    for (const m of allMembersWithId) {
-      if (!m.dwzId) continue;
-      
-      const data = await fetchDwzData(m.dwzId);
-      
-      if (data && data.dwz !== m.dwz) {
-        await db
-          .update(members)
-          .set({ dwz: data.dwz })
-          .where(eq(members.id, m.id));
+    for (const m of allMembersWithId || []) {
+      if (!m.dwz_id) continue;
 
-        await db.insert(dwzHistory).values({
-          memberId: m.id,
-          dwz: data.dwz,
-          elo: m.elo,
-          source: "cron-sync",
-          recordedAt: new Date().toISOString().split("T")[0],
-        });
-        
+      const data = await fetchDwzData(m.dwz_id);
+
+      if (data && data.dwz !== m.dwz) {
+        const { error: updateError } = await client
+          .from("members")
+          .update({ dwz: data.dwz })
+          .eq("id", m.id);
+
+        if (updateError) {
+          console.error(`Error updating member ${m.id}:`, updateError);
+          continue;
+        }
+
+        const { error: insertError } = await client.from("dwz_history").insert([
+          {
+            member_id: m.id,
+            dwz: data.dwz,
+            elo: m.elo,
+            source: "cron-sync",
+            recorded_at: new Date().toISOString().split("T")[0],
+          },
+        ]);
+
+        if (insertError) {
+          console.error(`Error inserting dwz history for ${m.id}:`, insertError);
+        }
+
         updatedCount++;
       }
-      
+
       // Gentle rate limiting for the DeWIS simulation/API
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     return NextResponse.json({
       success: true,
       updated: updatedCount,
-      totalChecked: allMembersWithId.length,
+      totalChecked: allMembersWithId?.length ?? 0,
     });
   } catch (error) {
     console.error("Cron sync error:", error);
-    return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

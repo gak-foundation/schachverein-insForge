@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/insforge";
+import { createServerAuthClient } from "@/lib/insforge/server-auth";
 import { redirect } from "next/navigation";
 
 interface ProtectedPageProps {
@@ -9,7 +9,7 @@ interface ProtectedPageProps {
  * Server Component Wrapper für geschützte Seiten
  */
 export async function ProtectedPage({ children }: ProtectedPageProps) {
-  const client = createServerClient();
+  const client = await createServerAuthClient();
   const { data: { user } } = await client.auth.getCurrentUser();
 
   if (!user) {
@@ -24,7 +24,7 @@ export async function ProtectedPage({ children }: ProtectedPageProps) {
  * Gibt den User zurück oder redirected zum Login
  */
 export async function requireAuth() {
-  const client = createServerClient();
+  const client = await createServerAuthClient();
   const { data: { user }, error } = await client.auth.getCurrentUser();
 
   if (error || !user) {
@@ -38,7 +38,7 @@ export async function requireAuth() {
  * Optional Auth - gibt User zurück wenn eingeloggt, sonst null
  */
 export async function optionalAuth() {
-  const client = createServerClient();
+  const client = await createServerAuthClient();
   const { data: { user } } = await client.auth.getCurrentUser();
   
   return { user, client };

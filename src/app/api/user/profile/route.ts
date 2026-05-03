@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthUserWithClub } from "@/lib/db/queries/auth";
-import { createServerAuthClient } from "@/lib/insforge";
+import { createServerAuthClient } from "@/lib/insforge/server-auth";
 
 export async function GET() {
   try {

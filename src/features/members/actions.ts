@@ -671,7 +671,7 @@ export async function syncAllMembersDwz() {
         updatedCount++;
       }
     } catch (err) {
-      console.error(`Error syncing member ${m.id}:`, err);
+      console.error("Error syncing member %s:", m.id, err);
       errorCount++;
     }
     // Rate limiting to avoid blocking

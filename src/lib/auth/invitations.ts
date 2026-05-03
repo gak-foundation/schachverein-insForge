@@ -1,6 +1,4 @@
-import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { clubInvitations } from "@/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { randomUUID } from "crypto";
 import { addDays } from "date-fns";
 
@@ -21,52 +19,70 @@ export async function createInvitation({
   const token = randomUUID();
   const expiresAt = addDays(new Date(), 7); // 7 days expiry
 
-  const [invitation] = await db
-    .insert(clubInvitations)
-    .values({
-      clubId,
+  const client = createServiceClient();
+  const { data: invitation, error } = await client
+    .from("club_invitations")
+    .insert({
+      club_id: clubId,
       email,
       role: role || "mitglied",
       token,
-      invitedBy,
-      expiresAt,
+      invited_by: invitedBy,
+      expires_at: expiresAt.toISOString(),
     })
-    .returning();
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating invitation:", error);
+    throw new Error("Failed to create invitation");
+  }
 
   return invitation;
 }
 
 // Get invitation by token
 export async function getInvitationByToken(token: string) {
-  const [invitation] = await db
-    .select()
-    .from(clubInvitations)
-    .where(eq(clubInvitations.token, token))
-    .limit(1);
+  const client = createServiceClient();
+  const { data: invitation, error } = await client
+    .from("club_invitations")
+    .select("*")
+    .eq("token", token)
+    .single();
+
+  if (error) {
+    console.error("Error fetching invitation:", error);
+    return null;
+  }
 
   return invitation;
 }
 
 // Mark invitation as accepted
 export async function acceptInvitation(token: string) {
-  const [invitation] = await db
-    .update(clubInvitations)
-    .set({
-      usedAt: new Date(),
-    })
-    .where(eq(clubInvitations.token, token))
-    .returning();
+  const client = createServiceClient();
+  const { data: invitation, error } = await client
+    .from("club_invitations")
+    .update({ used_at: new Date().toISOString() })
+    .eq("token", token)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error accepting invitation:", error);
+    throw new Error("Failed to accept invitation");
+  }
 
   return invitation;
 }
 
 // Check if invitation is valid
 export function isInvitationValid(invitation: {
-  expiresAt: Date;
-  usedAt: Date | null;
+  expires_at: string;
+  used_at: string | null;
 }): boolean {
-  if (invitation.usedAt) return false;
-  if (new Date() > invitation.expiresAt) return false;
+  if (invitation.used_at) return false;
+  if (new Date() > new Date(invitation.expires_at)) return false;
   return true;
 }
 

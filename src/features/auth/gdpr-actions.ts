@@ -1,13 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import {
-  members,
-  clubMemberships,
-  authUsers,
-  payments,
-} from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { logMemberAction } from "@/lib/audit";
@@ -24,14 +17,20 @@ export async function requestAccountDeletion() {
   }
 
   const memberId = session.user.memberId;
+  const client = createServiceClient();
 
-  await db
-    .update(members)
-    .set({
-      deletionRequestedAt: new Date(),
+  const { error } = await client
+    .from("members")
+    .update({
+      deletion_requested_at: new Date().toISOString(),
       status: "inactive",
     })
-    .where(eq(members.id, memberId));
+    .eq("id", memberId);
+
+  if (error) {
+    console.error("Error requesting account deletion:", error);
+    throw new Error("Fehler beim Löschauftrag");
+  }
 
   // Log the request
   await logMemberAction("DELETION_REQUESTED", memberId, {
@@ -53,41 +52,45 @@ export async function exportMemberData(memberId: string) {
     throw new Error("Nicht autorisiert");
   }
 
-  const memberData = await db.query.members.findFirst({
-    where: eq(members.id, memberId),
-    with: {
-      clubMemberships: true,
-      dwzEntries: true,
-      statusHistory: true,
-    },
-  });
+  const client = createServiceClient();
 
-  if (!memberData) {
+  // Fetch member with related data
+  const { data: memberData, error: memberError } = await client
+    .from("members")
+    .select("*, club_memberships(*), dwz_history(*), member_status_history(*)")
+    .eq("id", memberId)
+    .single();
+
+  if (memberError || !memberData) {
     throw new Error("Mitglied nicht gefunden");
   }
 
-  const paymentRecords = await db
-    .select()
-    .from(payments)
-    .where(eq(payments.memberId, memberId));
+  const { data: paymentRecords, error: paymentError } = await client
+    .from("payments")
+    .select("*")
+    .eq("member_id", memberId);
+
+  if (paymentError) {
+    console.error("Error fetching payments:", paymentError);
+  }
 
   const exportBlob = {
     personalData: {
-      firstName: memberData.firstName,
-      lastName: memberData.lastName,
+      firstName: memberData.first_name,
+      lastName: memberData.last_name,
       email: memberData.email,
       phone: memberData.phone,
-      dateOfBirth: memberData.dateOfBirth,
+      dateOfBirth: memberData.date_of_birth,
       gender: memberData.gender,
       dwz: memberData.dwz,
       elo: memberData.elo,
-      fideId: memberData.fideId,
-      joinedAt: memberData.joinedAt,
+      fideId: memberData.fide_id,
+      joinedAt: memberData.joined_at,
     },
-    memberships: memberData.clubMemberships,
-    dwzHistory: memberData.dwzEntries,
-    statusHistory: memberData.statusHistory,
-    payments: paymentRecords,
+    memberships: memberData.club_memberships,
+    dwzHistory: memberData.dwz_history,
+    statusHistory: memberData.member_status_history,
+    payments: paymentRecords || [],
     exportedAt: new Date().toISOString(),
   };
 
@@ -120,48 +123,68 @@ export async function anonymizeMember(memberId: string) {
     throw new Error("Nur Administratoren mit entsprechenden Rechten können Daten anonymisieren.");
   }
 
-  const [member] = await db
-    .select()
-    .from(members)
-    .where(eq(members.id, memberId));
+  const client = createServiceClient();
 
-  if (!member) {
+  // Check member exists
+  const { data: member, error: memberError } = await client
+    .from("members")
+    .select("id")
+    .eq("id", memberId)
+    .single();
+
+  if (memberError || !member) {
     throw new Error("Mitglied nicht gefunden");
   }
 
   // 1. Delete associated auth user (this cascades to sessions/accounts)
-  await db.delete(authUsers).where(eq(authUsers.memberId, memberId));
+  const { error: deleteError } = await client
+    .from("auth_user")
+    .delete()
+    .eq("member_id", memberId);
+
+  if (deleteError) {
+    console.error("Error deleting auth user:", deleteError);
+  }
 
   // 2. Anonymize sensitive fields in members table
-  await db
-    .update(members)
-    .set({
-      firstName: "Anonymes",
-      lastName: `Mitglied ${memberId.slice(0, 4)}`,
+  const { error: updateError } = await client
+    .from("members")
+    .update({
+      first_name: "Anonymes",
+      last_name: `Mitglied ${memberId.slice(0, 4)}`,
       email: `anonymized-${memberId.slice(0, 8)}@checkmate-manager.de`,
       phone: null,
-      dateOfBirth: null,
+      date_of_birth: null,
       gender: null,
-      dwzId: null,
-      fideId: null,
-      lichessUsername: null,
-      chesscomUsername: null,
-      sepaIban: null,
-      sepaBic: null,
-      sepaMandateReference: null,
-      mandateSignedAt: null,
+      dwz_id: null,
+      fide_id: null,
+      lichess_username: null,
+      chesscom_username: null,
+      sepa_iban: null,
+      sepa_bic: null,
+      sepa_mandate_reference: null,
+      mandate_signed_at: null,
       notes: null,
       status: "inactive",
-      anonymizedAt: new Date(),
-      updatedAt: new Date(),
+      anonymized_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .where(eq(members.id, memberId));
+    .eq("id", memberId);
+
+  if (updateError) {
+    console.error("Error anonymizing member:", updateError);
+    throw new Error("Fehler bei der Anonymisierung");
+  }
 
   // 3. Clear memberships but keep record for historical purposes
-  await db
-    .update(clubMemberships)
-    .set({ status: "inactive" })
-    .where(eq(clubMemberships.memberId, memberId));
+  const { error: membershipError } = await client
+    .from("club_memberships")
+    .update({ status: "inactive" })
+    .eq("member_id", memberId);
+
+  if (membershipError) {
+    console.error("Error updating memberships:", membershipError);
+  }
 
   await logMemberAction("ANONYMIZED", memberId, {});
 

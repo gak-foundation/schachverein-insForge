@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerAuthClient } from "@/lib/insforge";
+import { createServerAuthClient } from "@/lib/insforge/server-auth";
 import { getAuthUserById } from "@/lib/db/queries/auth";
 import { getClubBySlug } from "@/lib/clubs/queries";
 import { headers } from "next/headers";

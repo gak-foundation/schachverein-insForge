@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { authUsers, members, clubs } from "@/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { getAuthUserById, updateAuthUser } from "@/lib/db/queries/auth";
 import { getClubBySlug } from "@/lib/clubs/queries";
 
@@ -20,44 +18,51 @@ interface SignupTenantBindInput {
  */
 export async function bindUserToTenant(input: SignupTenantBindInput) {
   const { userId, email, name, invitationToken, slug } = input;
+  const client = createServiceClient();
 
   // Resolve club from subdomain slug
   const club = await getClubBySlug(slug);
 
-  if (!club || !club.isActive) {
+  if (!club || !club.is_active) {
     throw new Error("Verein nicht gefunden oder inaktiv");
   }
 
   // Check if user already bound to another club (strict tenancy enforcement)
   const existingUser = await getAuthUserById(userId);
-  if (existingUser?.clubId && existingUser.clubId !== club.id) {
+  if (existingUser?.club_id && existingUser.club_id !== club.id) {
     throw new Error("Dieser Account gehoert bereits einem anderen Verein");
   }
 
   // If invitation token provided, validate it and resolve role
-  let resolvedRole: typeof members.$inferInsert.role = "mitglied";
+  let resolvedRole: string = "mitglied";
   if (invitationToken) {
     const { getInvitationByToken } = await import("@/lib/auth/invitations");
     const invitation = await getInvitationByToken(invitationToken);
-    if (!invitation || invitation.clubId !== club.id) {
+    if (!invitation || invitation.club_id !== club.id) {
       throw new Error("Ungueltige Einladung");
     }
-    resolvedRole = (invitation.role as typeof members.$inferInsert.role) || "mitglied";
+    resolvedRole = invitation.role || "mitglied";
   }
 
   // Create member record if not exists
-  if (!existingUser?.memberId) {
-    const [newMember] = await db
-      .insert(members)
-      .values({
-        firstName: name?.split(" ")[0] || "Vorname",
-        lastName: name?.split(" ").slice(1).join(" ") || "Nachname",
+  if (!existingUser?.member_id) {
+    const { data: newMember, error } = await client
+      .from("members")
+      .insert({
+        first_name: name?.split(" ")[0] || "Vorname",
+        last_name: name?.split(" ").slice(1).join(" ") || "Nachname",
         email,
         status: "active",
         role: resolvedRole,
-        clubId: club.id,
+        club_id: club.id,
       })
-      .returning({ id: members.id });
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Error creating member:", error);
+      throw new Error("Fehler beim Erstellen des Mitglieds");
+    }
 
     if (newMember) {
       await updateAuthUser(userId, {
@@ -68,10 +73,14 @@ export async function bindUserToTenant(input: SignupTenantBindInput) {
     }
   } else {
     // Update existing member with clubId
-    await db
-      .update(members)
-      .set({ clubId: club.id, updatedAt: new Date() })
-      .where(eq(members.id, existingUser.memberId));
+    const { error: updateError } = await client
+      .from("members")
+      .update({ club_id: club.id, updated_at: new Date().toISOString() })
+      .eq("id", existingUser.member_id);
+
+    if (updateError) {
+      console.error("Error updating member:", updateError);
+    }
 
     await updateAuthUser(userId, { clubId: club.id });
   }

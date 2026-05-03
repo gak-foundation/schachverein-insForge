@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { events, seasons, matches, teams, tournaments } from "@/lib/db/schema";
-import { eq, desc, and, gte, lte, or, isNotNull, sql } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
 import { requireClubId } from "@/lib/actions/utils";
 import { rrulestr } from "rrule";
@@ -10,123 +8,146 @@ import { CalendarItem } from "@/types";
 
 export async function getEvents(limit?: number) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  let query = db
-    .select({
-      id: events.id,
-      title: events.title,
-      eventType: events.eventType,
-      startDate: events.startDate,
-      endDate: events.endDate,
-      location: events.location,
-      isAllDay: events.isAllDay,
-      recurrenceRule: events.recurrenceRule,
-    })
-    .from(events)
-    .where(eq(events.clubId, clubId))
-    .orderBy(desc(events.startDate));
+  let query = client
+    .from("events")
+    .select(
+      "id, title, event_type, start_date, end_date, location, is_all_day, recurrence_rule"
+    )
+    .eq("club_id", clubId)
+    .order("start_date", { ascending: false });
 
   if (limit) {
-    query = query.limit(limit) as typeof query;
+    query = query.limit(limit);
   }
 
-  return query;
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error in getEvents:", error);
+    return [];
+  }
+
+  return data || [];
 }
 
 export async function getEventById(id: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   if (id.startsWith("tournament-")) {
     const realId = id.replace("tournament-", "");
-    const [tournament] = await db
-      .select({
-        id: tournaments.id,
-        title: tournaments.name,
-        description: tournaments.description,
-        eventType: tournaments.type,
-        startDate: tournaments.startDate,
-        endDate: tournaments.endDate,
-        location: tournaments.location,
-        isAllDay: sql`true`.as("is_all_day"),
-        recurrenceRule: sql`null`.as<string | null>("recurrence_rule"),
-        createdBy: sql`null`.as<string | null>("created_by"),
-        createdAt: tournaments.createdAt,
-        clubId: tournaments.clubId,
-      })
-      .from(tournaments)
-      .where(and(eq(tournaments.id, realId), eq(tournaments.clubId, clubId)));
-    return tournament ? { ...tournament, id } : undefined;
+    const { data: tournament, error } = await client
+      .from("tournaments")
+      .select("*")
+      .eq("id", realId)
+      .eq("club_id", clubId)
+      .single();
+
+    if (error || !tournament) return undefined;
+
+    return {
+      ...tournament,
+      id,
+      title: tournament.name,
+      eventType: tournament.type,
+      startDate: tournament.start_date,
+      endDate: tournament.end_date,
+      isAllDay: true,
+      recurrenceRule: null,
+      createdBy: null,
+      createdAt: tournament.created_at,
+      clubId: tournament.club_id,
+    };
   }
 
   if (id.startsWith("match-")) {
     const realId = id.replace("match-", "");
-    const [match] = await db
-      .select({
-        id: matches.id,
-        title: sql<string>`${teams.name} || ' vs ' || ${teams.name}`.as("title"),
-        description: sql<string>`'Mannschaftskampf'`.as("description"),
-        eventType: sql<string>`'match'`.as("event_type"),
-        startDate: sql<Date>`${matches.matchDate}::timestamp`.as("start_date"),
-        endDate: sql<Date>`${matches.matchDate}::timestamp`.as("end_date"),
-        location: matches.location,
-        isAllDay: sql`true`.as("is_all_day"),
-        recurrenceRule: sql`null`.as<string | null>("recurrence_rule"),
-        createdBy: sql`null`.as<string | null>("created_by"),
-        createdAt: matches.createdAt,
-        clubId: sql<string>`${matches.seasonId}`.as("club_id"),
-      })
-      .from(matches)
-      .where(eq(matches.id, realId));
-    return match ? { ...match, id } : undefined;
+    const { data: match, error } = await client
+      .from("matches")
+      .select("*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)")
+      .eq("id", realId)
+      .single();
+
+    if (error || !match) return undefined;
+
+    return {
+      ...match,
+      id,
+      title: `${match.home_team?.name || ""} vs ${match.away_team?.name || ""}`,
+      description: "Mannschaftskampf",
+      eventType: "match",
+      startDate: match.match_date,
+      endDate: match.match_date,
+      location: match.location,
+      isAllDay: true,
+      recurrenceRule: null,
+      createdBy: null,
+      createdAt: match.created_at,
+      clubId: match.season_id,
+    };
   }
 
-  const [event] = await db
-    .select()
-    .from(events)
-    .where(and(eq(events.id, id), eq(events.clubId, clubId)));
+  const { data: event, error } = await client
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .eq("club_id", clubId)
+    .single();
+
+  if (error) {
+    console.error("Error in getEventById:", error);
+    return undefined;
+  }
+
   return event;
 }
 
-export async function getCalendarEvents(start: Date, end: Date): Promise<CalendarItem[]> {
+export async function getCalendarEvents(
+  start: Date,
+  end: Date
+): Promise<CalendarItem[]> {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   // 1. Fetch regular events
-  const baseEvents = await db
-    .select()
-    .from(events)
-    .where(
-      and(
-        eq(events.clubId, clubId),
-        or(
-          and(gte(events.startDate, start), lte(events.startDate, end)),
-          isNotNull(events.recurrenceRule)
-        )
-      )
+  const { data: baseEvents, error: eventsError } = await client
+    .from("events")
+    .select("*")
+    .eq("club_id", clubId)
+    .or(
+      `and(start_date.gte.${start.toISOString()},start_date.lte.${end.toISOString()}),recurrence_rule.not.is.null`
     );
+
+  if (eventsError) {
+    console.error("Error fetching events:", eventsError);
+  }
 
   const unifiedEvents: CalendarItem[] = [];
 
   // Expand recurring events
-  baseEvents.forEach((event) => {
-    if (event.recurrenceRule) {
+  (baseEvents || []).forEach((event: any) => {
+    if (event.recurrence_rule) {
       try {
-        const rule = rrulestr(event.recurrenceRule);
+        const rule = rrulestr(event.recurrence_rule);
         const occurrences = rule.between(start, end, true);
-        
+
         occurrences.forEach((occ) => {
-          const duration = event.endDate 
-            ? event.endDate.getTime() - event.startDate.getTime()
+          const duration = event.end_date
+            ? new Date(event.end_date).getTime() -
+              new Date(event.start_date).getTime()
             : 0;
-            
+
           unifiedEvents.push({
             id: `${event.id}-${occ.getTime()}`,
             originalId: event.id,
             title: event.title,
-            type: event.eventType,
+            type: event.event_type,
             start: occ,
             end: new Date(occ.getTime() + duration),
             location: event.location,
-            isAllDay: !!event.isAllDay,
+            isAllDay: !!event.is_all_day,
             isRecurring: true,
           });
         });
@@ -137,36 +158,37 @@ export async function getCalendarEvents(start: Date, end: Date): Promise<Calenda
       unifiedEvents.push({
         id: event.id,
         title: event.title,
-        type: event.eventType,
-        start: event.startDate,
-        end: event.endDate || event.startDate,
+        type: event.event_type,
+        start: new Date(event.start_date),
+        end: event.end_date
+          ? new Date(event.end_date)
+          : new Date(event.start_date),
         location: event.location,
-        isAllDay: !!event.isAllDay,
+        isAllDay: !!event.is_all_day,
         isRecurring: false,
       });
     }
   });
 
   // 2. Fetch matches
-  const clubMatches = await db.query.matches.findMany({
-    where: (table, { and, gte, lte }) => and(
-      gte(table.matchDate, start.toISOString().split('T')[0]),
-      lte(table.matchDate, end.toISOString().split('T')[0])
-    ),
-    with: {
-      homeTeam: true,
-      awayTeam: true,
-    }
-  });
+  const { data: clubMatches, error: matchesError } = await client
+    .from("matches")
+    .select("*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)")
+    .gte("match_date", start.toISOString().split("T")[0])
+    .lte("match_date", end.toISOString().split("T")[0]);
 
-  clubMatches.forEach(match => {
-    if (match.matchDate) {
+  if (matchesError) {
+    console.error("Error fetching matches:", matchesError);
+  }
+
+  (clubMatches || []).forEach((match: any) => {
+    if (match.match_date) {
       unifiedEvents.push({
         id: `match-${match.id}`,
-        title: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
+        title: `${match.home_team?.name || ""} vs ${match.away_team?.name || ""}`,
         type: "match",
-        start: new Date(match.matchDate),
-        end: new Date(match.matchDate),
+        start: new Date(match.match_date),
+        end: new Date(match.match_date),
         location: match.location,
         isAllDay: true,
         isRecurring: false,
@@ -175,26 +197,27 @@ export async function getCalendarEvents(start: Date, end: Date): Promise<Calenda
   });
 
   // 3. Fetch tournaments
-  const clubTournaments = await db
-    .select()
-    .from(tournaments)
-    .where(
-      and(
-        eq(tournaments.clubId, clubId),
-        or(
-          and(gte(tournaments.startDate, start.toISOString().split('T')[0]), lte(tournaments.startDate, end.toISOString().split('T')[0])),
-          and(gte(tournaments.endDate, start.toISOString().split('T')[0]), lte(tournaments.endDate, end.toISOString().split('T')[0]))
-        )
-      )
+  const { data: clubTournaments, error: tournamentsError } = await client
+    .from("tournaments")
+    .select("*")
+    .eq("club_id", clubId)
+    .or(
+      `and(start_date.gte.${start.toISOString().split("T")[0]},start_date.lte.${end.toISOString().split("T")[0]}),and(end_date.gte.${start.toISOString().split("T")[0]},end_date.lte.${end.toISOString().split("T")[0]})`
     );
 
-  clubTournaments.forEach(tournament => {
+  if (tournamentsError) {
+    console.error("Error fetching tournaments:", tournamentsError);
+  }
+
+  (clubTournaments || []).forEach((tournament: any) => {
     unifiedEvents.push({
       id: `tournament-${tournament.id}`,
       title: tournament.name,
       type: "tournament",
-      start: new Date(tournament.startDate),
-      end: tournament.endDate ? new Date(tournament.endDate) : new Date(tournament.startDate),
+      start: new Date(tournament.start_date),
+      end: tournament.end_date
+        ? new Date(tournament.end_date)
+        : new Date(tournament.start_date),
       location: tournament.location,
       isAllDay: true,
       isRecurring: false,
@@ -204,78 +227,115 @@ export async function getCalendarEvents(start: Date, end: Date): Promise<Calenda
   return unifiedEvents;
 }
 
-export async function createEvent(formData: FormData, explicitClubId?: string) {
-  const clubId = explicitClubId || await requireClubId();
+export async function createEvent(
+  formData: FormData,
+  explicitClubId?: string
+) {
+  const clubId = explicitClubId || (await requireClubId());
+  const client = createServiceClient();
 
   const title = formData.get("title") as string;
   const eventType = formData.get("eventType") as string;
   const startDate = formData.get("startDate") as string;
   const endDate = (formData.get("endDate") as string) || null;
   const location = (formData.get("location") as string) || null;
-  const isAllDay = formData.get("isAllDay") === "on" || formData.get("isAllDay") === "true";
+  const isAllDay =
+    formData.get("isAllDay") === "on" || formData.get("isAllDay") === "true";
   const recurrenceRule = (formData.get("recurrenceRule") as string) || null;
 
-  await db.insert(events).values({
-    clubId,
+  const { error } = await client.from("events").insert({
+    club_id: clubId,
     title,
-    eventType,
-    startDate: new Date(startDate),
-    endDate: endDate ? new Date(endDate) : null,
+    event_type: eventType,
+    start_date: startDate,
+    end_date: endDate,
     location,
-    isAllDay,
-    recurrenceRule,
+    is_all_day: isAllDay,
+    recurrence_rule: recurrenceRule,
   });
+
+  if (error) {
+    console.error("Error creating event:", error);
+    throw new Error("Fehler beim Erstellen des Events");
+  }
 
   revalidatePath("/dashboard/calendar");
 }
 
 export async function updateEvent(id: string, formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   const title = formData.get("title") as string;
   const eventType = formData.get("eventType") as string;
   const startDate = formData.get("startDate") as string;
   const endDate = (formData.get("endDate") as string) || null;
   const location = (formData.get("location") as string) || null;
-  const isAllDay = formData.get("isAllDay") === "on" || formData.get("isAllDay") === "true";
+  const isAllDay =
+    formData.get("isAllDay") === "on" || formData.get("isAllDay") === "true";
   const recurrenceRule = (formData.get("recurrenceRule") as string) || null;
 
-  await db.update(events)
-    .set({
+  const { error } = await client
+    .from("events")
+    .update({
       title,
-      eventType,
-      startDate: new Date(startDate),
-      endDate: endDate ? new Date(endDate) : null,
+      event_type: eventType,
+      start_date: startDate,
+      end_date: endDate,
       location,
-      isAllDay,
-      recurrenceRule,
+      is_all_day: isAllDay,
+      recurrence_rule: recurrenceRule,
     })
-    .where(and(eq(events.id, id), eq(events.clubId, clubId)));
+    .eq("id", id)
+    .eq("club_id", clubId);
+
+  if (error) {
+    console.error("Error updating event:", error);
+    throw new Error("Fehler beim Aktualisieren des Events");
+  }
 
   revalidatePath("/dashboard/calendar");
 }
 
 export async function deleteEvent(id: string) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  await db.delete(events)
-    .where(and(eq(events.id, id), eq(events.clubId, clubId)));
+  const { error } = await client
+    .from("events")
+    .delete()
+    .eq("id", id)
+    .eq("club_id", clubId);
+
+  if (error) {
+    console.error("Error deleting event:", error);
+    throw new Error("Fehler beim Löschen des Events");
+  }
 
   revalidatePath("/dashboard/calendar");
 }
 
 export async function getSeasons() {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
-  return db
-    .select()
-    .from(seasons)
-    .where(eq(seasons.clubId, clubId))
-    .orderBy(desc(seasons.year));
+  const { data, error } = await client
+    .from("seasons")
+    .select("*")
+    .eq("club_id", clubId)
+    .order("year", { ascending: false });
+
+  if (error) {
+    console.error("Error in getSeasons:", error);
+    return [];
+  }
+
+  return data || [];
 }
 
 export async function createSeason(formData: FormData) {
   const clubId = await requireClubId();
+  const client = createServiceClient();
 
   const name = formData.get("name") as string;
   const year = Number(formData.get("year"));
@@ -283,14 +343,19 @@ export async function createSeason(formData: FormData) {
   const startDate = (formData.get("startDate") as string) || null;
   const endDate = (formData.get("endDate") as string) || null;
 
-  await db.insert(seasons).values({
-    clubId,
+  const { error } = await client.from("seasons").insert({
+    club_id: clubId,
     name,
     year,
-    type: type as typeof seasons.$inferInsert.type,
-    startDate,
-    endDate,
+    type,
+    start_date: startDate,
+    end_date: endDate,
   });
+
+  if (error) {
+    console.error("Error creating season:", error);
+    throw new Error("Fehler beim Erstellen der Saison");
+  }
 
   revalidatePath("/dashboard/seasons");
 }

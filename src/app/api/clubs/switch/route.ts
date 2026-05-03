@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { switchClubAction } from "@/lib/clubs/actions";
-import { createServerAuthClient } from "@/lib/insforge";
+import { createServerAuthClient } from "@/lib/insforge/server-auth";
 
 export async function POST(request: Request) {
   try {

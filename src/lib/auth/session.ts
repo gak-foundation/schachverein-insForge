@@ -1,11 +1,8 @@
-import { createServerAuthClient, createServiceClient } from "@/lib/insforge";
+import { createServerClient } from "@/lib/insforge";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { ROLE_PERMISSIONS, Permission } from "./permissions";
 import { getAuthUserWithClub } from "@/lib/db/queries/auth";
-import { db } from "@/lib/db";
-import { clubs } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 import { getClubAddons } from "@/lib/billing/queries";
 import type { AddonId, PlanId } from "@/lib/billing/addons";
 import { getClubById, getClubBySlug } from "@/lib/clubs/queries";
@@ -13,7 +10,7 @@ import { getClubById, getClubBySlug } from "@/lib/clubs/queries";
 // Cached session getter for server components
 export const getSession = cache(async () => {
   try {
-    const client = await createServerAuthClient();
+    const client = createServerClient();
     let user = null;
 
     try {

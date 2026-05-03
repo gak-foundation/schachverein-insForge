@@ -3,9 +3,7 @@ import { cancelSubscription } from "@/lib/billing/stripe";
 import { getClubById } from "@/lib/clubs/queries";
 import { setClubPlan, setStripeSubscriptionId, setAddonStatus } from "@/lib/billing/queries";
 import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { clubAddons } from "@/lib/db/schema/club_addons";
-import { eq, and } from "drizzle-orm";
+import { createServiceClient } from "@/lib/insforge";
 import { z } from "zod";
 
 const cancelSchema = z.object({
@@ -38,20 +36,22 @@ export async function POST(request: Request) {
 
     if (addonId) {
       // Find the specific addon subscription
-      const [addon] = await db
-        .select()
-        .from(clubAddons)
-        .where(
-          and(
-            eq(clubAddons.clubId, clubId),
-            eq(clubAddons.addonId, addonId),
-            eq(clubAddons.status, "active")
-          )
-        )
-        .limit(1);
+      const client = createServiceClient();
+      const { data: addon, error } = await client
+        .from("club_addons")
+        .select("*")
+        .eq("club_id", clubId)
+        .eq("addon_id", addonId)
+        .eq("status", "active")
+        .single();
 
-      if (addon?.stripeSubscriptionId) {
-        await cancelSubscription(addon.stripeSubscriptionId);
+      if (error) {
+        console.error("Error finding addon:", error);
+        return NextResponse.json({ error: "Addon not found" }, { status: 404 });
+      }
+
+      if (addon?.stripe_subscription_id) {
+        await cancelSubscription(addon.stripe_subscription_id);
       }
 
       await setAddonStatus(clubId, addonId, "canceled");
