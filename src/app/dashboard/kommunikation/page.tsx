@@ -20,26 +20,26 @@ export default async function KommunikationPage() {
     {
       id: "welcome",
       label: "Willkommensmail",
-      getSubject: () => welcomeTemplate("dein Verein").subject,
-      getBody: () => welcomeTemplate("dein Verein").html,
+      subject: welcomeTemplate("dein Verein").subject,
+      body: welcomeTemplate("dein Verein").html,
     },
     {
       id: "payment_reminder",
       label: "Beitragserinnerung",
-      getSubject: () => paymentReminderTemplate().subject,
-      getBody: () => paymentReminderTemplate().html,
+      subject: paymentReminderTemplate().subject,
+      body: paymentReminderTemplate().html,
     },
     {
       id: "tournament_invite",
       label: "Turniereinladung",
-      getSubject: () => tournamentInviteTemplate("").subject,
-      getBody: () => tournamentInviteTemplate("").html,
+      subject: tournamentInviteTemplate("").subject,
+      body: tournamentInviteTemplate("").html,
     },
     {
       id: "generic",
       label: "Allgemeine Mitteilung",
-      getSubject: () => "",
-      getBody: () => "<p>Hallo {{Vorname}},</p><p></p>",
+      subject: "",
+      body: "<p>Hallo {{Vorname}},</p><p></p>",
     },
   ];
 

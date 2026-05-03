@@ -7,15 +7,14 @@ import {
   type MemberSortField,
   type SortOrder as MembersListSortOrder,
 } from "@/features/members/actions";
-import { ArrowUpDown } from "lucide-react";
 import { MembersPageClient } from "./members-page-client";
+
+type SortField = "name" | "email" | "dwz" | "elo" | "role" | "status";
+type SortOrder = "asc" | "desc";
 
 export const metadata = {
   title: "Mitglieder",
 };
-
-type SortField = "name" | "email" | "dwz" | "elo" | "role" | "status";
-type SortOrder = "asc" | "desc";
 
 export default async function MembersPage({
   searchParams,
@@ -57,41 +56,7 @@ export default async function MembersPage({
     currentPage
   );
   
-  function buildMembersLink(overrides: Record<string, string | undefined>) {
-    const params = new URLSearchParams();
-    if (filters?.search) params.set("search", filters.search);
-    if (filters?.role) params.set("role", filters.role);
-    if (filters?.status) params.set("status", filters.status);
-    if (filters?.sortBy) params.set("sortBy", filters.sortBy);
-    if (filters?.sortOrder) params.set("sortOrder", filters.sortOrder);
-    if (filters?.page && filters.page !== "1") params.set("page", filters.page);
 
-    for (const [key, value] of Object.entries(overrides)) {
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-    }
-
-    const query = params.toString();
-    return query ? `/dashboard/members?${query}` : "/dashboard/members";
-  }
-
-  function buildSortLink(field: SortField) {
-    return buildMembersLink({
-      sortBy: field,
-      sortOrder: sortBy === field && sortOrder !== "desc" ? "desc" : "asc",
-      page: undefined,
-    });
-  }
-  
-  function getSortIcon(field: SortField) {
-    if (sortBy !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground/50" />;
-    return sortOrder === "desc" 
-      ? <span className="text-primary font-bold" aria-hidden="true">↓</span> 
-      : <span className="text-primary font-bold" aria-hidden="true">↑</span>;
-  }
 
   const statusColors: Record<string, string> = {
     active: "bg-green-100 text-green-900 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/50",
@@ -120,9 +85,6 @@ export default async function MembersPage({
       sortBy={sortBy}
       sortOrder={sortOrder}
       filters={filters}
-      buildSortLink={buildSortLink as any}
-      buildMembersLink={buildMembersLink}
-       getSortIcon={getSortIcon as any}
       statusColors={statusColors}
       statusLabels={statusLabels}
       hasWritePermission={hasWritePermission}

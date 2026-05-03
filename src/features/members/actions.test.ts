@@ -24,6 +24,10 @@ vi.mock("@/lib/insforge", () => ({
   createServiceClient: vi.fn(() => mockInsforgeClient),
 }));
 
+vi.mock("@/lib/insforge/server-auth", () => ({
+  createServerAuthClient: vi.fn(() => Promise.resolve(mockInsforgeClient)),
+}));
+
 vi.mock("@/lib/actions/utils", () => ({
   requireClubId: mockRequireClubId,
 }));

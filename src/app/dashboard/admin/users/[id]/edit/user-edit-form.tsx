@@ -1,23 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { PERMISSIONS, getPermissionsForRole, Permission } from "@/lib/auth/permissions";
-import { updateUserRole } from "@/lib/actions/members";
+import { PERMISSIONS, getPermissionsForRole, ROLES, Permission } from "@/lib/auth/permissions";
+import { updateUserRole } from "@/features/members/actions";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const ROLES = [
-  { value: "admin", label: "Admin" },
-  { value: "vorstand", label: "Vorstand" },
-  { value: "sportwart", label: "Sportwart" },
-  { value: "jugendwart", label: "Jugendwart" },
-  { value: "kassenwart", label: "Kassenwart" },
-  { value: "trainer", label: "Trainer" },
-  { value: "mitglied", label: "Mitglied" },
-  { value: "eltern", label: "Eltern" },
-] as const;
 
 const PERMISSION_GROUPS = [
   {

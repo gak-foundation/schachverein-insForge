@@ -6,9 +6,11 @@ import { MembersFilters } from "@/features/members/components/members-filters";
 import { MembersTable } from "@/features/members/components/members-table";
 import { BulkActionBar } from "@/features/members/components/bulk-action-bar";
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import { Upload, ArrowUpDown } from "lucide-react";
 import Link from "next/link";
 import { PrintButton } from "@/components/print-button";
+
+type SortField = "name" | "email" | "dwz" | "elo" | "role" | "status";
 
 interface MembersPageClientProps {
   members: any[];
@@ -17,10 +19,7 @@ interface MembersPageClientProps {
   currentPage: number;
   sortBy: string;
   sortOrder: string;
-  filters: any;
-  buildSortLink: (field: string) => string;
-  buildMembersLink: (overrides: Record<string, string | undefined>) => string;
-  getSortIcon: (field: string) => React.ReactNode;
+  filters: Record<string, string | undefined>;
   statusColors: Record<string, string>;
   statusLabels: Record<string, string>;
   hasWritePermission: boolean;
@@ -35,14 +34,55 @@ export function MembersPageClient({
   sortBy,
   sortOrder,
   filters,
-  buildSortLink,
-  buildMembersLink,
-  getSortIcon,
   statusColors,
   statusLabels,
   hasWritePermission,
   contributionRates,
 }: MembersPageClientProps) {
+  const buildMembersLink = useCallback(
+    (overrides: Record<string, string | undefined>) => {
+      const params = new URLSearchParams();
+      if (filters?.search) params.set("search", filters.search);
+      if (filters?.role) params.set("role", filters.role);
+      if (filters?.status) params.set("status", filters.status);
+      if (filters?.sortBy) params.set("sortBy", filters.sortBy);
+      if (filters?.sortOrder) params.set("sortOrder", filters.sortOrder);
+      if (filters?.page && filters.page !== "1") params.set("page", filters.page);
+
+      for (const [key, value] of Object.entries(overrides)) {
+        if (value) {
+          params.set(key, value);
+        } else {
+          params.delete(key);
+        }
+      }
+
+      const query = params.toString();
+      return query ? `/dashboard/members?${query}` : "/dashboard/members";
+    },
+    [filters]
+  );
+
+  const buildSortLink = useCallback(
+    (field: SortField) => {
+      return buildMembersLink({
+        sortBy: field,
+        sortOrder: sortBy === field && sortOrder !== "desc" ? "desc" : "asc",
+        page: undefined,
+      });
+    },
+    [buildMembersLink, sortBy, sortOrder]
+  );
+
+  const getSortIcon = useCallback(
+    (field: SortField) => {
+      if (sortBy !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground/50" />;
+      return sortOrder === "desc"
+        ? <span className="text-primary font-bold" aria-hidden="true">↓</span>
+        : <span className="text-primary font-bold" aria-hidden="true">↑</span>;
+    },
+    [sortBy, sortOrder]
+  );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const handleSelectionChange = useCallback((id: string, checked: boolean) => {

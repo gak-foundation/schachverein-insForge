@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 interface Template {
   id: string;
   label: string;
-  getSubject: () => string;
-  getBody: () => string;
+  subject: string;
+  body: string;
 }
 
 interface TemplateSelectorProps {
@@ -31,7 +31,7 @@ export function TemplateSelector({
     if (!templateId) return;
     const template = templates.find((t) => t.id === templateId);
     if (template) {
-      onChange(template.getSubject(), template.getBody());
+      onChange(template.subject, template.body);
     }
   };
 

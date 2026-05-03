@@ -11,7 +11,7 @@ import { fetchLichessProfile, getBestLichessRating } from "@/lib/lichess";
 import { requireClubId } from "@/lib/actions/utils";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { createServerClient } from "@/lib/insforge";
-import { getAuthTokensFromCookies } from "@/lib/insforge/server-auth";
+import { createServerAuthClient } from "@/lib/insforge/server-auth";
 
 // Define types used across the file
 type ClubMemberRole = "admin" | "vorstand" | "mitglied" | "jugend" | "passiv";
@@ -32,13 +32,12 @@ export async function getMembers(
   const clubId = await requireClubId();
   const offset = (page - 1) * pageSize;
 
-  // Use auth token from cookies for authenticated RLS access
-  const { accessToken } = await getAuthTokensFromCookies();
-  const client = createServerClient(accessToken);
+  // Use authenticated server client with automatic token validation/refresh
+  const client = await createServerAuthClient();
 
   let query = client
     .from('club_memberships')
-    .select('role, members(*)')
+    .select('role, members!club_memberships_member_id_members_id_fk(*)', { count: 'exact' })
     .eq('club_id', clubId);
 
   if (role) {
@@ -52,7 +51,7 @@ export async function getMembers(
   const { data, count, error } = await query;
 
   if (error || !data) {
-    console.error("getMembers failed:", error);
+    console.error("getMembers failed:", JSON.stringify(error), error?.message, error?.code, error?.details);
     return { members: [], totalCount: 0, totalPages: 0 };
   }
 
@@ -656,7 +655,7 @@ export async function syncAllMembersDwz() {
 
   const { data: allMembersWithId, error } = await client
     .from('members')
-    .select('id, dwz_id, club_memberships!inner(club_id)')
+    .select('id, dwz_id, club_memberships!club_memberships_member_id_members_id_fk!inner(club_id)')
     .eq('club_memberships.club_id', clubId)
     .not('dwz_id', 'is', null);
 
@@ -716,7 +715,7 @@ export async function updateUserRole(formData: FormData) {
   const client = createServerClient();
 
   const { error } = await client
-    .from('auth_users')
+    .from('auth_user')
     .update({
       role: role,
       permissions: additional,
@@ -725,7 +724,7 @@ export async function updateUserRole(formData: FormData) {
     .eq('id', userId);
 
   if (error) {
-    throw error;
+    throw new Error(error?.message || "Fehler beim Aktualisieren der Benutzerrolle");
   }
 
   revalidatePath("/dashboard/admin/users");
@@ -738,7 +737,7 @@ export async function syncLichessRating(memberId: string) {
 
   const { data: result, error } = await client
     .from('members')
-    .select('lichess_username, dwz, club_memberships!inner(club_id)')
+    .select('lichess_username, dwz, club_memberships!club_memberships_member_id_members_id_fk!inner(club_id)')
     .eq('id', memberId)
     .eq('club_memberships.club_id', clubId)
     .single();

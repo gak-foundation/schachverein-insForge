@@ -129,7 +129,7 @@ describe("Tournament Actions", () => {
         name: "Neues Turnier", type: "swiss", startDate: "2024-06-01",
       });
 
-      await tournaments.createTournament(formData);
+      await expect(tournaments.createTournament(formData)).rejects.toThrow("NEXT_REDIRECT");
       expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard/tournaments");
     });
 
@@ -141,7 +141,7 @@ describe("Tournament Actions", () => {
         name: "Neues Turnier", type: "swiss", startDate: "2024-06-01", seasonId: "season-1",
       });
 
-      await tournaments.createTournament(formData);
+      await expect(tournaments.createTournament(formData)).rejects.toThrow("NEXT_REDIRECT");
       expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard/tournaments");
     });
 

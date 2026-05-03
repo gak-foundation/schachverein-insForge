@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireClubId } from "@/lib/actions/utils";
 import { generateRoundRobinPairings } from "@/lib/pairings/round-robin";
 import { generateTRFFromTournament } from "@/lib/trf/generator";
@@ -85,6 +86,7 @@ export async function createTournament(formData: FormData) {
   if (error) throw error;
 
   revalidatePath("/dashboard/tournaments");
+  redirect("/dashboard/tournaments");
 }
 
 export async function updateTournament(formData: FormData) {

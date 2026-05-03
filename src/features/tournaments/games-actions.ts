@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireClubId } from "@/lib/actions/utils";
 
 import { parsePgn, extractEcoFromPgn, splitPgnGames } from "@/lib/pgn";
@@ -80,7 +81,7 @@ export async function importBulkPgn(tournamentId: string, pgnContent: string) {
   // Fetch all club members for mapping
   const { data: clubMembers, error: cmError } = await client
     .from('members')
-    .select('id, first_name, last_name, club_memberships!inner(*)')
+    .select('id, first_name, last_name, club_memberships!club_memberships_member_id_members_id_fk!inner(*)')
     .eq('club_memberships.club_id', clubId);
 
   if (cmError) throw cmError;
@@ -225,6 +226,7 @@ export async function createGame(formData: FormData) {
   if (iError) throw iError;
 
   revalidatePath("/dashboard/tournaments");
+  redirect("/dashboard/games");
 }
 
 export async function updateBasicGameResult(gameId: string, result: string, lichessUrl?: string) {

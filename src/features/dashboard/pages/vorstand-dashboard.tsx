@@ -1,3 +1,5 @@
+"use client";
+
 import { Users, Swords, Trophy, Wallet, AlertCircle, CircleCheck, Mail, Calendar } from "lucide-react";
 import type { DashboardData } from "../index";
 import { WelcomeHeader } from "../components/welcome-header";

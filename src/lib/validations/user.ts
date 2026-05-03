@@ -11,6 +11,7 @@ export const updateUserRoleSchema = z.object({
     "trainer",
     "mitglied",
     "eltern",
+    "user",
   ]),
   permissions: z.array(z.string()).default([]),
 });

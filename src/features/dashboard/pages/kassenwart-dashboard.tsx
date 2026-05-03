@@ -1,3 +1,5 @@
+"use client";
+
 import { Users, FileText, AlertCircle, CircleCheck, TrendingUp } from "lucide-react";
 import type { DashboardData } from "../index";
 import { WelcomeHeader } from "../components/welcome-header";

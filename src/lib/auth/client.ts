@@ -63,7 +63,7 @@ export const authClient = {
                 email: user.email,
                 name: profile.name || user.profile?.name,
                 image: profile.image || user.profile?.avatar_url,
-                role: profile.role || "mitglied",
+                role: profile.role ?? "mitglied",
                 permissions: profile.permissions || [],
                 memberId: profile.memberId,
                 clubId: profile.clubId,

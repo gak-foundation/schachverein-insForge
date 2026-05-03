@@ -1,3 +1,5 @@
+"use client";
+
 import { Users, Swords, ClipboardList, Target, Calendar } from "lucide-react";
 import type { DashboardData } from "../index";
 import { WelcomeHeader } from "../components/welcome-header";

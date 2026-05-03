@@ -116,7 +116,7 @@ describe("Event Actions", () => {
         startDate: "2024-09-01", endDate: "2025-06-30",
       });
 
-      await events.createSeason(formData);
+      await expect(events.createSeason(formData)).rejects.toThrow("NEXT_REDIRECT");
       expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard/seasons");
     });
   });

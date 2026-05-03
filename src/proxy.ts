@@ -220,11 +220,7 @@ export default async function proxy(request: NextRequest) {
       if (isShared) {
         // pass through
       } else if (isTenantAppRoute(pathname)) {
-        // App routes on root → redirect to app domain (legacy behavior)
-        const fallbackSlug = "app";
-        return NextResponse.redirect(
-          new URL(pathname, `https://${fallbackSlug}.${ROOT_DOMAIN}`),
-        );
+        // App routes now served directly on root domain (no subdomain redirect)
       } else if (!isMarketingRoute(pathname) && !isAdminRoute(pathname)) {
         // Unknown route on root — let it 404 naturally
       }

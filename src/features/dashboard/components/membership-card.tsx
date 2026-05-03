@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ROLE_LABELS } from "@/lib/auth/permissions";
 import Link from "next/link";
 
 type MembershipCardProps = {
@@ -20,7 +21,7 @@ export function MembershipCard({ role, permissionsCount }: MembershipCardProps) 
       <CardContent className="space-y-4 relative z-10">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Rolle:</span>
-          <span className="px-2 py-0.5 rounded-md bg-primary-foreground/20 text-xs font-bold uppercase tracking-widest">{role}</span>
+          <span className="px-2 py-0.5 rounded-md bg-primary-foreground/20 text-xs font-bold uppercase tracking-widest">{ROLE_LABELS[role] || role}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Berechtigungen:</span>

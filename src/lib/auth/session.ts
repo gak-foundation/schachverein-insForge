@@ -43,9 +43,9 @@ export const getSession = cache(async () => {
       user: {
         id: user.id,
         email: user.email,
-        name: userData?.name || user.profile?.name || user.email?.split("@")[0],
-        role: userData?.role || (isHardcodedAdmin ? "admin" : "mitglied"),
-        permissions: userData?.permissions || [],
+        name: userData?.name ?? user.profile?.name ?? user.email?.split("@")[0],
+        role: userData?.role ?? (isHardcodedAdmin ? "admin" : "mitglied"),
+        permissions: userData?.permissions ?? [],
         memberId: userData?.memberId,
         clubId: userData?.clubId,
         isSuperAdmin: userData?.isSuperAdmin || isHardcodedAdmin || false,

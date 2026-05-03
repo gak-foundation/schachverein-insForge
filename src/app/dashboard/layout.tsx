@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ClubProvider } from "@/lib/club-context";
 import { ClubSwitcher } from "@/features/clubs/components/club-switcher";
 import { getUserClubs } from "@/lib/clubs/queries";
+import { ROLE_LABELS } from "@/lib/auth/permissions";
 import Image from "next/image";
 import type { PlanId } from "@/lib/billing/addons";
 
@@ -69,7 +70,7 @@ export default async function DashboardLayout({
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-end mr-2">
                 <span className="text-sm font-semibold">{user.name}</span>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{role}</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{ROLE_LABELS[role] || role}</span>
               </div>
               <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center border shadow-sm overflow-hidden relative">
                  {user.image ? (

@@ -288,7 +288,7 @@ export async function generateDuePayments(year: number) {
 
   const { data: activeMembersWithRate, error: amError } = await client
     .from('members')
-    .select('id, contribution_rate_id, sepa_mandate_reference, club_memberships!inner(*)')
+    .select('id, contribution_rate_id, sepa_mandate_reference, club_memberships!club_memberships_member_id_members_id_fk!inner(*)')
     .eq('club_memberships.club_id', clubId)
     .eq('club_memberships.status', "active")
     .eq('status', "active")
@@ -472,7 +472,7 @@ export async function generateAnnualPayments(year: number) {
   // 1. Get all active members with an assigned contribution rate
   const { data: activeMembers, error: amError } = await client
     .from('members')
-    .select('id, first_name, last_name, contribution_rate_id, sepa_mandate_reference, club_memberships!inner(*)')
+    .select('id, first_name, last_name, contribution_rate_id, sepa_mandate_reference, club_memberships!club_memberships_member_id_members_id_fk!inner(*)')
     .eq('club_memberships.club_id', clubId)
     .eq('club_memberships.status', "active")
     .eq('status', "active")
@@ -708,7 +708,7 @@ export async function getMembersForFinance() {
 
   const { data, error } = await client
     .from('members')
-    .select('id, first_name, last_name, email, club_memberships!inner(*)')
+    .select('id, first_name, last_name, email, club_memberships!club_memberships_member_id_members_id_fk!inner(*)')
     .eq('club_memberships.club_id', clubId)
     .eq('club_memberships.status', "active")
     .eq('status', "active")

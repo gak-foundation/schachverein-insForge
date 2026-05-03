@@ -1,3 +1,5 @@
+"use client";
+
 import { CalendarDays, Shield, Trophy } from "lucide-react";
 import type { DashboardData } from "../index";
 import { WelcomeHeader } from "../components/welcome-header";

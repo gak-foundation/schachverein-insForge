@@ -1,4 +1,3 @@
-import { createElement, type ComponentType } from "react";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getDashboardStats } from "@/features/audit/actions";
@@ -12,16 +11,6 @@ import { TrainerDashboard } from "@/features/dashboard/pages/trainer-dashboard";
 import { MitgliedDashboard } from "@/features/dashboard/pages/mitglied-dashboard";
 import { ElternDashboard } from "@/features/dashboard/pages/eltern-dashboard";
 import type { DashboardData } from "@/features/dashboard";
-
-const ROLE_DASHBOARD: Record<string, ComponentType<DashboardData>> = {
-  vorstand: VorstandDashboard,
-  sportwart: SportwartDashboard,
-  jugendwart: JugendwartDashboard,
-  kassenwart: KassenwartDashboard,
-  trainer: TrainerDashboard,
-  mitglied: MitgliedDashboard,
-  eltern: ElternDashboard,
-};
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -54,7 +43,23 @@ export default async function DashboardPage() {
     onboardingCompleted,
   };
 
-  const roleDashboard = ROLE_DASHBOARD[role] ?? VorstandDashboard;
-
-  return createElement(roleDashboard, dashboardData);
+  switch (role) {
+    case "admin":
+    case "vorstand":
+      return <VorstandDashboard {...dashboardData} />;
+    case "sportwart":
+      return <SportwartDashboard {...dashboardData} />;
+    case "kassenwart":
+      return <KassenwartDashboard {...dashboardData} />;
+    case "jugendwart":
+      return <JugendwartDashboard {...dashboardData} />;
+    case "trainer":
+      return <TrainerDashboard {...dashboardData} />;
+    case "mitglied":
+      return <MitgliedDashboard {...dashboardData} />;
+    case "eltern":
+      return <ElternDashboard {...dashboardData} />;
+    default:
+      return <VorstandDashboard {...dashboardData} />;
+  }
 }

@@ -176,6 +176,23 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   user: [],
 };
 
+export const ROLE_LABELS: Record<string, string> = {
+  admin: "Admin",
+  vorstand: "Vorstand",
+  sportwart: "Sportwart",
+  jugendwart: "Jugendwart",
+  kassenwart: "Kassenwart",
+  trainer: "Trainer",
+  mitglied: "Mitglied",
+  eltern: "Eltern",
+  user: "Benutzer",
+};
+
+export const ROLES = Object.entries(ROLE_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+
 export function hasPermission(
   role: string,
   userPermissions: string[],

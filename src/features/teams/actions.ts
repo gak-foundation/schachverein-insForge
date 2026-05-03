@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireClubId } from "@/lib/actions/utils";
 
 export async function getTeams() {
@@ -90,6 +91,7 @@ export async function createTeam(formData: FormData) {
   }
 
   revalidatePath("/dashboard/teams");
+  redirect("/dashboard/teams");
 }
 
 export async function updateTeam(formData: FormData) {

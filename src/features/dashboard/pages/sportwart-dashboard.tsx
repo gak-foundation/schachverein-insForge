@@ -1,3 +1,5 @@
+"use client";
+
 import { Swords, Trophy, ClipboardList, Target, RefreshCw } from "lucide-react";
 import type { DashboardData } from "../index";
 import { WelcomeHeader } from "../components/welcome-header";

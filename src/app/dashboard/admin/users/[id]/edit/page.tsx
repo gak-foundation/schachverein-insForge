@@ -1,20 +1,9 @@
 import { getSession } from "@/lib/auth/session";
 import { createServiceClient } from "@/lib/insforge";
-import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
+import { PERMISSIONS, hasPermission, ROLES } from "@/lib/auth/permissions";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { UserEditForm } from "./user-edit-form";
-
-const ROLES = [
-  { value: "admin", label: "Admin" },
-  { value: "vorstand", label: "Vorstand" },
-  { value: "sportwart", label: "Sportwart" },
-  { value: "jugendwart", label: "Jugendwart" },
-  { value: "kassenwart", label: "Kassenwart" },
-  { value: "trainer", label: "Trainer" },
-  { value: "mitglied", label: "Mitglied" },
-  { value: "eltern", label: "Eltern" },
-] as const;
 
 async function getUserById(id: string) {
   const client = createServiceClient();

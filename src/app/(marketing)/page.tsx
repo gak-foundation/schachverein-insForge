@@ -88,7 +88,7 @@ export default function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href={`${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.schach.studio"}/auth/signup`}
+              href="/auth/signup"
               className={cn(
                 buttonVariants({ size: "lg" }),
                 "h-14 px-8 text-lg font-bold gap-2 inline-flex items-center justify-center"

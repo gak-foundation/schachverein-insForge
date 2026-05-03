@@ -30,13 +30,27 @@ export async function getAuthUserWithClub(id: string) {
     return null;
   }
 
+  let role = data.role;
+
+  if (data.member_id) {
+    const { data: member, error: memberError } = await client
+      .from("members")
+      .select("role")
+      .eq("id", data.member_id)
+      .maybeSingle();
+
+    if (!memberError && member?.role) {
+      role = member.role;
+    }
+  }
+
   return {
     id: data.id,
     name: data.name,
     email: data.email,
     emailVerified: data.email_verified || false,
     image: data.image,
-    role: data.role,
+    role,
     permissions: data.permissions || [],
     memberId: data.member_id,
     clubId: data.club_id,

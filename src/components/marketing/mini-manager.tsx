@@ -72,7 +72,7 @@ export function MiniManager() {
         <div className="flex-1 flex justify-center">
           <div className="bg-white rounded-md px-3 py-1 text-xs text-slate-400 flex items-center gap-2 min-w-[200px] justify-center">
             <span className="opacity-50">🔒</span>
-            app.schach.studio/dashboard
+            schach.studio/dashboard
           </div>
         </div>
         <button

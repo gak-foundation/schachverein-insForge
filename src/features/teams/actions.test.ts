@@ -105,7 +105,7 @@ describe("Team Actions", () => {
         name: "1. Mannschaft", seasonId: "season-1",
       });
 
-      await teams.createTeam(formData);
+      await expect(teams.createTeam(formData)).rejects.toThrow("NEXT_REDIRECT");
       expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard/teams");
     });
 

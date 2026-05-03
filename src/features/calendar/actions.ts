@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireClubId } from "@/lib/actions/utils";
 import { rrulestr } from "rrule";
 import { CalendarItem } from "@/types";
@@ -358,4 +359,5 @@ export async function createSeason(formData: FormData) {
   }
 
   revalidatePath("/dashboard/seasons");
+  redirect("/dashboard/seasons");
 }

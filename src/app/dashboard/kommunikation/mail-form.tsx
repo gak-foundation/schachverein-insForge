@@ -27,8 +27,8 @@ interface MailFormProps {
   templates: {
     id: string;
     label: string;
-    getSubject: () => string;
-    getBody: () => string;
+    subject: string;
+    body: string;
   }[];
 }
 
