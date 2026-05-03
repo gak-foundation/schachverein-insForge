@@ -147,6 +147,15 @@ export default async function TournamentDetailPage({
 
   return (
     <div className="space-y-6">
+      <style>{`
+        @media print {
+          nav, button, .no-print, [role="tablist"] { display: none !important; }
+          .hidden, [data-state="inactive"] { display: none !important; }
+          .print\\:block, [data-state="active"] { display: block !important; }
+          table { font-size: 12px; }
+          body { margin: 0; padding: 0; }
+        }
+      `}</style>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
@@ -320,7 +329,7 @@ export default async function TournamentDetailPage({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="standings">
+        <TabsContent value="standings" className="print:block">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -586,7 +595,7 @@ export default async function TournamentDetailPage({
                   }))}
                   onSave={async (results) => {
                     "use server";
-                    await saveAllRoundResults(tournamentId || id, results);
+                    await saveAllRoundResults(id, results);
                   }}
                 />
               )}
