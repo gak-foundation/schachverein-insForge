@@ -16,6 +16,9 @@ const CSV_MEMBER_HEADERS = [
   "Status",
   "Foto-Einwilligung",
   "Newsletter-Einwilligung",
+  "Ergebnisveroeffentlichung",
+  "Notfallkontakt-Name",
+  "Notfallkontakt-Telefon",
   "Notizen",
 ] as const;
 
@@ -35,6 +38,9 @@ export type CSVMemberRow = {
   Status?: string;
   "Foto-Einwilligung"?: string;
   "Newsletter-Einwilligung"?: string;
+  Ergebnisveroeffentlichung?: string;
+  "Notfallkontakt-Name"?: string;
+  "Notfallkontakt-Telefon"?: string;
   Notizen?: string;
 };
 
@@ -56,6 +62,9 @@ export function generateMemberCSVTemplate(): string {
     "active",
     "ja",
     "ja",
+    "ja",
+    "Maria Mustermann",
+    "+49111111111",
     "Kommentar",
   ].join(";");
 
@@ -124,6 +133,9 @@ export function parseMemberCSV(csvContent: string): {
       status: parseStatus(row["Status"] || row["Status"]),
       photoConsent: parseBoolean(row["Foto-Einwilligung"] || row["PhotoConsent"]),
       newsletterConsent: parseBoolean(row["Newsletter-Einwilligung"] || row["NewsletterConsent"]),
+      resultPublicationConsent: parseBoolean(row["Ergebnisveroeffentlichung"] || row["ResultPublicationConsent"]),
+      emergencyContactName: row["Notfallkontakt-Name"] || row["EmergencyContactName"] || undefined,
+      emergencyContactPhone: row["Notfallkontakt-Telefon"] || row["EmergencyContactPhone"] || undefined,
       notes: row["Notizen"] || row["Notes"] || undefined,
     };
 
@@ -149,6 +161,9 @@ export function exportMembersToCSV(members: {
   status: string;
   photoConsent?: boolean | null;
   newsletterConsent?: boolean | null;
+  resultPublicationConsent?: boolean | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
   notes?: string | null;
 }[]): string {
   const headers = CSV_MEMBER_HEADERS.join(";");
@@ -175,6 +190,9 @@ export function exportMembersToCSV(members: {
       m.status,
       m.photoConsent ? "ja" : "nein",
       m.newsletterConsent ? "ja" : "nein",
+      m.resultPublicationConsent ? "ja" : "nein",
+      escapeCsvField(m.emergencyContactName ?? ""),
+      escapeCsvField(m.emergencyContactPhone ?? ""),
       escapeCsvField(m.notes ?? ""),
     ].join(";");
   });

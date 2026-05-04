@@ -16,12 +16,16 @@ const ROLE_STYLES: Record<string, string> = {
   eltern: "bg-pink-100 text-pink-700 ring-pink-600/20",
 };
 
-async function getUsers(search?: string, roleFilter?: string) {
+async function getUsers(search?: string, roleFilter?: string, clubId?: string, isSuperAdmin?: boolean) {
   const client = createServiceClient();
   let query = client
     .from("auth_user")
     .select("id, name, email, role, permissions, member_id, club_id, created_at, members(first_name, last_name)")
     .order("created_at", { ascending: false });
+
+  if (!isSuperAdmin && clubId) {
+    query = query.eq("club_id", clubId);
+  }
 
   if (search) {
     const escapedSearch = search.replace(/[%_]/g, "\\$&");
@@ -183,11 +187,15 @@ function UsersTableSkeleton() {
 async function UsersContent({
   search,
   role,
+  clubId,
+  isSuperAdmin,
 }: {
   search?: string;
   role?: string;
+  clubId?: string;
+  isSuperAdmin?: boolean;
 }) {
-  const userList = await getUsers(search, role);
+  const userList = await getUsers(search, role, clubId, isSuperAdmin);
 
   return (
     <>
@@ -225,7 +233,7 @@ export default async function AdminUsersPage({
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Benutzerverwaltung</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Systemweite Rollenverteilung und feingranulare Berechtigungen steuern.
+            Vereinsinterne Rollenverteilung und feingranulare Berechtigungen steuern.
           </p>
         </div>
       </div>
@@ -278,7 +286,7 @@ export default async function AdminUsersPage({
       </div>
 
       <Suspense fallback={<UsersTableSkeleton />}>
-        <UsersContent search={search} role={role} />
+        <UsersContent search={search} role={role} clubId={session.user.clubId} isSuperAdmin={session.user.isSuperAdmin} />
       </Suspense>
     </div>
   );

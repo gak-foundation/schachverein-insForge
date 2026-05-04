@@ -8,7 +8,6 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { useEditorStore } from "@/lib/store/editor-store";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface TextBlockProps {
   data: any;
@@ -18,6 +17,7 @@ interface TextBlockProps {
 
 export function TextBlock({ data, blockId, mode }: TextBlockProps) {
   const updateBlock = useEditorStore((state) => state.updateBlock);
+  const isEditor = mode === "editor";
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -34,10 +34,10 @@ export function TextBlock({ data, blockId, mode }: TextBlockProps) {
         placeholder: "Schreiben Sie hier etwas...",
       }),
     ],
-    content: data.content,
-    editable: mode === "editor",
+    content: isEditor ? data.content : (data.contentHtml || ""),
+    editable: isEditor,
     onUpdate: ({ editor }) => {
-      if (mode === "editor") {
+      if (isEditor) {
         updateBlock(blockId, { content: editor.getJSON() });
       }
     },
@@ -45,12 +45,12 @@ export function TextBlock({ data, blockId, mode }: TextBlockProps) {
 
   // Sync content when data changes externally (e.g. undo/redo)
   useEffect(() => {
-    if (editor && data.content && JSON.stringify(data.content) !== JSON.stringify(editor.getJSON())) {
+    if (editor && data.content && isEditor && JSON.stringify(data.content) !== JSON.stringify(editor.getJSON())) {
       editor.commands.setContent(data.content);
     }
-  }, [data.content, editor]);
+  }, [data.content, editor, isEditor]);
 
-  if (!editor && mode === "editor") return null;
+  if (!editor && isEditor) return null;
 
   const alignmentClass = data.alignment === "center" ? "text-center" : "text-left";
   const maxWidthClass = 
@@ -59,11 +59,7 @@ export function TextBlock({ data, blockId, mode }: TextBlockProps) {
 
   return (
     <div className={cn("prose prose-sm md:prose-base dark:prose-invert max-w-none", alignmentClass, maxWidthClass)}>
-      {mode === "editor" ? (
-        <EditorContent editor={editor} />
-      ) : (
-        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.contentHtml || "") }} />
-      )}
+      <EditorContent editor={editor} />
     </div>
   );
 }

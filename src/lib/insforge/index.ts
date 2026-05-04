@@ -1,6 +1,6 @@
 import { createClient as createInsForgeClient, type InsForgeClient } from '@insforge/sdk';
 
-const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL ?? 'https://4d3rbpyx.eu-central.insforge.app';
+const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL ?? '';
 const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
 const INSFORGE_SERVICE_ROLE_KEY = process.env.INSFORGE_SERVICE_ROLE_KEY;
 

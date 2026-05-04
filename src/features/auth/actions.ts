@@ -97,7 +97,7 @@ export async function signupAction(formData: FormData) {
 
     const emailParam = encodeURIComponent(email);
     if (data?.requireEmailVerification) {
-      redirect(`/auth/verify-email?email=${emailParam}&dev=${!process.env.SMTP_HOST}`);
+      redirect(`/auth/verify-email?email=${emailParam}`);
     }
 
     if (data?.accessToken && data?.refreshToken) {

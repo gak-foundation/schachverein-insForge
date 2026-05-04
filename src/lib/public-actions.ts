@@ -1,9 +1,9 @@
 "use server";
 
-import { createServiceClient } from "@/lib/insforge";
+import { createClient } from "@/lib/insforge";
 
 export async function getPublicEvents(clubSlug: string, limit?: number) {
-  const client = createServiceClient();
+  const client = createClient();
 
   const { data: club, error: clubError } = await client
     .from("clubs")
@@ -50,7 +50,7 @@ export async function getPublicEvents(clubSlug: string, limit?: number) {
 }
 
 export async function getPublicTeams(clubSlug: string) {
-  const client = createServiceClient();
+  const client = createClient();
   const currentYear = new Date().getFullYear();
 
   const { data: club, error: clubError } = await client
@@ -103,7 +103,7 @@ export async function getPublicTeams(clubSlug: string) {
 }
 
 export async function getPublicTournaments(clubSlug: string) {
-  const client = createServiceClient();
+  const client = createClient();
 
   const { data: club, error: clubError } = await client
     .from("clubs")
@@ -134,7 +134,7 @@ export async function getPublicTournaments(clubSlug: string) {
 }
 
 export async function getClubStats(clubSlug: string) {
-  const client = createServiceClient();
+  const client = createClient();
 
   const { data: club, error: clubError } = await client
     .from("clubs")
@@ -180,7 +180,7 @@ export async function getClubStats(clubSlug: string) {
 }
 
 export async function getUpcomingMatches(clubSlug: string, limit = 5) {
-  const client = createServiceClient();
+  const client = createClient();
 
   const { data: club, error: clubError } = await client
     .from("clubs")

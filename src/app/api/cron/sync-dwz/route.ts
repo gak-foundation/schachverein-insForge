@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new NextResponse("Unauthorized", { status: 401 });
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
           .eq("id", m.id);
 
         if (updateError) {
-          console.error(`Error updating member ${m.id}:`, updateError);
+          console.error("Error updating member %s:", m.id, updateError);
           continue;
         }
 
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
         ]);
 
         if (insertError) {
-          console.error(`Error inserting dwz history for ${m.id}:`, insertError);
+          console.error("Error inserting dwz history for %s:", m.id, insertError);
         }
 
         updatedCount++;

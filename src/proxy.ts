@@ -59,10 +59,14 @@ const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Strict-Transport-Security":
+    process.env.NODE_ENV === "production"
+      ? "max-age=63072000; includeSubDomains; preload"
+      : "max-age=0",
 };
 
 const SHARED_CSP_DEV =
-  "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.insforge.app https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
+  "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.insforge.app https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
 const SHARED_CSP_PROD =
   "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.insforge.app https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 

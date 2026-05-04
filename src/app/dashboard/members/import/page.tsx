@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { importMembersCSV, exportMembersToCSVAction } from "@/lib/actions/import-export";
+import { generateMemberCSVTemplate } from "@/lib/csv/members";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -51,13 +52,8 @@ export default function MemberImportPage() {
     setResult(null);
   }
 
-  async function downloadTemplate() {
-    const template = [
-      "Vorname;Nachname;E-Mail;Telefon;Geburtsdatum;Geschlecht;DWZ;Elo;DWZ-ID;Lichess-Benutzername;Chess.com-Benutzername;Rolle;Status;Foto-Einwilligung;Newsletter-Einwilligung;Notizen",
-      "Max;Mustermann;max@beispiel.de;+49123456789;1990-05-15;maennlich;1850;1900;12345678;maxspieler;maxchess;mitglied;active;ja;ja;Kommentar",
-      "Erika;Musterfrau;erika@beispiel.de;+49987654321;1985-08-20;weiblich;2100;2150;87654321;erikachess;;vorstand;active;ja;nein;2. Vorsitzende",
-    ].join("\n");
-
+  function downloadTemplate() {
+    const template = generateMemberCSVTemplate();
     const blob = new Blob([template], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -232,10 +228,10 @@ export default function MemberImportPage() {
                 <li>Trennzeichen: Semikolon (;)</li>
                 <li>Kodierung: UTF-8 empfohlen</li>
                 <li>Datum: YYYY-MM-DD oder DD.MM.YYYY</li>
+                <li>Geschlecht: m/männlich/maennlich, w/weiblich, d/divers, x/keine_angabe</li>
                 <li>Rolle: admin, vorstand, spielleiter, jugendwart, kassenwart, trainer, mitglied, eltern</li>
-                <li>Status: active, inactive, resigned, honorary</li>
-                <li>Boolesche Werte: ja/nein, yes/no, true/false</li>
-                <li>Existierende E-Mails werden übersprungen (kein Update)</li>
+                <li>Status: active/aktiv, inactive/inaktiv, resigned/ausgetreten, honorary/ehrenmitglied</li>
+                <li>Boolesche Werte: ja/nein, yes/no, true/false, 1/0</li>
               </ul>
             </CardContent>
           </Card>

@@ -5,6 +5,19 @@ import { parseMemberCSV, exportMembersToCSV } from "@/lib/csv/members";
 import { createMember, getMembers } from "@/features/members/actions";
 import { revalidatePath } from "next/cache";
 
+function toFormData(obj: Record<string, unknown>): FormData {
+  const fd = new FormData();
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined || value === null) continue;
+    if (typeof value === "boolean") {
+      fd.append(key, value ? "on" : "");
+    } else {
+      fd.append(key, String(value));
+    }
+  }
+  return fd;
+}
+
 /**
  * Importiert Mitglieder aus einer CSV-Datei.
  */
@@ -28,7 +41,7 @@ export async function importMembersCSV(formData: FormData) {
 
   for (let i = 0; i < data.length; i++) {
     try {
-      await createMember(data[i] as any);
+      await createMember(toFormData(data[i] as Record<string, unknown>));
       importedCount++;
     } catch (error: any) {
       importErrors.push({

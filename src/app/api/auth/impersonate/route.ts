@@ -18,7 +18,10 @@ export async function POST(request: NextRequest) {
     ts: Date.now(),
   });
 
-  const secret = process.env.IMPERSONATION_SECRET || process.env.NEXT_PUBLIC_ROOT_DOMAIN || "fallback";
+  const secret = process.env.IMPERSONATION_SECRET;
+  if (!secret) {
+    return NextResponse.json({ error: "Impersonation not configured" }, { status: 503 });
+  }
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",

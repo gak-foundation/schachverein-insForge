@@ -92,14 +92,20 @@ export function checkRateLimit(
 
 /**
  * Holt die Client-IP aus dem Request.
- * Berücksichtigt X-Forwarded-For Header.
+ * Berücksichtigt X-Forwarded-For und X-Real-IP Header.
  */
 export function getClientIP(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
     return forwarded.split(",")[0].trim();
   }
-  return "unknown";
+  const realIP = request.headers.get("x-real-ip");
+  if (realIP) {
+    return realIP.trim();
+  }
+  // Fallback: hash the entire request as an identifier to avoid
+  // collapsing all requests into a single "unknown" bucket
+  return "unknown-" + Math.random().toString(36).slice(2, 10);
 }
 
 /**

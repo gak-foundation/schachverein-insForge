@@ -10,7 +10,6 @@ import { PERMISSIONS, getPermissionsForRole, hasPermission } from "@/lib/auth/pe
 import { fetchLichessProfile, getBestLichessRating } from "@/lib/lichess";
 import { requireClubId } from "@/lib/actions/utils";
 import { encrypt, decrypt } from "@/lib/crypto";
-import { createServerClient } from "@/lib/insforge";
 import { createServerAuthClient } from "@/lib/insforge/server-auth";
 
 // Define types used across the file
@@ -72,6 +71,9 @@ export async function getMembers(
     status: item.members.status,
     photoConsent: item.members.photo_consent,
     newsletterConsent: item.members.newsletter_consent,
+    resultPublicationConsent: item.members.result_publication_consent,
+    emergencyContactName: item.members.emergency_contact_name,
+    emergencyContactPhone: item.members.emergency_contact_phone,
     notes: item.members.notes,
     createdAt: item.members.created_at,
   }));
@@ -134,7 +136,7 @@ export async function getMembersForForms() {
 
 export async function getMemberById(id: string) {
   const clubId = await requireClubId();
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   const { data: membership, error: membershipError } = await client
     .from('club_memberships')
@@ -163,23 +165,90 @@ export async function getMemberById(id: string) {
     throw memberError;
   }
 
-  const member = {
-    ...memberData,
-    membership,
-  };
+  // Decrypt sensitive fields before mapping
+  const sepaIban = memberData.sepa_iban ? decrypt(memberData.sepa_iban) : null;
+  const sepaBic = memberData.sepa_bic ? decrypt(memberData.sepa_bic) : null;
+  const medicalNotes = memberData.medical_notes ? decrypt(memberData.medical_notes) : null;
 
-  if (member) {
-    if (member.sepa_iban) member.sepa_iban = decrypt(member.sepa_iban);
-    if (member.sepa_bic) member.sepa_bic = decrypt(member.sepa_bic);
-    if (member.medical_notes) member.medical_notes = decrypt(member.medical_notes);
+  // Fetch parent if parent_id exists
+  let parent = null;
+  if (memberData.parent_id) {
+    const { data: parentData } = await client
+      .from('members')
+      .select('id, first_name, last_name')
+      .eq('id', memberData.parent_id)
+      .maybeSingle();
+    if (parentData) {
+      parent = {
+        id: parentData.id,
+        firstName: parentData.first_name,
+        lastName: parentData.last_name,
+      };
+    }
   }
 
-  return member;
+  // Fetch children (members whose parent_id points to this member)
+  const { data: childrenData } = await client
+    .from('members')
+    .select('id, first_name, last_name')
+    .eq('parent_id', id)
+    .order('last_name, first_name');
+
+  const children = (childrenData || []).map((c: any) => ({
+    id: c.id,
+    firstName: c.first_name,
+    lastName: c.last_name,
+  }));
+
+  return {
+    id: memberData.id,
+    firstName: memberData.first_name,
+    lastName: memberData.last_name,
+    email: memberData.email,
+    phone: memberData.phone,
+    dateOfBirth: memberData.date_of_birth,
+    gender: memberData.gender,
+    dwz: memberData.dwz,
+    elo: memberData.elo,
+    dwzId: memberData.dwz_id,
+    lichessUsername: memberData.lichess_username,
+    lichessId: memberData.lichess_id,
+    isLichessVerified: memberData.is_lichess_verified,
+    lichessAccessToken: memberData.lichess_access_token,
+    chesscomUsername: memberData.chesscom_username,
+    fideId: memberData.fide_id,
+    status: memberData.status,
+    role: membership.role,
+    joinedAt: memberData.joined_at,
+    parentId: memberData.parent_id,
+    parent,
+    children,
+    permissions: memberData.permissions,
+    sepaMandateReference: memberData.sepa_mandate_reference,
+    sepaIban,
+    sepaBic,
+    mandateSignedAt: memberData.mandate_signed_at,
+    mandateUrl: memberData.mandate_url,
+    contributionRateId: memberData.contribution_rate_id,
+    photoConsent: memberData.photo_consent,
+    newsletterConsent: memberData.newsletter_consent,
+    resultPublicationConsent: memberData.result_publication_consent,
+    notes: memberData.notes,
+    medicalNotes,
+    emergencyContactName: memberData.emergency_contact_name,
+    emergencyContactPhone: memberData.emergency_contact_phone,
+    deletionRequestedAt: memberData.deletion_requested_at,
+    anonymizedAt: memberData.anonymized_at,
+    heritageGameId: memberData.heritage_game_id,
+    clubId: memberData.club_id,
+    createdAt: memberData.created_at,
+    updatedAt: memberData.updated_at,
+  };
 }
 
 export async function getMemberStatusHistory(memberId: string) {
   const clubId = await requireClubId();
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   // Check if member belongs to club
   const { data: membership, error: membershipError } = await client
@@ -209,7 +278,7 @@ export async function getMemberStatusHistory(memberId: string) {
 
 export async function getContributionRatesForMemberSelect() {
   const clubId = await requireClubId();
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   const { data, error } = await client
     .from('contribution_rates')
@@ -224,7 +293,7 @@ export async function getContributionRatesForMemberSelect() {
 export async function createMember(formData: FormData) {
   const clubId = await requireClubId();
   const session = await getSession();
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   const rawData = {
     firstName: formData.get("firstName") as string,
@@ -351,7 +420,7 @@ export async function createMember(formData: FormData) {
 export async function deleteMember(id: string) {
   const clubId = await requireClubId();
   const session = await getSession();
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   const { data: membership, error: membershipError } = await client
     .from('club_memberships')
@@ -419,7 +488,7 @@ export async function updateMember(formData: FormData) {
   const clubId = await requireClubId();
   const session = await getSession();
   const id = formData.get("id") as string;
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   const { data: membership, error: membershipError } = await client
     .from('club_memberships')
@@ -515,7 +584,7 @@ export async function updateMember(formData: FormData) {
 
 export async function getDWZHistory(memberId: string) {
   const clubId = await requireClubId();
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   // Check if member belongs to club
   const { data: membership, error: membershipError } = await client
@@ -545,7 +614,7 @@ export async function getDWZHistory(memberId: string) {
 
 export async function addDWZEntry(formData: FormData) {
   const clubId = await requireClubId();
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   const memberId = formData.get("memberId") as string;
   const dwz = Number(formData.get("dwz"));
@@ -597,7 +666,7 @@ export async function addDWZEntry(formData: FormData) {
 import { fetchDwzData } from "@/lib/dwz";
 
 export async function syncMemberDwz(memberId: string) {
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   const { data: member, error: memberError } = await client
     .from('members')
@@ -651,7 +720,7 @@ export async function syncMemberDwz(memberId: string) {
 
 export async function syncAllMembersDwz() {
   const clubId = await requireClubId();
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   const { data: allMembersWithId, error } = await client
     .from('members')
@@ -707,14 +776,29 @@ export async function updateUserRole(formData: FormData) {
   }
 
   const { userId, role } = parsed.data;
+
+  // Verify target user belongs to the same club (unless super admin)
+  if (!session.user.isSuperAdmin) {
+    const client = await createServerAuthClient();
+    const { data: targetUser } = await client
+      .from("auth_user")
+      .select("club_id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (!targetUser || targetUser.club_id !== session.user.clubId) {
+      throw new Error("Nicht autorisiert – Benutzer gehoert nicht zu deinem Verein");
+    }
+  }
+
   const rolePermSet = new Set(getPermissionsForRole(role));
   const additional = parsed.data.permissions.filter(
     (p) => ALL_PERMISSION_VALUES.has(p as (typeof PERMISSIONS)[keyof typeof PERMISSIONS]) && !rolePermSet.has(p as never),
   );
 
-  const client = createServerClient();
+  const updateClient = await createServerAuthClient();
 
-  const { error } = await client
+  const { error } = await updateClient
     .from('auth_user')
     .update({
       role: role,
@@ -733,7 +817,7 @@ export async function updateUserRole(formData: FormData) {
 
 export async function syncLichessRating(memberId: string) {
   const clubId = await requireClubId();
-  const client = createServerClient();
+  const client = await createServerAuthClient();
 
   const { data: result, error } = await client
     .from('members')
