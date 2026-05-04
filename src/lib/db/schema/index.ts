@@ -15,3 +15,4 @@ export * from "./auth";
 export * from "./cms";
 export * from "./waitlist";
 export * from "./blog";
+export * from "./blog";

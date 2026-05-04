@@ -5,6 +5,7 @@ import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { ProblemSolutionSection } from "@/components/marketing/problem-solution-section";
 import { FAQAccordion } from "@/components/marketing/faq-accordion";
 import { MiniManager } from "@/components/marketing/mini-manager";
+import { BlogSection } from "@/features/blog/components/blog-section";
 import { cn } from "@/lib/utils";
 
 export default function HomePage() {
@@ -79,6 +80,8 @@ export default function HomePage() {
           <FAQAccordion />
         </div>
       </section>
+
+      <BlogSection />
 
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">

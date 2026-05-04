@@ -5,6 +5,7 @@ import Link from "next/link";
 const adminNavItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/clubs", label: "Vereine" },
+  { href: "/admin/blog", label: "Blog" },
   { href: "/admin/einladungen", label: "Einladungen" },
   { href: "/admin/billing", label: "Billing" },
   { href: "/admin/audit", label: "Audit Logs" },
