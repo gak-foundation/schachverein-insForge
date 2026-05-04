@@ -64,8 +64,9 @@ describe("getClientIP", () => {
     expect(getClientIP(r)).toBe("192.168.1.1");
   });
 
-  it("sollte 'unknown' ohne Header zurückgeben", () => {
-    expect(getClientIP(new Request("http://localhost"))).toBe("unknown");
+  it("sollte mit 'unknown-' beginnen ohne Header zurückgeben", () => {
+    const ip = getClientIP(new Request("http://localhost"));
+    expect(ip).toMatch(/^unknown-[a-z0-9]{8}$/);
   });
 
   it("sollte einzelne IP erkennen", () => {
