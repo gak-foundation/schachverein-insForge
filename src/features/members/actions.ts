@@ -476,8 +476,8 @@ export async function deleteMember(id: string) {
   }
 
   await logMemberAction("DELETED", id, {
-    firstName: { old: member?.first_name, new: null },
-    lastName: { old: member?.last_name, new: null },
+    firstName: { old: member?.firstName, new: null },
+    lastName: { old: member?.lastName, new: null },
     email: { old: member?.email, new: null },
   });
 
