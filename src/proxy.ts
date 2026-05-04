@@ -66,7 +66,7 @@ const SECURITY_HEADERS = {
 };
 
 const SHARED_CSP_DEV =
-  "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.insforge.app https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
+  "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.insforge.app https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
 const SHARED_CSP_PROD =
   "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self'; connect-src 'self' https://*.insforge.app https://lichess.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 

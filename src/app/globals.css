@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 @custom-variant data-horizontal (&[data-orientation="horizontal"]);
@@ -67,24 +68,24 @@
   --popover: oklch(0.99 0 0);
   --popover-foreground: oklch(0.2 0.02 60);
   
-  --primary: oklch(0.45 0.15 250); /* Sophisticated Blue */
+  --primary: oklch(0.52 0.08 250); /* Softer, lighter Blue */
   --primary-foreground: oklch(0.99 0 0);
   
   --secondary: oklch(0.94 0.02 80); 
-  --secondary-foreground: oklch(0.45 0.15 250); /* Blue as secondary text */
+  --secondary-foreground: oklch(0.52 0.08 250); 
   
   --muted: oklch(0.95 0.01 80);
   --muted-foreground: oklch(0.35 0.02 60);
   
-  --accent: oklch(0.92 0.03 250); /* Soft blue tinted accent */
-  --accent-foreground: oklch(0.45 0.15 250);
+  --accent: oklch(0.96 0.015 250); /* Very soft blue tinted accent */
+  --accent-foreground: oklch(0.52 0.08 250);
   
   --destructive: oklch(0.55 0.18 25);
   --destructive-foreground: oklch(0.99 0 0);
   
   --border: oklch(0.7 0.02 80); 
   --input: oklch(0.7 0.02 80); 
-  --ring: oklch(0.45 0.15 250); /* Blue focus ring */
+  --ring: oklch(0.52 0.08 250); /* Softer blue focus ring */
   
   --radius: 0.75rem; 
   
@@ -109,16 +110,16 @@
   --popover: oklch(0.18 0.02 60);
   --popover-foreground: oklch(0.95 0.01 80);
   
-  --primary: oklch(0.65 0.12 250); /* Lighter vibrant blue for dark mode */
+  --primary: oklch(0.7 0.08 250); /* Lighter, softer blue for dark mode */
   --primary-foreground: oklch(0.15 0.02 60);
   
   --secondary: oklch(0.22 0.02 60);
-  --secondary-foreground: oklch(0.65 0.12 250);
+  --secondary-foreground: oklch(0.7 0.08 250);
   
   --muted: oklch(0.22 0.02 60);
   --muted-foreground: oklch(0.85 0.02 60); 
   
-  --accent: oklch(0.2 0.05 250);
+  --accent: oklch(0.25 0.03 250); /* Softer dark accent */
   --accent-foreground: oklch(0.95 0.01 80);
   
   --destructive: oklch(0.45 0.18 25);
@@ -126,7 +127,7 @@
   
   --border: oklch(0.4 0.02 60); 
   --input: oklch(0.4 0.02 60); 
-  --ring: oklch(0.65 0.12 250); 
+  --ring: oklch(0.7 0.08 250); 
   
   --sidebar: oklch(0.15 0.02 60);
   --sidebar-foreground: oklch(0.85 0.01 80);

@@ -152,6 +152,7 @@ export async function verifyEmailAction(formData: FormData) {
 export async function initiateOAuthAction(formData: FormData) {
   const provider = formData.get("provider") as string;
   const redirectTo = formData.get("redirectTo") as string || "/onboarding";
+  const origin = formData.get("origin") as string;
 
   if (!provider) {
     return { error: "Provider ist erforderlich" };
@@ -159,7 +160,7 @@ export async function initiateOAuthAction(formData: FormData) {
 
   try {
     const client = createServerClient();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = origin || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const callbackUrl = new URL("/api/auth/oauth-callback", appUrl);
     callbackUrl.searchParams.set("next", redirectTo);
 

@@ -56,6 +56,7 @@ function LoginPageContent() {
       const formData = new FormData();
       formData.append("provider", provider);
       formData.append("redirectTo", callbackURL);
+      formData.append("origin", window.location.origin);
       const result = await initiateOAuthAction(formData);
       if ((result as any)?.url) {
         window.location.href = (result as any).url;
