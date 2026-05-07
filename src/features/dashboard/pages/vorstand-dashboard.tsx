@@ -2,6 +2,7 @@
 
 import { Users, Swords, Trophy, Wallet, AlertCircle, CircleCheck, Mail, Calendar } from "lucide-react";
 import type { DashboardData } from "../index";
+import { AttentionWidget } from "../components/attention-widget";
 import { WelcomeHeader } from "../components/welcome-header";
 import { StatsCard } from "../components/stats-card";
 import { TodayItems } from "../components/today-items";
@@ -15,7 +16,7 @@ import { OnboardingBanner } from "../components/onboarding-banner";
 import { EmptyState } from "../components/empty-state";
 import { QuickActionsBar } from "../components/quick-actions-bar";
 
-export function VorstandDashboard({ stats, user, club, onboardingCompleted }: DashboardData) {
+export function VorstandDashboard({ stats, user, club, onboardingCompleted, attentionItems }: DashboardData) {
   const firstName = user?.name?.split(" ")[0] ?? "Vorstand";
   const hasData = stats.memberCount > 0 || stats.upcomingEvents.length > 0;
   const role = (user?.role as string) ?? "vorstand";
@@ -50,6 +51,10 @@ export function VorstandDashboard({ stats, user, club, onboardingCompleted }: Da
 
   return (
     <div className="space-y-10">
+      {attentionItems && attentionItems.length > 0 && (
+        <AttentionWidget items={attentionItems} roleLabel="Vorstand" />
+      )}
+
       <WelcomeHeader firstName={firstName} subtitle="Dein Überblick über den aktuellen Status des Schachvereins." roleLabel="Vorstand" />
 
       {!onboardingCompleted && (
@@ -102,3 +107,4 @@ export function VorstandDashboard({ stats, user, club, onboardingCompleted }: Da
     </div>
   );
 }
+

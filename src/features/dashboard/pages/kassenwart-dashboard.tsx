@@ -2,6 +2,7 @@
 
 import { Users, FileText, AlertCircle, CircleCheck, TrendingUp } from "lucide-react";
 import type { DashboardData } from "../index";
+import { AttentionWidget } from "../components/attention-widget";
 import { WelcomeHeader } from "../components/welcome-header";
 import { StatsCard } from "../components/stats-card";
 import { TodayItems } from "../components/today-items";
@@ -9,7 +10,7 @@ import { UpcomingEvents } from "../components/upcoming-events";
 import { MembershipCard } from "../components/membership-card";
 import { QuickActionsBar } from "../components/quick-actions-bar";
 
-export function KassenwartDashboard({ stats, user }: DashboardData) {
+export function KassenwartDashboard({ stats, user, attentionItems }: DashboardData) {
   const firstName = user?.name?.split(" ")[0] ?? "Kassenwart";
   const role = (user?.role as string) ?? "kassenwart";
   const permissions = (user?.permissions as string[]) ?? [];
@@ -27,6 +28,10 @@ export function KassenwartDashboard({ stats, user }: DashboardData) {
 
   return (
     <div className="space-y-10">
+      {attentionItems && attentionItems.length > 0 && (
+        <AttentionWidget items={attentionItems} roleLabel="Kassenwart" />
+      )}
+
       <WelcomeHeader firstName={firstName} subtitle="Finanzverwaltung – Beiträge, Ausgaben und Export." roleLabel="Kassenwart" />
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -53,3 +58,4 @@ export function KassenwartDashboard({ stats, user }: DashboardData) {
     </div>
   );
 }
+

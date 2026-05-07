@@ -2,6 +2,7 @@
 
 import { Swords, Trophy, ClipboardList, Target, RefreshCw } from "lucide-react";
 import type { DashboardData } from "../index";
+import { AttentionWidget } from "../components/attention-widget";
 import { WelcomeHeader } from "../components/welcome-header";
 import { StatsCard } from "../components/stats-card";
 import { TodayItems } from "../components/today-items";
@@ -12,7 +13,7 @@ import { MembershipCard } from "../components/membership-card";
 import { ClubStrengthCard } from "../components/club-strength-card";
 import { QuickActionsBar } from "../components/quick-actions-bar";
 
-export function SpielleiterDashboard({ stats, user }: DashboardData) {
+export function SpielleiterDashboard({ stats, user, attentionItems }: DashboardData) {
   const firstName = user?.name?.split(" ")[0] ?? "Spielleiter";
   const role = (user?.role as string) ?? "spielleiter";
   const permissions = (user?.permissions as string[]) ?? [];
@@ -46,6 +47,10 @@ export function SpielleiterDashboard({ stats, user }: DashboardData) {
 
   return (
     <div className="space-y-10">
+      {attentionItems && attentionItems.length > 0 && (
+        <AttentionWidget items={attentionItems} roleLabel="Spielleiter" />
+      )}
+
       <WelcomeHeader firstName={firstName} subtitle="Sportlicher Überblick – Mannschaften, Turniere und Partien." roleLabel="Spielleiter" />
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -83,3 +88,4 @@ export function SpielleiterDashboard({ stats, user }: DashboardData) {
     </div>
   );
 }
+

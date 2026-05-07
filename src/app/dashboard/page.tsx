@@ -1,6 +1,6 @@
-﻿import { getSession } from "@/lib/auth/session";
+import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { getDashboardStats } from "@/features/audit/actions";
+import { getDashboardDataWithAttention } from "@/features/dashboard/attention";
 import { getCurrentClubId } from "@/lib/actions/utils";
 import { getClubById } from "@/lib/clubs/queries";
 import { VorstandDashboard } from "@/features/dashboard/pages/vorstand-dashboard";
@@ -34,13 +34,16 @@ export default async function DashboardPage() {
   const club = await getClubById(clubId);
   const onboardingCompleted = (club?.settings as any)?.onboardingCompleted === true;
 
-  const stats = await getDashboardStats();
+  const { stats, attentionItems } = await getDashboardDataWithAttention(
+    ((user?.role as string) ?? "mitglied") as any
+  );
 
   const dashboardData: DashboardData = {
     stats,
     user,
     club,
     onboardingCompleted,
+    attentionItems,
   };
 
   switch (role) {
@@ -63,3 +66,6 @@ export default async function DashboardPage() {
       return <VorstandDashboard {...dashboardData} />;
   }
 }
+
+
+

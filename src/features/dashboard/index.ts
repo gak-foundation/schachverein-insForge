@@ -45,11 +45,14 @@ type DashboardClub = {
   settings?: Record<string, unknown>;
 };
 
+import type { AttentionItem } from "./attention";
+
 export type DashboardData = {
   stats: DashboardStats;
   user: DashboardUser;
   club?: DashboardClub;
   onboardingCompleted: boolean;
+  attentionItems?: AttentionItem[];
 };
 
 const ROLE_DASHBOARD_MAP: Record<string, React.ComponentType<DashboardData>> = {
@@ -65,3 +68,4 @@ const ROLE_DASHBOARD_MAP: Record<string, React.ComponentType<DashboardData>> = {
 export function getRoleDashboard(role: string): React.ComponentType<DashboardData> {
   return ROLE_DASHBOARD_MAP[role] ?? VorstandDashboard;
 }
+
