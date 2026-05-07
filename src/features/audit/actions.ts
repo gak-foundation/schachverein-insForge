@@ -214,149 +214,177 @@ export async function getDashboardStats() {
 }
 
 export async function getKassenwartAttentionItems(clubId: string): Promise<AttentionItem[]> {
-  const client = createServiceClient();
-  const items: AttentionItem[] = [];
+  try {
+    const client = createServiceClient();
+    const items: AttentionItem[] = [];
 
-  const { count: overdueCount } = await client
-    .from('payments')
-    .select('id', { count: 'exact' })
-    .eq('club_id', clubId)
-    .eq('status', 'overdue');
+    const { count: overdueCount } = await client
+      .from('payments')
+      .select('id', { count: 'exact' })
+      .eq('club_id', clubId)
+      .eq('status', 'overdue');
 
-  if (overdueCount && overdueCount > 0) {
-    items.push({
-      id: 'overdue-payments',
-      label: 'Ueberfaellige Zahlungen',
-      count: Number(overdueCount),
-      href: '/dashboard/finance',
-      urgency: 'critical',
-      icon: 'AlertCircle',
-      actionLabel: 'Jetzt pruefen',
-    });
+    if (overdueCount && overdueCount > 0) {
+      items.push({
+        id: 'overdue-payments',
+        label: 'Ueberfaellige Zahlungen',
+        count: Number(overdueCount),
+        href: '/dashboard/finance',
+        urgency: 'critical',
+        icon: 'AlertCircle',
+        actionLabel: 'Jetzt pruefen',
+      });
+    }
+
+    const { count: pendingCount } = await client
+      .from('payments')
+      .select('id', { count: 'exact' })
+      .eq('club_id', clubId)
+      .eq('status', 'pending');
+
+    if (pendingCount && pendingCount > 0) {
+      items.push({
+        id: 'pending-payments',
+        label: 'Ausstehende Zahlungen',
+        count: Number(pendingCount),
+        href: '/dashboard/finance',
+        urgency: 'warning',
+        icon: 'Wallet',
+        actionLabel: 'Anzeigen',
+      });
+    }
+
+    return items;
+  } catch (error) {
+    console.error("Error fetching kassenwart attention items:", error);
+    return [];
   }
-
-  const { count: pendingCount } = await client
-    .from('payments')
-    .select('id', { count: 'exact' })
-    .eq('club_id', clubId)
-    .eq('status', 'pending');
-
-  if (pendingCount && pendingCount > 0) {
-    items.push({
-      id: 'pending-payments',
-      label: 'Ausstehende Zahlungen',
-      count: Number(pendingCount),
-      href: '/dashboard/finance',
-      urgency: 'warning',
-      icon: 'Wallet',
-      actionLabel: 'Anzeigen',
-    });
-  }
-
-  return items;
 }
 
 export async function getSpielleiterAttentionItems(clubId: string): Promise<AttentionItem[]> {
-  const client = createServiceClient();
-  const items: AttentionItem[] = [];
+  try {
+    const client = createServiceClient();
+    const items: AttentionItem[] = [];
 
-  const { data: activeTournaments } = await client
-    .from('tournaments')
-    .select('id, name, current_round')
-    .eq('club_id', clubId)
-    .eq('is_completed', false);
+    const { data: activeTournaments } = await client
+      .from('tournaments')
+      .select('id, name, current_round')
+      .eq('club_id', clubId)
+      .eq('is_completed', false);
 
-  let missingResultsCount = 0;
-  for (const tournament of activeTournaments || []) {
-    const { count } = await client
-      .from('games')
+    let missingResultsCount = 0;
+    for (const tournament of activeTournaments || []) {
+      const { count } = await client
+        .from('games')
+        .select('id', { count: 'exact' })
+        .eq('tournament_id', tournament.id)
+        .eq('round', tournament.current_round || 1)
+        .is('result', null);
+      missingResultsCount += Number(count || 0);
+    }
+
+    if (missingResultsCount > 0) {
+      items.push({
+        id: 'missing-results',
+        label: 'Fehlende Ergebnisse',
+        count: missingResultsCount,
+        href: '/dashboard/tournaments',
+        urgency: 'critical',
+        icon: 'Trophy',
+        actionLabel: 'Ergebnisse eintragen',
+      });
+    }
+
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const { count: upcomingTournamentCount } = await client
+      .from('tournaments')
       .select('id', { count: 'exact' })
-      .eq('tournament_id', tournament.id)
-      .eq('round', tournament.current_round || 1)
-      .is('result', null);
-    missingResultsCount += Number(count || 0);
+      .eq('club_id', clubId)
+      .eq('is_completed', false)
+      .lte('start_date', nextWeek.toISOString());
+
+    if (upcomingTournamentCount && upcomingTournamentCount > 0) {
+      items.push({
+        id: 'upcoming-tournaments',
+        label: 'Bald startende Turniere',
+        count: Number(upcomingTournamentCount),
+        href: '/dashboard/tournaments',
+        urgency: 'warning',
+        icon: 'Calendar',
+        actionLabel: 'Vorbereiten',
+      });
+    }
+
+    return items;
+  } catch (error) {
+    console.error("Error fetching spielleiter attention items:", error);
+    return [];
   }
-
-  if (missingResultsCount > 0) {
-    items.push({
-      id: 'missing-results',
-      label: 'Fehlende Ergebnisse',
-      count: missingResultsCount,
-      href: '/dashboard/tournaments',
-      urgency: 'critical',
-      icon: 'Trophy',
-      actionLabel: 'Ergebnisse eintragen',
-    });
-  }
-
-  const nextWeek = new Date();
-  nextWeek.setDate(nextWeek.getDate() + 7);
-  const { count: upcomingTournamentCount } = await client
-    .from('tournaments')
-    .select('id', { count: 'exact' })
-    .eq('club_id', clubId)
-    .eq('is_completed', false)
-    .lte('start_date', nextWeek.toISOString());
-
-  if (upcomingTournamentCount && upcomingTournamentCount > 0) {
-    items.push({
-      id: 'upcoming-tournaments',
-      label: 'Bald startende Turniere',
-      count: Number(upcomingTournamentCount),
-      href: '/dashboard/tournaments',
-      urgency: 'warning',
-      icon: 'Calendar',
-      actionLabel: 'Vorbereiten',
-    });
-  }
-
-  return items;
 }
 
 export async function getVorstandAttentionItems(clubId: string): Promise<AttentionItem[]> {
-  const client = createServiceClient();
-  const items: AttentionItem[] = [];
+  try {
+    const client = createServiceClient();
+    const items: AttentionItem[] = [];
 
-  const { count: pendingInvitations } = await client
-    .from('invitations')
-    .select('id', { count: 'exact' })
-    .eq('club_id', clubId)
-    .eq('status', 'pending');
+    const { count: pendingInvitations } = await client
+      .from('invitations')
+      .select('id', { count: 'exact' })
+      .eq('club_id', clubId)
+      .eq('status', 'pending');
 
-  if (pendingInvitations && pendingInvitations > 0) {
-    items.push({
-      id: 'pending-invitations',
-      label: 'Offene Einladungen',
-      count: Number(pendingInvitations),
-      href: '/dashboard/einladungen',
-      urgency: 'warning',
-      icon: 'Mail',
-      actionLabel: 'Einladungen verwalten',
-    });
+    if (pendingInvitations && pendingInvitations > 0) {
+      items.push({
+        id: 'pending-invitations',
+        label: 'Offene Einladungen',
+        count: Number(pendingInvitations),
+        href: '/dashboard/einladungen',
+        urgency: 'warning',
+        icon: 'Mail',
+        actionLabel: 'Einladungen verwalten',
+      });
+    }
+
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    // Find members with recent successful payments
+    const { data: recentPayments } = await client
+      .from('payments')
+      .select('member_id')
+      .eq('club_id', clubId)
+      .eq('status', 'paid')
+      .gte('paid_at', ninetyDaysAgo.toISOString());
+
+    const paidMemberIds = new Set((recentPayments || []).map((p: any) => p.member_id));
+
+    // Get all active members
+    const { data: allMembers } = await client
+      .from('club_memberships')
+      .select('member_id')
+      .eq('club_id', clubId)
+      .eq('status', 'active');
+
+    const membersWithoutPayment = (allMembers || []).filter((m: any) => !paidMemberIds.has(m.member_id));
+
+    if (membersWithoutPayment.length > 0) {
+      items.push({
+        id: 'members-without-payment',
+        label: 'Mitglieder ohne Zahlung > 90 Tage',
+        count: membersWithoutPayment.length,
+        href: '/dashboard/finance',
+        urgency: 'critical',
+        icon: 'Users',
+        actionLabel: 'Anmahnen',
+      });
+    }
+
+    return items;
+  } catch (error) {
+    console.error("Error fetching vorstand attention items:", error);
+    return [];
   }
-
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  const { count: membersWithoutPayment } = await client
-    .from('payments')
-    .select('id', { count: 'exact' })
-    .eq('club_id', clubId)
-    .eq('status', 'overdue')
-    .lt('due_date', ninetyDaysAgo.toISOString());
-
-  if (membersWithoutPayment && membersWithoutPayment > 0) {
-    items.push({
-      id: 'members-without-payment',
-      label: 'Mitglieder ohne Zahlung > 90 Tage',
-      count: Number(membersWithoutPayment),
-      href: '/dashboard/finance',
-      urgency: 'critical',
-      icon: 'Users',
-      actionLabel: 'Anmahnen',
-    });
-  }
-
-  return items;
 }
 
 export async function getDashboardDataWithAttention(role: string, clubId: string) {
