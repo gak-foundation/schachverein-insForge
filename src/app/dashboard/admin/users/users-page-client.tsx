@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { Suspense } from "react";
@@ -15,13 +15,24 @@ const ROLE_STYLES: Record<string, string> = {
   eltern: "bg-pink-100 text-pink-700 ring-pink-600/20",
 };
 
+const STATUS_STYLES: Record<string, string> = {
+  active: "bg-green-50 text-green-700 ring-green-600/20",
+  inactive: "bg-gray-50 text-gray-600 ring-gray-500/20",
+  pending: "bg-yellow-50 text-yellow-700 ring-yellow-600/20",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  active: "Aktiv",
+  inactive: "Inaktiv",
+  pending: "Ausstehend",
+};
+
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
-  permissions?: string[];
-  memberId?: string;
+  status: string;
   clubId?: string;
   firstName?: string | null;
   lastName?: string | null;
@@ -47,7 +58,7 @@ function UsersTable({ users: userList }: { users: User[] }) {
               Rolle
             </th>
             <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
-              Rechte-Status
+              Status
             </th>
             <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-500">
               Aktionen
@@ -71,16 +82,9 @@ function UsersTable({ users: userList }: { users: User[] }) {
                 </span>
               </td>
               <td className="px-6 py-4">
-                <div className="flex items-center gap-2">
-                  {user.permissions?.length ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                      <span className="h-1 w-1 rounded-full bg-blue-600" />
-                      +{user.permissions.length} Custom
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-400 italic">Standard</span>
-                  )}
-                </div>
+                <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${STATUS_STYLES[user.status] || STATUS_STYLES.pending}`}>
+                  {STATUS_LABELS[user.status] || user.status}
+                </span>
               </td>
               <td className="px-6 py-4 text-right">
                 <Link
@@ -114,7 +118,7 @@ function UsersTableSkeleton() {
               Rolle
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-              Zusaetzliche Berechtigungen
+              Status
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
               Aktionen

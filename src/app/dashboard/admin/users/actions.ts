@@ -1,56 +1,49 @@
-﻿import { createServiceClient } from "@/lib/insforge";
+"use server";
 
-export async function getUsers(search?: string, roleFilter?: string, clubId?: string) {
-  const client = createServiceClient();
-  let query = client
-    .from("auth_user")
-    .select("id, name, email, role, permissions, member_id, club_id, created_at, members(first_name, last_name)")
-    .order("created_at", { ascending: false });
+import { createServiceClient } from "@/lib/insforge";
+import { withTenant } from "@/lib/tenant/with-tenant";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
-  if (clubId) {
-    query = query.eq("club_id", clubId);
-  }
+export async function getUsers(search?: string, roleFilter?: string) {
+  return withTenant(PERMISSIONS.ADMIN_USERS, async ({ user }) => {
+    const client = createServiceClient();
 
-  if (search) {
-    const escapedSearch = search.replace(/[%_]/g, "\\$&");
-    query = query.or(`name.ilike.%${escapedSearch}%,email.ilike.%${escapedSearch}%`);
-  }
+    let query = client
+      .from("members")
+      .select("id, first_name, last_name, email, role, status, club_id, created_at")
+      .eq("club_id", user.clubId)
+      .order("created_at", { ascending: false });
 
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Error fetching users:", error);
-    return [];
-  }
-
-  const users = await Promise.all((data || []).map(async (u: any) => {
-    let effectiveRole = u.role;
-    if (u.member_id && u.club_id) {
-      const { data: membership } = await client
-        .from("club_memberships")
-        .select("role")
-        .eq("member_id", u.member_id)
-        .eq("club_id", u.club_id)
-        .maybeSingle();
-      if (membership?.role) effectiveRole = membership.role;
+    if (search) {
+      const escapedSearch = search.replace(/[%_]/g, "\\$&");
+      query = query.or(
+        `first_name.ilike.%${escapedSearch}%,last_name.ilike.%${escapedSearch}%,email.ilike.%${escapedSearch}%`
+      );
     }
-    return {
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      role: effectiveRole,
-      permissions: u.permissions,
-      memberId: u.member_id,
-      clubId: u.club_id,
-      firstName: u.members?.first_name ?? null,
-      lastName: u.members?.last_name ?? null,
-      createdAt: u.created_at,
-    };
-  }));
 
-  if (roleFilter) {
-    return users.filter((u) => u.role === roleFilter);
-  }
+    const { data, error } = await query;
 
-  return users;
+    if (error) {
+      console.error("Error fetching members:", error);
+      return [];
+    }
+
+    const members = (data || []).map((m: any) => ({
+      id: m.id,
+      firstName: m.first_name,
+      lastName: m.last_name,
+      name: `${m.first_name} ${m.last_name}`.trim(),
+      email: m.email,
+      role: m.role,
+      status: m.status,
+      clubId: m.club_id,
+      createdAt: m.created_at,
+    }));
+
+    if (roleFilter) {
+      return members.filter((m) => m.role === roleFilter);
+    }
+
+    return members;
+  });
 }
