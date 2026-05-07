@@ -15,21 +15,19 @@ export function usePermissions() {
 
   const userRole = (session?.user as any)?.role ?? "mitglied";
   const userPermissions = (session?.user as any)?.permissions ?? [];
-  const isSuperAdmin = (session?.user as any)?.isSuperAdmin ?? false;
 
   return {
     isPending,
     hasPermission: (permission: Permission) => 
-      hasPermission(userRole, userPermissions, permission, isSuperAdmin),
+      hasPermission(userRole, userPermissions, permission),
     hasAnyPermission: (permissions: Permission[]) => 
-      hasAnyPermission(userRole, userPermissions, permissions, isSuperAdmin),
+      hasAnyPermission(userRole, userPermissions, permissions),
     hasAllPermissions: (permissions: Permission[]) => 
-      hasAllPermissions(userRole, userPermissions, permissions, isSuperAdmin),
+      hasAllPermissions(userRole, userPermissions, permissions),
     hasRole: (role: string | string[]) => 
-      hasRole(userRole, role, isSuperAdmin),
+      hasRole(userRole, role),
     role: userRole,
     permissions: userPermissions,
-    isSuperAdmin,
     PERMISSIONS,
   };
 }

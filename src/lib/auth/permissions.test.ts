@@ -1,4 +1,4 @@
-﻿import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   PERMISSIONS,
   hasPermission,
@@ -12,11 +12,6 @@ import {
 } from "./permissions";
 
 describe("hasPermission", () => {
-  it("sollte Super-Admin immer erlauben", () => {
-    expect(hasPermission("mitglied", [], PERMISSIONS.ADMIN_USERS, true)).toBe(true);
-    expect(hasPermission("user", [], PERMISSIONS.FINANCE_MANAGE, true)).toBe(true);
-  });
-
   it("sollte benutzerdefinierte Berechtigungen prüfen", () => {
     expect(hasPermission("mitglied", [PERMISSIONS.FINANCE_WRITE], PERMISSIONS.FINANCE_WRITE)).toBe(true);
     expect(hasPermission("mitglied", [], PERMISSIONS.FINANCE_WRITE)).toBe(false);
@@ -71,14 +66,8 @@ describe("hasAnyPermission", () => {
     expect(hasAnyPermission("mitglied", [], perms)).toBe(false);
   });
 
-  it("sollte true für Super-Admin immer zurückgeben", () => {
-    const perms: Permission[] = [PERMISSIONS.ADMIN_USERS, PERMISSIONS.FINANCE_MANAGE];
-    expect(hasAnyPermission("user", [], perms, true)).toBe(true);
-  });
-
   it("sollte false zurückgeben bei leerem Berechtigungs-Array", () => {
     expect(hasAnyPermission("admin", [], [])).toBe(false);
-    expect(hasAnyPermission("admin", [], [], true)).toBe(true); // Super-Admin Ausnahme
   });
 
   it("sollte true zurückgeben wenn Rolle mindestens eine Berechtigung hat", () => {
@@ -98,14 +87,8 @@ describe("hasAllPermissions", () => {
     expect(hasAllPermissions("mitglied", [], perms)).toBe(false);
   });
 
-  it("sollte true für Super-Admin immer zurückgeben", () => {
-    const perms: Permission[] = [PERMISSIONS.ADMIN_USERS, PERMISSIONS.FINANCE_MANAGE];
-    expect(hasAllPermissions("user", [], perms, true)).toBe(true);
-  });
-
   it("sollte true zurückgeben bei leerem Berechtigungs-Array (vacuous truth)", () => {
     expect(hasAllPermissions("user", [], [])).toBe(true);
-    expect(hasAllPermissions("user", [], [], true)).toBe(true);
   });
 
   it("sollte false zurückgeben wenn Rolle einige aber nicht alle Berechtigungen hat", () => {
@@ -165,10 +148,6 @@ describe("getAvailableRoles", () => {
 });
 
 describe("hasRole", () => {
-  it("sollte Super-Admin immer erlauben", () => {
-    expect(hasRole("mitglied", "admin", true)).toBe(true);
-  });
-
   it("sollte einzelne Rolle prüfen", () => {
     expect(hasRole("admin", "admin")).toBe(true);
     expect(hasRole("mitglied", "admin")).toBe(false);
@@ -181,7 +160,6 @@ describe("hasRole", () => {
 
   it("sollte mit leerem Rollen-Array false zurückgeben", () => {
     expect(hasRole("admin", [])).toBe(false);
-    expect(hasRole("admin", [], true)).toBe(true); // Super-Admin Ausnahme
   });
 
   it("sollte mit undefined requiredRole false zurückgeben", () => {

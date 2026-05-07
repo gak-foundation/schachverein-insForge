@@ -196,10 +196,8 @@ export const ROLES = Object.entries(ROLE_LABELS).map(([value, label]) => ({
 export function hasPermission(
   role: string,
   userPermissions: string[],
-  permission: Permission,
-  isSuperAdmin = false
+  permission: Permission
 ): boolean {
-  if (isSuperAdmin) return true;
   if (userPermissions.includes(permission)) return true;
   const rolePerms = ROLE_PERMISSIONS[role] || [];
   return rolePerms.includes(permission);
@@ -208,24 +206,20 @@ export function hasPermission(
 export function hasAnyPermission(
   role: string,
   userPermissions: string[],
-  permissions: Permission[],
-  isSuperAdmin = false
+  permissions: Permission[]
 ): boolean {
-  if (isSuperAdmin) return true;
   return permissions.some((perm) =>
-    hasPermission(role, userPermissions, perm, false)
+    hasPermission(role, userPermissions, perm)
   );
 }
 
 export function hasAllPermissions(
   role: string,
   userPermissions: string[],
-  permissions: Permission[],
-  isSuperAdmin = false
+  permissions: Permission[]
 ): boolean {
-  if (isSuperAdmin) return true;
   return permissions.every((perm) =>
-    hasPermission(role, userPermissions, perm, false)
+    hasPermission(role, userPermissions, perm)
   );
 }
 
@@ -243,10 +237,8 @@ export function getAvailableRoles(): string[] {
 
 export function hasRole(
   userRole: string,
-  requiredRole: string | string[],
-  isSuperAdmin = false
+  requiredRole: string | string[]
 ): boolean {
-  if (isSuperAdmin) return true;
   if (Array.isArray(requiredRole)) {
     return requiredRole.includes(userRole);
   }
