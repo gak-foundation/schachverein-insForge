@@ -45,7 +45,7 @@ export const authClient = {
         permissions?: string[];
         memberId?: string;
         clubId?: string;
-        isSuperAdmin?: boolean;
+
         image?: string;
       } | null;
     } | null>(null);
@@ -67,7 +67,7 @@ export const authClient = {
                 permissions: profile.permissions || [],
                 memberId: profile.memberId,
                 clubId: profile.clubId,
-                isSuperAdmin: profile.isSuperAdmin || false,
+
               },
             });
             setIsPending(false);

@@ -6,7 +6,7 @@ import { BlogForm } from "@/features/blog/components/blog-form";
 export default async function NewBlogPostPage() {
   const session = await getSessionWithClub();
 
-  if (!session?.user.isSuperAdmin) {
+  if (session?.user.role !== "admin") {
     redirect("/dashboard");
   }
 

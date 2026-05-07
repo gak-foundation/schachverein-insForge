@@ -75,7 +75,7 @@ interface User {
   name: string;
   email: string;
   role: string;
-  isSuperAdmin: boolean;
+
   createdAt: Date;
   lastLoginAt: Date | null;
 }
@@ -423,7 +423,7 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {user.isSuperAdmin ? (
+                        {user.role === "admin" ? (
                           <Badge className="bg-amber-500/10 text-amber-600 border-amber-200">
                             <ShieldAlert className="h-3 w-3 mr-1" />
                             Super Admin

@@ -20,7 +20,6 @@ export interface AuthUser {
   twoFactorEnabled: boolean;
   banned: boolean;
   banReason: string | null;
-  isSuperAdmin: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,7 +42,6 @@ export interface NewAuthUser {
   twoFactorEnabled?: boolean;
   banned?: boolean;
   banReason?: string | null;
-  isSuperAdmin?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

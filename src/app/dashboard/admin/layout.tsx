@@ -12,13 +12,13 @@ export default async function AdminLayout({
     redirect("/auth/login");
   }
 
-  const isAdmin = session.user.role === "admin" || session.user.isSuperAdmin;
+  const isAdmin = session.user.role === "admin";
 
   if (!isAdmin) {
     redirect("/dashboard");
   }
 
-  if (!session.user.isSuperAdmin && !session.user.clubId) {
+  if (session.user.role !== "admin" && !session.user.clubId) {
     redirect("/dashboard");
   }
 

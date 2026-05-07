@@ -6,8 +6,8 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 
-function requireSuperAdmin(user: { isSuperAdmin?: boolean } | null) {
-  if (!user?.isSuperAdmin) {
+function requireSuperAdmin(user: { role?: string } | null) {
+  if (user?.role !== "admin") {
     throw new Error("Nicht autorisiert");
   }
 }

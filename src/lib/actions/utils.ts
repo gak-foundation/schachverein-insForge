@@ -22,7 +22,7 @@ export async function requireClubId() {
   const clubId = session.user.clubId;
   
   if (!clubId) {
-    if (session.user.isSuperAdmin) {
+    if (session.user.role === "admin") {
       // Super-admins without club context are redirected in the page/layout,
       // but if an action is called, we need to throw a specific error.
       throw new Error("SUPER_ADMIN_NO_CLUB_CONTEXT");

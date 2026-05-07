@@ -20,7 +20,7 @@ export async function getAuthUserWithClub(id: string) {
   const { data, error } = await client
     .from("auth_user")
     .select(
-      "id, name, email, email_verified, image, role, permissions, member_id, club_id, is_super_admin"
+      "id, name, email, email_verified, image, role, permissions, member_id, club_id"
     )
     .eq("id", id)
     .single();
@@ -55,7 +55,6 @@ export async function getAuthUserWithClub(id: string) {
     permissions: data.permissions || [],
     memberId: data.member_id,
     clubId: data.club_id,
-    isSuperAdmin: data.is_super_admin || false,
   };
 }
 
@@ -63,7 +62,7 @@ export async function getAllAuthUsers() {
   const client = createServiceClient();
   const { data, error } = await client
     .from("auth_user")
-    .select("id, name, email, role, is_super_admin, member_id, club_id, created_at, updated_at")
+    .select("id, name, email, role, member_id, club_id, created_at, updated_at")
     .order("created_at", { ascending: false });
 
   if (error || !data) {
@@ -87,7 +86,6 @@ export async function getAllAuthUsers() {
       name: u.name,
       email: u.email,
       role: effectiveRole,
-      isSuperAdmin: u.is_super_admin || false,
       createdAt: u.created_at,
       lastLoginAt: u.updated_at,
     };
@@ -106,7 +104,6 @@ export async function updateAuthUser(
     permissions: string[];
     memberId: string;
     clubId: string;
-    isSuperAdmin: boolean;
   }>
 ) {
   const client = createServiceClient();
@@ -122,8 +119,6 @@ export async function updateAuthUser(
   if (data.permissions !== undefined) updateData.permissions = data.permissions;
   if (data.memberId !== undefined) updateData.member_id = data.memberId;
   if (data.clubId !== undefined) updateData.club_id = data.clubId;
-  if (data.isSuperAdmin !== undefined) updateData.is_super_admin = data.isSuperAdmin;
-
   const { data: updated, error } = await client
     .from("auth_user")
     .update(updateData)
@@ -141,7 +136,6 @@ export async function updateAuthUser(
     emailVerified: updated.email_verified,
     memberId: updated.member_id,
     clubId: updated.club_id,
-    isSuperAdmin: updated.is_super_admin,
     createdAt: updated.created_at,
     updatedAt: updated.updated_at,
   };

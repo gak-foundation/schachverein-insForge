@@ -48,7 +48,7 @@ export async function requestAccountDeletion() {
 export async function exportMemberData(memberId: string) {
   const session = await getSession();
   // Only the member themselves or a super admin can export data
-  if (!session || (session.user.memberId !== memberId && !session.user.isSuperAdmin)) {
+  if (!session || (session.user.memberId !== memberId && session.user.role !== "admin")) {
     throw new Error("Nicht autorisiert");
   }
 
@@ -111,7 +111,7 @@ export async function anonymizeMember(memberId: string) {
   }
 
   // Allow if super admin OR if user has MEMBERS_DELETE permission
-  const hasAuth = session.user.isSuperAdmin || 
+  const hasAuth = session.user.role === "admin" || 
     hasPermission(
       session.user.role ?? "mitglied", 
       session.user.permissions ?? [], 

@@ -1,14 +1,13 @@
 ﻿import { createServiceClient } from "@/lib/insforge";
 
-export async function getUsers(search?: string, roleFilter?: string, clubId?: string, isSuperAdmin?: boolean) {
+export async function getUsers(search?: string, roleFilter?: string, clubId?: string) {
   const client = createServiceClient();
   let query = client
     .from("auth_user")
     .select("id, name, email, role, permissions, member_id, club_id, created_at, members(first_name, last_name)")
     .order("created_at", { ascending: false });
 
-  if (!isSuperAdmin) {
-    if (!clubId) return [];
+  if (clubId) {
     query = query.eq("club_id", clubId);
   }
 

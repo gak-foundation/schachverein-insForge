@@ -10,7 +10,7 @@ import { de } from "date-fns/locale";
 export default async function AdminBlogPage() {
   const session = await getSessionWithClub();
 
-  if (!session?.user.isSuperAdmin) {
+  if (session?.user.role !== "admin") {
     redirect("/dashboard");
   }
 

@@ -31,10 +31,6 @@ export const getSession = cache(async () => {
       return null;
     }
 
-    // Check if user is a hard-coded super admin via ENV
-    const superAdminEmails = process.env.SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
-    const isHardcodedAdmin = user.email ? superAdminEmails.includes(user.email) : false;
-
     // Fetch additional user data from database.
     // getAuthUserWithClub already handles its own fallbacks (REST vs Drizzle)
     const userData = await getAuthUserWithClub(user.id);
@@ -45,11 +41,10 @@ export const getSession = cache(async () => {
         id: user.id,
         email: user.email,
         name: userData?.name ?? user.profile?.name ?? user.email?.split("@")[0],
-        role: userData?.role ?? (isHardcodedAdmin ? "admin" : "mitglied"),
+        role: userData?.role ?? "mitglied",
         permissions: userData?.permissions ?? [],
         memberId: userData?.memberId,
         clubId: userData?.clubId,
-        isSuperAdmin: userData?.isSuperAdmin || isHardcodedAdmin || false,
         emailVerified: userData?.emailVerified || false,
         image: userData?.image || user.profile?.avatar_url,
       },
@@ -90,11 +85,11 @@ export const getSessionWithClub = cache(async () => {
     // Headers might not be available in all contexts (e.g. edge cases)
   }
 
-  // Check for impersonation cookies (Super Admin viewing another club)
+  // Check for impersonation cookies
   let isImpersonating = false;
   try {
     const impersonationClubId = await getImpersonationTarget();
-    if (impersonationClubId && user.isSuperAdmin) {
+    if (impersonationClubId && user.role === "admin") {
       clubIdLookup = impersonationClubId;
       clubSlugLookup = null;
       isImpersonating = true;
@@ -128,8 +123,8 @@ export const getSessionWithClub = cache(async () => {
     console.error("Error fetching club context in getSessionWithClub:", error);
   }
 
-  // Super-Admins without a club context (e.g. on root domain) are fine
-  if (!club && user.isSuperAdmin) {
+  // Admins without a club context (e.g. on root domain) are fine
+  if (!club && user.role === "admin") {
     return { ...session, club: null, isImpersonating: false };
   }
 
@@ -154,7 +149,7 @@ export async function requireClubAuth() {
   if (!sessionWithClub) {
     throw new Error("UNAUTHORIZED");
   }
-  if (sessionWithClub.user.isSuperAdmin) {
+  if (sessionWithClub.user.role === "admin") {
     return sessionWithClub;
   }
   if (!sessionWithClub.club) {
@@ -195,8 +190,6 @@ export async function requirePermission(permission: Permission) {
   }
 
   const user = session.user;
-
-  if (user.isSuperAdmin) return session;
 
   if (user.permissions?.includes(permission)) return session;
 

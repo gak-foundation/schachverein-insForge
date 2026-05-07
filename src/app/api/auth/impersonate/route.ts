@@ -39,7 +39,7 @@ const IMPERSONATION_DURATION_MS = 60 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
-  if (!session?.user.isSuperAdmin) {
+  if (session?.user.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

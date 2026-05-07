@@ -4,7 +4,7 @@ import { setFeatureFlag, ALL_FLAGS } from "@/lib/feature-flags";
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
-  if (!session?.user.isSuperAdmin) {
+  if (session?.user.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

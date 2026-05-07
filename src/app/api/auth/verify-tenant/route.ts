@@ -21,10 +21,9 @@ export async function GET(request: Request) {
     // Root domain login is allowed for super-admins
     const authUser = await getAuthUserById(user.id);
     
-    if (authUser?.isSuperAdmin || !authUser?.clubId) {
+    if (!authUser?.clubId) {
       return NextResponse.json({ 
-        ok: true, 
-        isSuperAdmin: authUser?.isSuperAdmin || false
+        ok: true
       });
     }
     return NextResponse.json({ error: "Nur auf Subdomain anmelden", ok: false }, { status: 400 });
@@ -39,10 +38,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "User not found", ok: false }, { status: 404 });
   }
 
-  // Super-admin can login anywhere
-  if (authUser.isSuperAdmin) {
-    return NextResponse.json({ ok: true, isSuperAdmin: true });
-  }
 
   const club = await getClubBySlug(slug);
   if (!club) {

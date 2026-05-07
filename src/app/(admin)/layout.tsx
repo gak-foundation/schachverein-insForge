@@ -18,7 +18,7 @@ export default async function AdminLayout({
 }) {
   const session = await getSessionWithClub();
 
-  if (!session?.user.isSuperAdmin) {
+  if (session?.user.role !== "admin") {
     redirect("/dashboard");
   }
 

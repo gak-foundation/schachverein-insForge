@@ -822,7 +822,7 @@ export async function updateUserRole(formData: FormData) {
   const { userId, role } = parsed.data;
 
   // Verify target user belongs to the same club (unless super admin)
-  if (!session.user.isSuperAdmin) {
+  if (session.user.role !== "admin") {
     const client = await createServerAuthClient();
     const { data: targetUser } = await client
       .from("auth_user")

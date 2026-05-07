@@ -8,27 +8,27 @@ const { mockInsforgeClient, mockGetSession, mockLogMemberAction, mockRevalidateP
     mockGetSession: vi.fn(),
     mockLogMemberAction: vi.fn(),
     mockRevalidatePath: vi.fn(),
-    tableChains: chains,
+    tableChains: chains
   };
 });
 
 // ===== MODULE MOCKS =====
 vi.mock("next/cache", () => ({
-  revalidatePath: (...args: string[]) => mockRevalidatePath(...args),
+  revalidatePath: (...args: string[]) => mockRevalidatePath(...args)
 }));
 
 vi.mock("@/lib/insforge", () => ({
   createClient: vi.fn(() => mockInsforgeClient),
   createServerClient: vi.fn(() => mockInsforgeClient),
-  createServiceClient: vi.fn(() => mockInsforgeClient),
+  createServiceClient: vi.fn(() => mockInsforgeClient)
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  getSession: mockGetSession,
+  getSession: mockGetSession
 }));
 
 vi.mock("@/lib/audit", () => ({
-  logMemberAction: (...args: unknown[]) => mockLogMemberAction(...args),
+  logMemberAction: (...args: unknown[]) => mockLogMemberAction(...args)
 }));
 
 vi.mock("@/lib/auth/permissions", () => ({
@@ -37,7 +37,7 @@ vi.mock("@/lib/auth/permissions", () => ({
     if (isSuper) return true;
     if (perms.includes(perm)) return true;
     return role === "admin" || role === "vorstand";
-  }),
+  })
 }));
 
 // ===== IMPORTS =====
@@ -59,7 +59,7 @@ function makeChain(returnData: unknown = []) {
     insert: vi.fn(() => ({ then: (r: (v: unknown) => unknown) => Promise.resolve(r({ data: null, error: null })) })),
     update: vi.fn(() => chain),
     delete: vi.fn(() => chain),
-    then: (r: (v: unknown) => unknown) => Promise.resolve(r({ data, error: null })),
+    then: (r: (v: unknown) => unknown) => Promise.resolve(r({ data, error: null }))
   };
   return chain;
 }
@@ -118,7 +118,7 @@ describe("exportMemberData", () => {
       email: "max@test.de", phone: null, date_of_birth: "1990-01-01",
       gender: "m", dwz: 1800, elo: 1900, fide_id: null, joined_at: "2024-01-01",
       club_memberships: [{ id: "m1", club_id: "club-1", role: "mitglied" }],
-      dwz_history: [], member_status_history: [],
+      dwz_history: [], member_status_history: []
     };
     setupTable("members", [mockMember]);
     setupTable("payments", [{ id: "p1", amount: "100", status: "paid" }]);
@@ -132,7 +132,7 @@ describe("exportMemberData", () => {
   });
 
   it("sollte SuperAdmin den Export jeder ID erlauben", async () => {
-    mockGetSession.mockResolvedValue({ user: { memberId: "admin-id", isSuperAdmin: true } });
+    mockGetSession.mockResolvedValue({ user: { memberId: "admin-id", role: "admin" } });
     setupTable("members", [{ id: "member-99", first_name: "Fremd", last_name: "User", club_memberships: [], dwz_history: [], member_status_history: [] }]);
     setupTable("payments", []);
 
@@ -154,14 +154,14 @@ describe("anonymizeMember", () => {
 
   it("sollte Fehler werfen ohne Berechtigung", async () => {
     mockGetSession.mockResolvedValue({
-      user: { memberId: "m-1", id: "u-1", role: "mitglied", permissions: [], isSuperAdmin: false },
+      user: { memberId: "m-1", id: "u-1", role: "mitglied", permissions: [] }
     });
     await expect(anonymizeMember("member-1")).rejects.toThrow("Nur Administratoren mit entsprechenden Rechten");
   });
 
   it("sollte Mitglied anonymisieren", async () => {
     mockGetSession.mockResolvedValue({
-      user: { memberId: "m-1", id: "u-1", role: "admin", permissions: [], isSuperAdmin: false },
+      user: { memberId: "m-1", id: "u-1", role: "admin", permissions: [] }
     });
     setupTable("members", [{ id: "member-1" }]);
     setupTable("auth_user");
@@ -175,7 +175,7 @@ describe("anonymizeMember", () => {
 
   it("sollte Fehler werfen wenn Mitglied nicht existiert", async () => {
     mockGetSession.mockResolvedValue({
-      user: { memberId: "m-1", id: "u-1", role: "admin", permissions: [], isSuperAdmin: false },
+      user: { memberId: "m-1", id: "u-1", role: "admin", permissions: [],  }
     });
     setupTable("members", []);
 

@@ -37,7 +37,7 @@ type DashboardUser = {
   role?: string;
   permissions?: string[];
   memberId?: string;
-  isSuperAdmin?: boolean;
+
 };
 
 type DashboardClub = {

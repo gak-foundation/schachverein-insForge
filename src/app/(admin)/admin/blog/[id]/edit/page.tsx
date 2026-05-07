@@ -12,7 +12,7 @@ export default async function EditBlogPostPage({
 }) {
   const session = await getSessionWithClub();
 
-  if (!session?.user.isSuperAdmin) {
+  if (session?.user.role !== "admin") {
     redirect("/dashboard");
   }
 

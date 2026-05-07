@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export default async function AdminClubsPage() {
   const session = await getSessionWithClub();
 
-  if (!session?.user.isSuperAdmin) {
+  if (session?.user.role !== "admin") {
     redirect("/dashboard");
   }
 

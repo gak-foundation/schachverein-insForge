@@ -24,8 +24,8 @@ export default async function DashboardLayout({
   }
 
   // If authenticated but no club, allow rendering (DashboardPage will show creation UI)
-  const isSuperAdmin = session.user.isSuperAdmin;
-  const hasNoClub = !session.club && !isSuperAdmin;
+  const isAdminRole = session.user.role === "admin";
+  const hasNoClub = !session.club && !isAdminRole;
 
   const user = session.user;
   const role = user?.role as string ?? "mitglied";

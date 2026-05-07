@@ -29,7 +29,7 @@ export default async function TenantLayout({
   }
 
   const clubAny = club as any;
-  if (!session.user.isSuperAdmin && session.user.clubId !== clubAny.id) {
+  if (session.user.role !== "admin" && session.user.clubId !== clubAny.id) {
     redirect(`/auth/error?reason=wrong_tenant`);
   }
 

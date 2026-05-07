@@ -92,7 +92,7 @@ export async function completeOnboardingAction(_formData?: FormData) {
 export async function createClubAsSuperAdminAction(formData: FormData) {
   const session = await requireAuth();
 
-  if (!session.user.isSuperAdmin) {
+  if (session.user.role !== "admin") {
     throw new Error("Nicht autorisiert");
   }
 
@@ -157,7 +157,7 @@ export async function updateClubAction(formData: FormData) {
 export async function switchClubAction(clubId: string) {
   const session = await requireAuth();
 
-  if (session.user.isSuperAdmin) {
+  if (session.user.role === "admin") {
     await updateUserClub(session.user.id, clubId);
     return { success: true };
   }
@@ -429,7 +429,7 @@ export async function acceptClubInvitationAction(token: string) {
 export async function getAllInvitationsAction() {
   const session = await requireAuth();
 
-  if (!session.user.isSuperAdmin) {
+  if (session.user.role !== "admin") {
     throw new Error("Nicht autorisiert");
   }
 
@@ -508,7 +508,7 @@ export async function adminCreateInvitationAction(formData: FormData) {
     throw new Error("Verein nicht gefunden");
   }
 
-  if (!session.user.isSuperAdmin) {
+  if (session.user.role !== "admin") {
     throw new Error("Nicht autorisiert");
   }
 
@@ -611,7 +611,7 @@ export async function revokeInvitationAction(invitationId: string) {
     throw new Error("Einladung nicht gefunden");
   }
 
-  if (!session.user.isSuperAdmin) {
+  if (session.user.role !== "admin") {
     const club = await requireClub();
     if (invitation.club_id !== club.id) {
       throw new Error("Nicht autorisiert");
@@ -632,7 +632,7 @@ export async function revokeInvitationAction(invitationId: string) {
 export async function getAllClubsAction() {
   const session = await requireAuth();
 
-  if (!session.user.isSuperAdmin) {
+  if (session.user.role !== "admin") {
     throw new Error("Nicht autorisiert");
   }
 
@@ -680,7 +680,7 @@ export async function getAllClubsAction() {
 export async function getAllUsersAction() {
   const session = await requireAuth();
 
-  if (!session.user.isSuperAdmin) {
+  if (session.user.role !== "admin") {
     throw new Error("Nicht autorisiert");
   }
 
@@ -695,7 +695,7 @@ export async function getAllUsersAction() {
 export async function toggleClubStatusAction(clubId: string, isActive: boolean) {
   const session = await requireAuth();
 
-  if (!session.user.isSuperAdmin) {
+  if (session.user.role !== "admin") {
     throw new Error("Nicht autorisiert");
   }
 
@@ -752,7 +752,7 @@ const IMPERSONATION_DURATION_MS = 60 * 60 * 1000; // 1 hour
 export async function impersonateClubAction(clubId: string) {
   const session = await requireAuth();
 
-  if (!session.user.isSuperAdmin) {
+  if (session.user.role !== "admin") {
     throw new Error("Nicht autorisiert");
   }
 

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { UserEditForm } from "./user-edit-form";
 
-async function getUserById(id: string, clubId?: string, isSuperAdmin?: boolean) {
+async function getUserById(id: string, clubId?: string) {
   const client = createServiceClient();
   const { data, error } = await client
     .from("auth_user")
@@ -18,7 +18,7 @@ async function getUserById(id: string, clubId?: string, isSuperAdmin?: boolean) 
     return null;
   }
 
-  if (!isSuperAdmin && (!clubId || data.club_id !== clubId)) {
+  if (!clubId || data.club_id !== clubId) {
     return null;
   }
 

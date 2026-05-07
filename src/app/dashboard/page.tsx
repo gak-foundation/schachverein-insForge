@@ -21,11 +21,11 @@ export default async function DashboardPage() {
 
   const user = session.user;
   const role = (user?.role as string) ?? "mitglied";
-  const isSuperAdmin = user?.isSuperAdmin ?? false;
+  const isAdminRole = user?.role === "admin";
 
   const clubId = await getCurrentClubId();
   if (!clubId) {
-    if (isSuperAdmin) {
+    if (isAdminRole) {
       redirect("/admin");
     }
     redirect("/onboarding");

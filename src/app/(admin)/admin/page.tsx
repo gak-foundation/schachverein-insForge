@@ -6,7 +6,7 @@ import { SuperAdminDashboard } from "@/app/super-admin/super-admin-dashboard";
 export default async function AdminPage() {
   const session = await getSessionWithClub();
 
-  if (!session?.user.isSuperAdmin) {
+  if (session?.user.role !== "admin") {
     redirect("/dashboard");
   }
 
