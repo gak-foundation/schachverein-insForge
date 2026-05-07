@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { requireClubAuth } from "@/lib/auth/session";
 import { getClubById } from "@/lib/clubs/queries";
@@ -48,8 +48,8 @@ export async function createCheckoutSessionAction({
   }
 
   const baseUrl = APP_URL;
-  const successUrl = `${baseUrl}/super-admin/billing?success=true`;
-  const cancelUrl = `${baseUrl}/super-admin/billing?canceled=true`;
+  const successUrl = `${baseUrl}/admin/billing?success=true`;
+  const cancelUrl = `${baseUrl}/admin/billing?canceled=true`;
 
   const checkoutSession = await createCheckoutSession({
     stripeCustomerId,

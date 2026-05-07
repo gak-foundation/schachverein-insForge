@@ -3,7 +3,8 @@
   "plugin": [
     "opencode-froggy",
     "opencode-ignore",
-    "superpowers@git+https://github.com/obra/superpowers.git"
+    "superpowers@git+https://github.com/obra/superpowers.git",
+    "context-mode"
   ],
   "mcp": {
     "insforge": {
@@ -44,6 +45,10 @@
     "vercel": {
       "type": "remote",
       "url": "https://mcp.vercel.com"
+    },
+    "context-mode": {
+      "type": "local",
+      "command": ["context-mode"]
     }
   }
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useActionState, useTransition } from "react";
 import Link from "next/link";
@@ -32,7 +32,7 @@ export default function SignupPage() {
 
   const strengthCount = Object.values(passwordStrength).filter(Boolean).length;
   const strengthColor = 
-    strengthCount <= 1 ? "bg-red-500" :
+    strengthCount <= 1 ? "bg-destructive" :
     strengthCount <= 3 ? "bg-amber-500" : 
     "bg-green-500";
 
@@ -69,7 +69,7 @@ export default function SignupPage() {
         <div className="mt-8">
           <form action={formAction} className="space-y-4" suppressHydrationWarning>
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium text-slate-900 dark:text-slate-200">
+              <Label htmlFor="name" className="text-sm font-medium">
                 Name
               </Label>
               <Input
@@ -84,7 +84,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-slate-900 dark:text-slate-200">
+              <Label htmlFor="email" className="text-sm font-medium">
                 E-Mail
               </Label>
               <Input
@@ -99,7 +99,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-slate-900 dark:text-slate-200">
+              <Label htmlFor="password" className="text-sm font-medium">
                 Passwort
               </Label>
               <div className="relative">
@@ -117,7 +117,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   tabIndex={-1}
                 >
                   {showPassword ? (
@@ -130,17 +130,17 @@ export default function SignupPage() {
 
               {password && (
                 <div className="mt-2 space-y-2">
-                  <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
                     <div 
                       className={`h-full ${strengthColor} transition-all duration-300`} 
                       style={{ width: `${(strengthCount / 4) * 100}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-[10px] text-slate-500 font-medium">
-                    <span className={passwordStrength.length ? "text-green-600" : ""}>8+ Zeichen</span>
-                    <span className={passwordStrength.capital ? "text-green-600" : ""}>Großbuchstabe</span>
-                    <span className={passwordStrength.number ? "text-green-600" : ""}>Zahl</span>
-                    <span className={passwordStrength.special ? "text-green-600" : ""}>Sonderzeichen</span>
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
+                    <span className={passwordStrength.length ? "text-primary" : ""}>8+ Zeichen</span>
+                    <span className={passwordStrength.capital ? "text-primary" : ""}>Großbuchstabe</span>
+                    <span className={passwordStrength.number ? "text-primary" : ""}>Zahl</span>
+                    <span className={passwordStrength.special ? "text-primary" : ""}>Sonderzeichen</span>
                   </div>
                 </div>
               )}
@@ -167,7 +167,7 @@ export default function SignupPage() {
               <Separator className="w-full" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-3 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              <span className="bg-card px-3 text-muted-foreground">
                 Oder weiter mit
               </span>
             </div>
@@ -177,11 +177,11 @@ export default function SignupPage() {
             <SocialButtons providers={oauthProviders} />
           </div>
 
-          <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-8 text-center text-sm text-muted-foreground">
             Haben Sie bereits ein Konto?{" "}
             <Link
               href="/auth/login"
-              className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              className="font-medium text-primary hover:underline"
             >
               Anmelden
             </Link>
@@ -190,9 +190,9 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <Link
               href="/"
-              className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
-              ← Zurück zur Startseite
+              ← Zuruck zur Startseite
             </Link>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth/session";
+﻿import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getDashboardStats } from "@/features/audit/actions";
 import { getCurrentClubId } from "@/lib/actions/utils";
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const clubId = await getCurrentClubId();
   if (!clubId) {
     if (isSuperAdmin) {
-      redirect("/super-admin");
+      redirect("/admin");
     }
     redirect("/onboarding");
   }

@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { getMemberById, getDWZHistory, getMemberStatusHistory } from "@/lib/actions/members";
+import { getMemberById, getDWZHistory, getMemberStatusHistory, getMemberAuditLogs } from "@/lib/actions/members";
 import { hasPermission } from "@/lib/auth/permissions";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import Link from "next/link";
@@ -22,11 +22,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
 import { deleteMember } from "@/lib/actions/members";
+import { requestMemberDeletion, anonymizeMember, syncFideRating, syncChesscomRating } from "@/lib/actions/members";
 import { LichessSyncButton } from "@/features/clubs/components/lichess-sync-button";
 import { LichessGamesList } from "@/features/members/components/lichess-games-list";
 import { fetchLichessGames } from "@/lib/lichess";
 import { cn, calculateAge } from "@/lib/utils";
-import { ChevronLeft, Edit, Trash2, Calendar, Mail, Phone, User, Award, ShieldCheck, History, AlertCircle } from "lucide-react";
+import { ChevronLeft, Edit, Trash2, Calendar, Mail, Phone, User, Award, ShieldCheck, History, AlertCircle, FileText } from "lucide-react";
 import { Member } from "@/types";
 
 export const metadata = {

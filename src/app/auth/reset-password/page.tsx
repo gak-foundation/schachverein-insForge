@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -30,7 +30,7 @@ function calculateStrength(password: string): number {
 }
 
 function getStrengthColor(strength: number): string {
-  if (strength < 40) return "bg-red-500";
+  if (strength < 40) return "bg-destructive";
   if (strength < 60) return "bg-orange-500";
   if (strength < 80) return "bg-yellow-500";
   return "bg-green-500";
@@ -52,7 +52,6 @@ function ResetPasswordContent() {
 
   useEffect(() => {
     // The session is handled automatically via URL params
-    // Wir müssen hier nichts weiter tun
   }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -60,7 +59,7 @@ function ResetPasswordContent() {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Die Passwörter stimmen nicht überein");
+      setError("Die Passworter stimmen nicht uberein");
       return;
     }
 
@@ -102,7 +101,7 @@ function ResetPasswordContent() {
   return (
     <>
       <AuthHeader
-        title={success ? "Passwort geändert" : "Passwort zurücksetzen"}
+        title={success ? "Passwort geandert" : "Passwort zurucksetzen"}
         subtitle={success ? "Ihr neues Passwort wurde gespeichert" : "Erstellen Sie ein neues sicheres Passwort"}
       />
 
@@ -121,7 +120,7 @@ function ResetPasswordContent() {
                 transition={{ delay: 0.2 }}
                 className="space-y-2"
               >
-                <Label htmlFor="password" title="Neues Passwort" className="text-sm font-medium text-slate-200">Neues Passwort</Label>
+                <Label htmlFor="password" className="text-sm font-medium">Neues Passwort</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -131,12 +130,12 @@ function ResetPasswordContent() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20 pr-12"
+                    className="h-11 pr-12"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground transition-colors"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -146,7 +145,7 @@ function ResetPasswordContent() {
 
                 {password && (
                   <div className="space-y-2 pt-1">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-700">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${getStrengthColor(strength)}`}
                         style={{ width: `${strength}%` }}
@@ -157,10 +156,10 @@ function ResetPasswordContent() {
                         <p
                           key={req.label}
                           className={`text-xs ${
-                            req.test(password) ? "text-green-400" : "text-slate-500"
+                            req.test(password) ? "text-green-600" : "text-muted-foreground"
                           }`}
                         >
-                          {req.test(password) ? "✓" : "○"} {req.label}
+                          {req.test(password) ? "✓" : "—"} {req.label}
                         </p>
                       ))}
                     </div>
@@ -174,7 +173,7 @@ function ResetPasswordContent() {
                 transition={{ delay: 0.3 }}
                 className="space-y-2"
               >
-                <Label htmlFor="confirmPassword" title="Passwort bestätigen" className="text-sm font-medium text-slate-200">Passwort bestätigen</Label>
+                <Label htmlFor="confirmPassword" className="text-sm font-medium">Passwort bestatigen</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -184,12 +183,12 @@ function ResetPasswordContent() {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="h-11 border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20 pr-12"
+                    className="h-11 pr-12"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground transition-colors"
                     tabIndex={-1}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -211,7 +210,7 @@ function ResetPasswordContent() {
               >
                 <Button
                   type="submit"
-                  className="h-12 w-full bg-gradient-to-r from-blue-600 to-violet-600 font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-500 hover:to-violet-500 hover:shadow-blue-500/40 disabled:opacity-70"
+                  className="h-12 w-full font-medium"
                   disabled={loading}
                 >
                   {loading ? (
@@ -230,9 +229,9 @@ function ResetPasswordContent() {
             >
               <Link
                 href="/auth/login"
-                className="text-xs text-slate-500 transition-colors hover:text-slate-300"
+                className="text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
-                ← Zurück zur Anmeldung
+                ← Zuruck zur Anmeldung
               </Link>
             </motion.div>
           </motion.div>
@@ -250,7 +249,7 @@ function ResetPasswordContent() {
               transition={{ type: "spring", stiffness: 200, damping: 15 }}
               className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20"
             >
-              <CheckCircle className="h-8 w-8 text-green-400" />
+              <CheckCircle className="h-8 w-8 text-green-500" />
             </motion.div>
 
             <motion.div
@@ -259,11 +258,11 @@ function ResetPasswordContent() {
               transition={{ delay: 0.2 }}
               className="space-y-2"
             >
-              <p className="text-slate-300">
-                Ihr Passwort wurde erfolgreich zurückgesetzt.
+              <p className="text-foreground">
+                Ihr Passwort wurde erfolgreich zuruckgesetzt.
               </p>
-              <p className="text-sm text-slate-500">
-                Sie können sich jetzt mit Ihrem neuen Passwort anmelden.
+              <p className="text-sm text-muted-foreground">
+                Sie konnen sich jetzt mit Ihrem neuen Passwort anmelden.
               </p>
             </motion.div>
 
@@ -274,7 +273,7 @@ function ResetPasswordContent() {
             >
               <Button
                 onClick={() => router.push("/auth/login")}
-                className="h-12 w-full bg-gradient-to-r from-blue-600 to-violet-600 font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-500 hover:to-violet-500 hover:shadow-blue-500/40"
+                className="h-12 w-full font-medium"
               >
                 Zum Login
               </Button>
@@ -293,9 +292,9 @@ function LoadingState() {
         animate={{ rotate: 360 }}
         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
       >
-        <Loader2 className="h-8 w-8 text-blue-400" />
+        <Loader2 className="h-8 w-8 text-primary" />
       </motion.div>
-      <p className="mt-4 text-sm text-slate-400">Wird geladen...</p>
+      <p className="mt-4 text-sm text-muted-foreground">Wird geladen...</p>
     </div>
   );
 }

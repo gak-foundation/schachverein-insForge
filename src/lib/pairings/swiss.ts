@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Swiss System Pairing Service using bbpPairings
  * bbpPairings: https://github.com/BieremaBoyzProgramming/bbpPairings
  */
@@ -73,6 +73,7 @@ export async function generateSwissPairings(
       await execAsync(cmd, { timeout: 30000 });
     } catch (execError: any) {
       console.error("[Pairing] Execution error:", execError.message);
+      await cleanupFiles(inputFile, outputFile);
       return {
         success: false,
         errors: [`Pairing engine failed: ${execError.message}`],

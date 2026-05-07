@@ -1,11 +1,11 @@
-import { getSession } from "@/lib/auth/session";
+﻿import { getSession } from "@/lib/auth/session";
 import { createServiceClient } from "@/lib/insforge";
 import { PERMISSIONS, hasPermission, ROLES } from "@/lib/auth/permissions";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { UserEditForm } from "./user-edit-form";
 
-async function getUserById(id: string) {
+async function getUserById(id: string, clubId?: string, isSuperAdmin?: boolean) {
   const client = createServiceClient();
   const { data, error } = await client
     .from("auth_user")
@@ -15,6 +15,10 @@ async function getUserById(id: string) {
 
   if (error || !data) {
     console.error("Error fetching user:", error);
+    return null;
+  }
+
+  if (!isSuperAdmin && (!clubId || data.club_id !== clubId)) {
     return null;
   }
 
@@ -60,7 +64,7 @@ export default async function EditUserPage({
   }
 
   const { id } = await params;
-  const user = await getUserById(id);
+  const user = await getUserById(id, session.user.clubId, session.user.isSuperAdmin);
 
   if (!user) {
     redirect("/dashboard/admin/users");

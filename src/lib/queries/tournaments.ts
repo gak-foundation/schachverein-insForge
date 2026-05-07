@@ -26,7 +26,8 @@ export function useTournaments() {
   return useQuery({
     queryKey: tournamentKeys.lists(),
     queryFn: getTournaments,
-    staleTime: 5 * 60 * 1000, // 5 Minuten
+    staleTime: 10 * 60 * 1000, // 10 Minuten
+    gcTime: 30 * 60 * 1000, // 30 Minuten Cache
   });
 }
 
@@ -38,7 +39,8 @@ export function useTournament(id: string) {
     queryKey: tournamentKeys.details(id),
     queryFn: () => getTournamentById(id),
     enabled: !!id,
-    staleTime: 2 * 60 * 1000, // 2 Minuten
+    staleTime: 5 * 60 * 1000, // 5 Minuten
+    gcTime: 15 * 60 * 1000, // 15 Minuten Cache
   });
 }
 
@@ -50,7 +52,8 @@ export function useTournamentParticipants(tournamentId: string) {
     queryKey: tournamentKeys.participants(tournamentId),
     queryFn: () => getTournamentParticipants(tournamentId),
     enabled: !!tournamentId,
-    staleTime: 1 * 60 * 1000, // 1 Minute (kürzer da sich Ergebnisse ändern)
+    staleTime: 3 * 60 * 1000, // 3 Minuten (länger für API-Rate-Limits)
+    gcTime: 10 * 60 * 1000, // 10 Minuten Cache
   });
 }
 
@@ -62,7 +65,8 @@ export function useTournamentGames(tournamentId: string, round?: number) {
     queryKey: tournamentKeys.games(tournamentId, round),
     queryFn: () => getTournamentGames(tournamentId, round),
     enabled: !!tournamentId,
-    staleTime: 1 * 60 * 1000, // 1 Minute
+    staleTime: 3 * 60 * 1000, // 3 Minuten (länger für API-Rate-Limits)
+    gcTime: 10 * 60 * 1000, // 10 Minuten Cache
   });
 }
 

@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/insforge';
+import { checkRateLimit, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function POST(request: Request) {
+  // Rate limiting
+  const rateLimit = checkRateLimit(request);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.retryAfter || 60);
+  }
+
   try {
     const { token, newPassword } = await request.json();
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,17 +25,17 @@ export default function DashboardError({
         </div>
         <h2 className="text-2xl font-bold tracking-tight mb-2">
           {error.message === "SUPER_ADMIN_NO_CLUB_CONTEXT" 
-            ? "Kein Verein ausgewählt" 
+            ? "Kein Verein ausgewÃ¤hlt" 
             : "Ein Fehler ist aufgetreten"}
         </h2>
         <p className="text-sm text-muted-foreground mb-8">
           {error.message === "SUPER_ADMIN_NO_CLUB_CONTEXT"
-            ? "Als Super-Admin müssen Sie zuerst einen Verein auswählen, um diese Seite (Statistiken/Finanzen) anzeigen zu können."
+            ? "Als Super-Admin mÃ¼ssen Sie zuerst einen Verein auswÃ¤hlen, um diese Seite (Statistiken/Finanzen) anzeigen zu kÃ¶nnen."
             : error.message || "Es gab ein Problem beim Laden dieser Seite."}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           {error.message === "SUPER_ADMIN_NO_CLUB_CONTEXT" ? (
-            <Link href="/super-admin">
+            <Link href="/admin">
               <Button className="w-full sm:w-auto gap-2">
                 <Home className="h-4 w-4" />
                 Zur Vereinsauswahl

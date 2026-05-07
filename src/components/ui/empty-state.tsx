@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+﻿import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 import { Button } from "./button";
 import Link from "next/link";
@@ -29,13 +29,13 @@ export function EmptyState({
       )}
     >
       {Icon && (
-        <div className="mb-4 rounded-full bg-gray-100 p-3">
-          <Icon className="h-8 w-8 text-gray-400" />
+        <div className="mb-4 rounded-full bg-muted p-3">
+          <Icon className="h-8 w-8 text-muted-foreground" />
         </div>
       )}
-      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-gray-500">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
       )}
       {action && (
         <Link href={action.href} className="mt-4">

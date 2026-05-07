@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -54,21 +54,21 @@ export function InvitationContent({
       <div className="text-center py-8">
         <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold mb-2">Erfolgreich beigetreten!</h2>
-        <p className="text-slate-600">Sie werden zum Dashboard weitergeleitet...</p>
+        <p className="text-muted-foreground">Sie werden zum Dashboard weitergeleitet...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-        <p className="text-slate-700 dark:text-slate-300 mb-2">Sie wurden eingeladen, beizutreten:</p>
-        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{clubName}</h3>
+      <div className="bg-accent p-6 rounded-xl border border-border">
+        <p className="text-muted-foreground mb-2">Sie wurden eingeladen, beizutreten:</p>
+        <h3 className="text-2xl font-bold text-foreground">{clubName}</h3>
       </div>
 
       {!isLoggedIn ? (
         <div className="space-y-4">
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-muted-foreground">
             Bitte erstellen Sie ein Konto oder melden Sie sich an, um die Einladung anzunehmen.
           </p>
           <div className="grid grid-cols-2 gap-4">
@@ -91,11 +91,11 @@ export function InvitationContent({
           <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <p>
-              Diese Einladung wurde für <strong>{invitationEmail}</strong> ausgestellt. 
+              Diese Einladung wurde fur <strong>{invitationEmail}</strong> ausgestellt. 
               Sie sind aktuell als <strong>{userEmail}</strong> angemeldet.
             </p>
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Bitte melden Sie sich mit der richtigen E-Mail-Adresse an, um beizutreten.
           </p>
           <Link
@@ -107,7 +107,7 @@ export function InvitationContent({
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-muted-foreground">
             Klicken Sie auf den Button unten, um die Einladung anzunehmen und Mitglied zu werden.
           </p>
           {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}

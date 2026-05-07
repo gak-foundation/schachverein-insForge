@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { insforge } from '@/lib/insforge';
 import { ensureAuthUser } from '@/lib/db/queries/auth';
+import { checkRateLimit, rateLimitResponse } from '@/lib/security/rate-limit';
 
 export async function POST(request: Request) {
+  // Rate limiting
+  const rateLimit = checkRateLimit(request);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.retryAfter || 60);
+  }
+
   try {
     const { email, password, options } = await request.json();
 

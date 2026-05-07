@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { X, ChevronDown, Loader2 } from "lucide-react";
+import { X, ChevronDown, Loader2, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import {
   AlertDialog,
@@ -24,6 +24,7 @@ import { useToast } from "@/components/ui/use-toast";
 import {
   updateMemberStatusBulkAction,
   assignContributionRateBulkAction,
+  deleteMembersBulkAction,
 } from "@/lib/actions/bulk-members";
 
 interface BulkActionBarProps {
@@ -72,6 +73,9 @@ export function BulkActionBar({
         } else if (actionType === "rate") {
           const result = await assignContributionRateBulkAction(selectedIds, rest.join(":"));
           toast({ title: "Erfolg", description: `${result.updated} Mitglieder aktualisiert.` });
+        } else if (actionType === "delete") {
+          const result = await deleteMembersBulkAction(selectedIds);
+          toast({ title: "Erfolg", description: `${result.deleted} Mitglieder geloescht.` });
         }
         onClear();
       } catch (error: any) {
@@ -126,6 +130,11 @@ export function BulkActionBar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {contributionRates.length === 0 && (
+                <DropdownMenuItem disabled>
+                  Keine Tarife verfuegbar
+                </DropdownMenuItem>
+              )}
               {contributionRates.map((rate) => (
                 <DropdownMenuItem
                   key={rate.id}
@@ -139,16 +148,28 @@ export function BulkActionBar({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={disabled || isPending}
+            onClick={() => setConfirmAction({ action: "delete", label: "L\u00f6schen" })}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Loeschen
+          </Button>
         </div>
       </div>
 
       <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Aktion bestaetigen</AlertDialogTitle>
+            <AlertDialogTitle>{confirmAction?.action === "delete" ? "Loeschung bestaetigen" : "Aktion bestaetigen"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechtest du wirklich {selectedIds.length} Mitglieder auf
-              {" "}&quot;{confirmAction?.label}&quot; setzen?
+              {confirmAction?.action === "delete"
+                ? `Moechtest du wirklich ${selectedIds.length} Mitglieder loeschen? Sie werden auf "inaktiv" gesetzt.`
+                : `Moechtest du wirklich ${selectedIds.length} Mitglieder auf &quot;${confirmAction?.label}&quot; setzen?`
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

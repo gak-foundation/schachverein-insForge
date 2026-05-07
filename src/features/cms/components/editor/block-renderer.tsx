@@ -1,7 +1,13 @@
 "use client";
 
 import { Block } from "@/lib/store/editor-store";
-import { TextBlock } from "./blocks/text-block";
+import dynamic from "next/dynamic";
+
+const TextBlock = dynamic(() => import("./blocks/text-block").then((mod) => mod.TextBlock), {
+  loading: () => <div className="h-24 rounded-lg border bg-muted animate-pulse" />,
+});
+
+
 import { HeroBlock } from "./blocks/hero-block";
 import { ButtonBlock } from "./blocks/button-block";
 import { DividerBlock } from "./blocks/divider-block";

@@ -130,4 +130,31 @@ Available languages:
 - Serverless functions have single endpoint (no subpaths)
 - Storage: Upload files to buckets, store URLs in database
 - AI operations are OpenAI-compatible
-- **EXTRA IMPORTANT**: Use Tailwind CSS 3.4 (do not upgrade to v4). Lock these dependencies in `package.json`
+- **EXTRA IMPORTANT**: Use Tailwind CSS 4 (do not downgrade to v3.4). Lock these dependencies in `package.json`
+
+## context-mode routing rules
+
+MCP tools available: `context-mode_ctx_batch_execute`, `context-mode_ctx_execute`, `context-mode_ctx_execute_file`, `context-mode_ctx_index`, `context-mode_ctx_search`, `context-mode_ctx_fetch_and_index`, `context-mode_ctx_stats`, `context-mode_ctx_doctor`, `context-mode_ctx_upgrade`, `context-mode_ctx_purge`, `context-mode_ctx_insight`.
+
+### Think in Code
+Analyze/count/filter/compare/search/parse/transform data: **write code** via `context-mode_ctx_execute`, `console.log()` only the answer. Do NOT read raw data into context.
+
+### Blocked
+- **curl/wget** -- Use `context-mode_ctx_fetch_and_index` or `context-mode_ctx_execute` with fetch
+- **Direct web fetching** -- Use `context-mode_ctx_fetch_and_index(url, source)` then `context-mode_ctx_search`
+
+### Redirected
+- **Shell (>20 lines output)** -- Use `context-mode_ctx_batch_execute` or `context-mode_ctx_execute`
+- **File reading (analysis)** -- Use `context-mode_ctx_execute_file`
+- **grep/search (large)** -- Use `context-mode_ctx_execute` in sandbox
+
+### Session Continuity
+On resume: `context-mode_ctx_search(sort: "timeline")` BEFORE asking user.
+
+### ctx commands
+| Command | Action |
+|---------|--------|
+| `ctx stats` | Call stats MCP tool |
+| `ctx doctor` | Call doctor MCP tool |
+| `ctx upgrade` | Call upgrade MCP tool |
+| `ctx purge` | Purge knowledge base |

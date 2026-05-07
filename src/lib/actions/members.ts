@@ -7,7 +7,12 @@ import {
   deleteMember as originalDeleteMember, 
   updateUserRole as originalUpdateUserRole,
   getMembers as originalGetMembers,
-  getContributionRatesForMemberSelect as originalGetContributionRatesForMemberSelect
+  getContributionRatesForMemberSelect as originalGetContributionRatesForMemberSelect,
+  requestMemberDeletion as originalRequestMemberDeletion,
+  anonymizeMember as originalAnonymizeMember,
+  getMemberAuditLogs as originalGetMemberAuditLogs,
+  syncFideRating as originalSyncFideRating,
+  syncChesscomRating as originalSyncChesscomRating,
 } from "@/features/members/actions";
 
 export async function getMemberById(id: string) {
@@ -36,4 +41,24 @@ export async function getMembersAction(...args: any[]) {
 
 export async function getContributionRatesForMemberSelect() {
   return originalGetContributionRatesForMemberSelect();
+}
+
+export async function requestMemberDeletion(memberId: string) {
+  return originalRequestMemberDeletion(memberId);
+}
+
+export async function anonymizeMember(memberId: string) {
+  return originalAnonymizeMember(memberId);
+}
+
+export async function getMemberAuditLogs(memberId: string) {
+  return originalGetMemberAuditLogs(memberId);
+}
+
+export async function syncFideRating(memberId: string) {
+  return originalSyncFideRating(memberId);
+}
+
+export async function syncChesscomRating(memberId: string) {
+  return originalSyncChesscomRating(memberId);
 }

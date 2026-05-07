@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { blogPostSchema, type BlogPostFormData } from "@/lib/validations/blog";
-import { BlogEditor } from "./blog-editor";
+import dynamic from "next/dynamic";
+
+const BlogEditor = dynamic(() => import("./blog-editor").then((mod) => mod.BlogEditor), {
+  loading: () => (
+    <div className="w-full min-h-[300px] rounded-lg border bg-muted animate-pulse" />
+  ),
+});
+
+
 import { ImageUploader } from "./image-uploader";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";

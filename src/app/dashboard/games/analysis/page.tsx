@@ -1,6 +1,19 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { AnalysisBoard } from "@/features/training/components/analysis-board";
+import dynamic from "next/dynamic";
+
+const AnalysisBoard = dynamic(
+  () => import("@/features/training/components/analysis-board").then((mod) => mod.AnalysisBoard),
+  {
+    loading: () => (
+      <div className="h-[600px] flex items-center justify-center rounded-lg border bg-muted">
+        <p className="text-muted-foreground">Lade Analysebrett...</p>
+      </div>
+    ),
+  }
+);
+
+
 
 
 export const metadata = {

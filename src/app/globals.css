@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
@@ -172,25 +172,6 @@
 }
 
 @layer components {
-  /* Minimalist utilities */
-  .glass {
-    @apply bg-background/90 backdrop-blur-md border-b border-border;
-  }
-  
-  .card-hover {
-    @apply transition-all duration-300 ease-out hover:-translate-y-1 bg-card;
-  }
-
-  .friendly-shadow {
-    /* Kept for compatibility but styled less "friendly", more stark */
-    box-shadow: 0 4px 20px -5px oklch(0 0 0 / 0.05);
-  }
-  
-  /* Editorial additions */
-  .editorial-divider {
-    @apply w-full h-[1px] bg-border my-8;
-  }
-  
   .editorial-underline-input {
     @apply bg-transparent border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary transition-colors;
   }

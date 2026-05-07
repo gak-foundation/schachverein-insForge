@@ -4,6 +4,7 @@ import { requireAuth, requireClub } from "@/lib/auth/session";
 import { sendClubInvitationEmail } from "@/lib/auth/email";
 import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import {
   createClub,
   generateUniqueSlug,
@@ -18,7 +19,7 @@ import {
 import { getInvitationUrl } from "@/lib/auth/invitations";
 import { getAllAuthUsers, updateAuthUser } from "@/lib/db/queries/auth";
 
-// ─── Club CRUD ─────────────────────────────────────────────────
+// --- Club CRUD -------------------------------------------------
 
 export async function createClubAction(formData: FormData) {
   const session = await requireAuth();
@@ -151,7 +152,7 @@ export async function updateClubAction(formData: FormData) {
   return { success: true };
 }
 
-// ─── Club Switching (DEPRECATED: Strict tenancy - one club per user) ──────────
+// --- Club Switching (DEPRECATED: Strict tenancy - one club per user) ----------
 
 export async function switchClubAction(clubId: string) {
   const session = await requireAuth();
@@ -164,7 +165,7 @@ export async function switchClubAction(clubId: string) {
   throw new Error("Wechsel zwischen Vereinen ist nicht erlaubt");
 }
 
-// ─── Member Management ─────────────────────────────────────────
+// --- Member Management -----------------------------------------
 
 export async function inviteMemberToClubAction(formData: FormData) {
   const session = await requireAuth();
@@ -379,7 +380,7 @@ export async function importMembersAction(
   return results;
 }
 
-// ─── Invitation Handling ─────────────────────────────────────
+// --- Invitation Handling -------------------------------------
 
 export async function acceptClubInvitationAction(token: string) {
   const session = await requireAuth();
@@ -423,7 +424,7 @@ export async function acceptClubInvitationAction(token: string) {
   };
 }
 
-// ─── Admin Invitation Management ─────────────────────────────
+// --- Admin Invitation Management -----------------------------
 
 export async function getAllInvitationsAction() {
   const session = await requireAuth();
@@ -626,7 +627,7 @@ export async function revokeInvitationAction(invitationId: string) {
   return { success: true };
 }
 
-// ─── Super Admin ───────────────────────────────────────────────
+// --- Super Admin -----------------------------------------------
 
 export async function getAllClubsAction() {
   const session = await requireAuth();
@@ -711,6 +712,43 @@ export async function toggleClubStatusAction(clubId: string, isActive: boolean) 
   return { success: true };
 }
 
+// Helper: Generate random token (32 bytes = 64 hex chars)
+async function generateToken(): Promise<string> {
+  const buf = new Uint8Array(32);
+  crypto.getRandomValues(buf);
+  return Array.from(buf)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// Helper: SHA-256 hash as hex string
+async function sha256Hex(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const hash = await crypto.subtle.digest("SHA-256", encoder.encode(input));
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// Helper: HMAC-SHA256 sign
+async function hmacSign(message: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+const IMPERSONATION_MAX_PER_HOUR = 10;
+const IMPERSONATION_DURATION_MS = 60 * 60 * 1000; // 1 hour
+
 export async function impersonateClubAction(clubId: string) {
   const session = await requireAuth();
 
@@ -723,7 +761,133 @@ export async function impersonateClubAction(clubId: string) {
     throw new Error("Verein nicht gefunden");
   }
 
-  await updateUserClub(session.user.id, clubId);
+  if (!club.is_active) {
+    throw new Error("Verein ist inaktiv");
+  }
+
+  const secret = process.env.IMPERSONATION_SECRET;
+  if (!secret) {
+    throw new Error("Impersonation ist nicht konfiguriert");
+  }
+
+  const client = createServiceClient();
+
+  // Rate limiting: count sessions started in the last hour
+  const oneHourAgo = new Date(Date.now() - IMPERSONATION_DURATION_MS).toISOString();
+  const { count, error: countError } = await client
+    .from("impersonation_sessions")
+    .select("*", { count: "exact", head: true })
+    .eq("admin_id", session.user.id)
+    .gte("started_at", oneHourAgo);
+
+  if (countError) {
+    console.error("Rate limit check failed:", countError.message);
+    throw new Error("Interner Fehler bei der Rate-Limit-Pr?fung");
+  }
+
+  if ((count ?? 0) >= IMPERSONATION_MAX_PER_HOUR) {
+    throw new Error("Rate-Limit erreicht: Maximal 10 Impersonationen pro Stunde");
+  }
+
+  // Generate token and hashes
+  const token = await generateToken();
+  const tokenHash = await sha256Hex(token);
+  const sig = await hmacSign(token, secret);
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + IMPERSONATION_DURATION_MS);
+
+  // Create server-side session record
+  const { error: insertError } = await client.from("impersonation_sessions").insert({
+    admin_id: session.user.id,
+    target_club_id: clubId,
+    token_hash: tokenHash,
+    started_at: now.toISOString(),
+    expires_at: expiresAt.toISOString(),
+    revoked: false,
+  });
+
+  if (insertError) {
+    console.error("Failed to create impersonation session:", insertError.message);
+    throw new Error("Impersonation-Session konnte nicht erstellt werden");
+  }
+
+  // Set cookies
+  const cookieStore = await cookies();
+  cookieStore.set("impersonation_token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 3600,
+  });
+  cookieStore.set("impersonation_sig", sig, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 3600,
+  });
+
+  // Audit log
+  try {
+    await client.from("audit_log").insert({
+      user_id: session.user.id,
+      club_id: clubId,
+      action: "IMPERSONATION_STARTED",
+      entity: "club",
+      entity_id: clubId,
+      changes: { clubName: club.name, adminId: session.user.id },
+    });
+  } catch {
+    // Silent fail for audit
+  }
 
   return { success: true, club };
+}
+
+export async function unimpersonateClubAction() {
+  const session = await requireAuth();
+  const cookieStore = await cookies();
+  const token = cookieStore.get("impersonation_token")?.value;
+
+  if (token) {
+    const tokenHash = await sha256Hex(token);
+    const client = createServiceClient();
+
+    // Find and close the active session
+    const { data: sessionData } = await client
+      .from("impersonation_sessions")
+      .select("target_club_id")
+      .eq("token_hash", tokenHash)
+      .eq("admin_id", session.user.id)
+      .is("ended_at", null)
+      .eq("revoked", false)
+      .single();
+
+    if (sessionData) {
+      await client
+        .from("impersonation_sessions")
+        .update({ ended_at: new Date().toISOString() })
+        .eq("token_hash", tokenHash);
+
+      try {
+        await client.from("audit_log").insert({
+          user_id: session.user.id,
+          club_id: sessionData.target_club_id,
+          action: "IMPERSONATION_ENDED",
+          entity: "club",
+          entity_id: sessionData.target_club_id,
+          changes: {},
+        });
+      } catch {
+        // Silent fail for audit
+      }
+    }
+  }
+
+  cookieStore.delete("impersonation_token");
+  cookieStore.delete("impersonation_sig");
+
+  return { success: true };
 }

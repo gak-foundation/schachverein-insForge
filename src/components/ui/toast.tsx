@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { X, CheckCircle, AlertCircle, Info } from "lucide-react";
@@ -21,7 +21,6 @@ interface ToastContextType {
 
 const ToastContext = React.createContext<ToastContextType | null>(null);
 
-// Helper function to add toast without using hook
 let globalToastContext: ToastContextType | null = null;
 
 export function setToastContext(ctx: ToastContextType) {
@@ -32,7 +31,6 @@ export function toast(toastData: Omit<Toast, "id">) {
   if (typeof window !== "undefined" && globalToastContext) {
     globalToastContext.addToast(toastData);
   } else {
-    // Fallback for server-side
     console.log("Toast:", toastData);
   }
 }
@@ -97,11 +95,11 @@ const toastIcons = {
 };
 
 const toastStyles = {
-  default: "bg-white border-gray-200 text-gray-900",
-  success: "bg-green-50 border-green-200 text-green-900",
-  error: "bg-red-50 border-red-200 text-red-900",
-  destructive: "bg-red-600 border-red-700 text-white",
-  info: "bg-blue-50 border-blue-200 text-blue-900",
+  default: "bg-background border-border text-foreground",
+  success: "bg-green-50 border-green-200 text-green-900 dark:bg-green-950 dark:border-green-800 dark:text-green-200",
+  error: "bg-red-50 border-red-200 text-red-900 dark:bg-red-950 dark:border-red-800 dark:text-red-200",
+  destructive: "bg-destructive border-destructive text-destructive-foreground",
+  info: "bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200",
 };
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
@@ -128,7 +126,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       </div>
       <button
         onClick={onClose}
-        className="shrink-0 rounded-full p-1 hover:bg-black/5 transition-colors"
+        className="shrink-0 rounded-full p-1 hover:bg-foreground/5 transition-colors"
       >
         <X className="h-4 w-4" />
       </button>

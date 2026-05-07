@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Heart } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { getAllAddons, formatPrice, getFeatureLabel } from "@/lib/billing/addons";
+import { getAllAddons } from "@/lib/billing/addons";
 
 export function PricingCards({ className }: { className?: string }) {
   const addons = getAllAddons();
@@ -33,7 +33,7 @@ export function PricingCards({ className }: { className?: string }) {
               "Terminkalender",
               "Mannschaftsaufstellungen",
               "Basis-Turniere (Rundenturniere)",
-              "Ergebniseingabe \u0026 Tabellen",
+              "Ergebniseingabe & Tabellen",
               "DSGVO-konforme Datenverarbeitung",
               "WCAG 2.2 AA Barrierefreiheit",
               "E-Mail-Support",
@@ -55,7 +55,7 @@ export function PricingCards({ className }: { className?: string }) {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-center text-xl font-semibold">Bezahlbare Addons \u2014 Nur das, was du brauchst</h3>
+        <h3 className="text-center text-xl font-semibold">Alle Features \u2014 Im kostenlosen Plan enthalten</h3>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {addons.map((addon) => (
             <div
@@ -65,8 +65,7 @@ export function PricingCards({ className }: { className?: string }) {
               <div className="mb-4">
                 <h4 className="text-lg font-bold">{addon.name}</h4>
                 <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-2xl font-bold">{formatPrice(addon.price)}</span>
-                  <span className="text-sm text-muted-foreground">/Monat</span>
+                  <span className="text-sm font-medium text-primary">Kostenlos enthalten</span>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{addon.description}</p>
               </div>
@@ -75,23 +74,21 @@ export function PricingCards({ className }: { className?: string }) {
                 {addon.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2 text-sm">
                     <Check className="h-4 w-4 shrink-0 text-primary mt-0.5" />
-                    <span className="text-muted-foreground">{getFeatureLabel(feature)}</span>
+                    <span className="text-muted-foreground">{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              <Link
-                href="/auth/signup"
-                className={cn(buttonVariants({ variant: "outline", size: "default" }), "w-full")}
-              >
-                Hinzubuchen
-              </Link>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2 border-t">
+                <Heart className="h-4 w-4 text-red-500" />
+                <span>Von der Community f\u00fcr die Community</span>
+              </div>
             </div>
           ))}
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          Kombi-Rabatt: 2 Addons = 10% Rabatt \u00b7 3+ Addons = 20% Rabatt
+          schach.studio ist ein unabh\u00e4ngiges Hobby-Projekt. Alle Features sind f\u00fcr alle Vereine kostenlos.
         </p>
       </div>
     </div>

@@ -1,25 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { PlanConfig, AddonConfig } from "@/lib/billing/addons";
-import { formatPrice } from "@/lib/billing/addons";
 
 interface PlanCardProps {
   plan: PlanConfig | AddonConfig;
   isActive: boolean;
-  onSubscribe: () => void;
-  onCancel: () => void;
-  isLoading?: boolean;
+  onToggle: () => void;
 }
 
-export function PlanCard({ plan, isActive, onSubscribe, onCancel, isLoading }: PlanCardProps) {
-  const [hoveringCancel, setHoveringCancel] = useState(false);
-
+export function PlanCard({ plan, isActive, onToggle }: PlanCardProps) {
   return (
     <Card className={cn("flex flex-col", isActive && "border-primary")}>
       <CardHeader>
@@ -37,13 +30,10 @@ export function PlanCard({ plan, isActive, onSubscribe, onCancel, isLoading }: P
         </div>
       </CardHeader>
       <CardContent className="flex-1">
-        <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold">{formatPrice(plan.price)}</span>
-          <span className="text-sm text-muted-foreground">
-            /{plan.interval === "month" ? "Monat" : "Jahr"}
-          </span>
+        <div className="flex items-baseline gap-1 mb-4">
+          <span className="text-sm font-medium text-primary">Kostenlos enthalten</span>
         </div>
-        <ul className="mt-4 space-y-2">
+        <ul className="space-y-2">
           {plan.features.map((feature) => (
             <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
               <Check className="h-4 w-4 text-primary shrink-0" />
@@ -52,41 +42,19 @@ export function PlanCard({ plan, isActive, onSubscribe, onCancel, isLoading }: P
           ))}
         </ul>
       </CardContent>
-      <CardFooter>
-        {isActive ? (
-          <Button
-            variant="outline"
-            className="w-full"
-            onMouseEnter={() => setHoveringCancel(true)}
-            onMouseLeave={() => setHoveringCancel(false)}
-            onClick={onCancel}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : hoveringCancel ? (
-              <>
-                <X className="mr-2 h-4 w-4" />
-                Kündigen
-              </>
-            ) : (
-              "Aktiv"
-            )}
-          </Button>
-        ) : (
-          <Button
-            className="w-full"
-            onClick={onSubscribe}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              "Upgrade"
-            )}
-          </Button>
-        )}
-      </CardFooter>
+      <div className="p-4 pt-0 mt-auto">
+        <button
+          onClick={onToggle}
+          className={cn(
+            "w-full py-2 px-4 rounded-md text-sm font-medium transition-colors",
+            isActive
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "bg-muted hover:bg-muted/80 text-muted-foreground"
+          )}
+        >
+          {isActive ? "Aktiviert" : "Aktivieren"}
+        </button>
+      </div>
     </Card>
   );
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
       if (error) throw error;
       setSent(true);
     } catch {
-      setError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
+      setError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es spater erneut.");
     } finally {
       setLoading(false);
     }
@@ -42,8 +42,8 @@ export default function ForgotPasswordPage() {
           title="Passwort vergessen?"
           subtitle={
             sent
-              ? "Überprüfen Sie Ihr E-Mail-Postfach"
-              : "Wir senden Ihnen einen Link zum Zurücksetzen"
+              ? "Uberprufen Sie Ihr E-Mail-Postfach"
+              : "Wir senden Ihnen einen Link zum Zurucksetzen"
           }
         />
 
@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
                   transition={{ delay: 0.2 }}
                   className="space-y-2"
                 >
-                  <Label htmlFor="email" className="text-sm font-medium text-slate-200">
+                  <Label htmlFor="email" className="text-sm font-medium">
                     E-Mail
                   </Label>
                   <Input
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
+                    className="h-12"
                   />
                 </motion.div>
 
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
                 >
                   <Button
                     type="submit"
-                    className="h-12 w-full bg-gradient-to-r from-blue-600 to-violet-600 font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-500 hover:to-violet-500 hover:shadow-blue-500/40 disabled:opacity-70"
+                    className="h-12 w-full font-medium"
                     disabled={loading}
                   >
                     {loading ? (
@@ -115,17 +115,17 @@ export default function ForgotPasswordPage() {
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                 className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20"
               >
-                <CheckCircle className="h-8 w-8 text-green-400" />
+                <CheckCircle className="h-8 w-8 text-green-500" />
               </motion.div>
 
-              <p className="text-slate-300">
+              <p className="text-muted-foreground">
                 Wenn ein Konto mit{" "}
-                <span className="font-medium text-white">{email}</span>{" "}
-                existiert, haben wir einen Link zum Zurücksetzen Ihres Passworts gesendet.
+                <span className="font-medium text-foreground">{email}</span>{" "}
+                existiert, haben wir einen Link zum Zurucksetzen Ihres Passworts gesendet.
               </p>
 
-              <p className="text-sm text-slate-400">
-                Überprüfen Sie auch Ihren Spam-Ordner, falls Sie keine E-Mail erhalten.
+              <p className="text-sm text-muted-foreground">
+                Uberprufen Sie auch Ihren Spam-Ordner, falls Sie keine E-Mail erhalten.
               </p>
 
               <motion.div
@@ -134,11 +134,8 @@ export default function ForgotPasswordPage() {
                 transition={{ delay: 0.4 }}
               >
                 <Link href="/auth/login">
-                  <Button
-                    variant="outline"
-                    className="w-full border-white/10 text-white hover:bg-white/5 hover:text-white"
-                  >
-                    Zurück zum Login
+                  <Button variant="outline" className="w-full">
+                    Zuruck zum Login
                   </Button>
                 </Link>
               </motion.div>
@@ -151,13 +148,13 @@ export default function ForgotPasswordPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="mt-6 text-center text-sm text-slate-400"
+            className="mt-6 text-center text-sm text-muted-foreground"
           >
             <Link
               href="/auth/login"
-              className="font-medium text-blue-400 transition-colors hover:text-blue-300"
+              className="font-medium text-primary transition-colors hover:underline"
             >
-              Zurück zum Login
+              Zuruck zum Login
             </Link>
           </motion.p>
         )}

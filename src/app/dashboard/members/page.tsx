@@ -37,7 +37,7 @@ export default async function MembersPage({
   if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.MEMBERS_READ, session.user.isSuperAdmin)) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-gray-500">Keine Berechtigung für die Mitgliederverwaltung.</p>
+        <p className="text-gray-500">Keine Berechtigung fÃ¼r die Mitgliederverwaltung.</p>
       </div>
     );
   }
@@ -74,7 +74,8 @@ export default async function MembersPage({
 
   const hasWritePermission = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.MEMBERS_WRITE, session.user.isSuperAdmin);
 
-  const contributionRates: { id: string; name: string }[] = []; // TODO: fetch from DB if needed
+  const { getContributionRatesForMemberSelect } = await import("@/features/members/actions");
+  const contributionRates = await getContributionRatesForMemberSelect() as { id: string; name: string }[];
 
   return (
     <MembersPageClient

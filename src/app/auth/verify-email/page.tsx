@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -43,7 +43,7 @@ function VerifyEmailContent() {
       } else {
         toast({
           title: "Fehler",
-          description: (result as any)?.error || "Code ungültig oder abgelaufen",
+          description: (result as any)?.error || "Code ungultig oder abgelaufen",
           variant: "destructive",
         });
       }
@@ -55,18 +55,18 @@ function VerifyEmailContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             {isVerified ? (
               <CheckCircle2 className="h-8 w-8 text-green-600" />
             ) : (
-              <Mail className="h-8 w-8 text-blue-600" />
+              <Mail className="h-8 w-8 text-primary" />
             )}
           </div>
           <CardTitle className="text-2xl font-bold">
-            {isVerified ? "E-Mail bestätigt!" : "E-Mail bestätigen"}
+            {isVerified ? "E-Mail bestatigt!" : "E-Mail bestatigen"}
           </CardTitle>
           <CardDescription>
             {isVerified
@@ -86,7 +86,7 @@ function VerifyEmailContent() {
 
               <form onSubmit={handleVerify} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code">Bestätigungscode</Label>
+                  <Label htmlFor="code">Bestatigungscode</Label>
                   <Input
                     id="code"
                     name="code"
@@ -104,7 +104,7 @@ function VerifyEmailContent() {
                   {isVerifying ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  {isVerifying ? "Wird bestätigt..." : "Bestätigen"}
+                  {isVerifying ? "Wird bestatigt..." : "Bestatigen"}
                 </Button>
               </form>
 
@@ -115,7 +115,7 @@ function VerifyEmailContent() {
                     Entwicklungsmodus
                   </div>
                   <p className="text-xs text-amber-700">
-                    Kein E-Mail-Versand konfiguriert. Der Bestätigungscode wird in der Server-Konsole angezeigt.
+                    Kein E-Mail-Versand konfiguriert. Der Bestatigungscode wird in der Server-Konsole angezeigt.
                   </p>
                   <Button
                     type="button"
@@ -123,7 +123,6 @@ function VerifyEmailContent() {
                     size="sm"
                     className="w-full"
                     onClick={async () => {
-                      // Try common dev codes
                       for (const otp of ["000000", "123456"]) {
                         const fd = new FormData();
                         fd.append("email", email);
@@ -137,7 +136,7 @@ function VerifyEmailContent() {
                       }
                       toast({
                         title: "Dev-Mode",
-                        description: "Kein Standard-Code funktioniert. Prüfe die Server-Konsole auf den echten Code.",
+                        description: "Kein Standard-Code funktioniert. Prufe die Server-Konsole auf den echten Code.",
                       });
                     }}
                   >
@@ -149,11 +148,11 @@ function VerifyEmailContent() {
 
             <CardFooter className="flex flex-col space-y-2">
               <p className="text-xs text-center text-muted-foreground">
-                Der Code ist 24 Stunden gültig. Überprüfe auch den Spam-Ordner.
+                Der Code ist 24 Stunden gultig. Uberprufe auch den Spam-Ordner.
               </p>
               <Button variant="link" size="sm" onClick={() => router.push("/auth/login")} className="text-xs">
                 <ArrowLeft className="mr-1 h-3 w-3" />
-                Zurück zur Anmeldung
+                Zuruck zur Anmeldung
               </Button>
             </CardFooter>
           </>
@@ -165,12 +164,12 @@ function VerifyEmailContent() {
 
 function VerifyEmailSkeleton() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardContent className="py-12 text-center space-y-4 animate-pulse">
-          <div className="h-16 w-16 rounded-full bg-slate-200 mx-auto" />
-          <div className="h-6 w-48 rounded bg-slate-200 mx-auto" />
-          <div className="h-4 w-64 rounded bg-slate-200 mx-auto" />
+          <div className="h-16 w-16 rounded-full bg-muted mx-auto" />
+          <div className="h-6 w-48 rounded bg-muted mx-auto" />
+          <div className="h-4 w-64 rounded bg-muted mx-auto" />
         </CardContent>
       </Card>
     </div>

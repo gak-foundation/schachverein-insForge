@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { hasPermission } from "@/lib/auth/permissions";
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
+import { useActiveClub } from "@/lib/club-context";
 import { 
   LogOut,
   Menu,
   X,
-  ChevronRight,
 } from "lucide-react";
 import { navigation, type NavGroup } from "./navigation";
 
@@ -24,6 +25,7 @@ interface SidebarProps {
 export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const activeClub = useActiveClub();
 
   const filteredNavigation = navigation
     .map((group: NavGroup) => ({
@@ -35,14 +37,26 @@ export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: Sideb
     .filter((group) => group.items.length > 0);
 
   const navContent = (
-    <div className="flex h-full flex-col bg-card border-r shadow-sm">
-      <div className="flex h-20 items-center gap-3 px-6 border-b">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
-          <span className="text-2xl font-serif">♔</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-lg font-bold tracking-tight">Schachverein</span>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Club Management</span>
+    <div className="flex h-full flex-col bg-card border-r">
+      <div className="flex h-20 items-center gap-3 px-5 border-b">
+        {activeClub?.logoUrl ? (
+          <div className="h-10 w-10 rounded-lg overflow-hidden relative shrink-0 ring-1 ring-border/50">
+            <Image src={activeClub.logoUrl} alt={activeClub.name} fill className="object-cover" />
+          </div>
+        ) : (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <span className="text-lg font-bold font-heading">
+              {activeClub?.name?.charAt(0)?.toUpperCase() || "S"}
+            </span>
+          </div>
+        )}
+        <div className="flex flex-col min-w-0">
+          <span className="text-sm font-bold tracking-tight truncate">
+            {activeClub?.name || "Schachverein"}
+          </span>
+          <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/70 font-medium">
+            Dashboard
+          </span>
         </div>
       </div>
 
@@ -52,13 +66,13 @@ export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: Sideb
         </div>
       )}
 
-      <nav className="flex-1 space-y-8 overflow-y-auto px-4 py-6 scrollbar-hide">
+      <nav className="flex-1 space-y-7 overflow-y-auto px-3 py-5 scrollbar-hide">
         {filteredNavigation.map((group) => (
-          <div key={group.label} className="space-y-2">
-            <p className="px-3 text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60">
+          <div key={group.label} className="space-y-1">
+            <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
               {group.label}
             </p>
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {group.items.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                 const Icon = item.icon;
@@ -68,17 +82,26 @@ export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: Sideb
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
                       className={cn(
-                        "group flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                        "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
                         isActive
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          ? "bg-accent text-foreground shadow-sm"
+                          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                       )}
                     >
-                      <div className="flex items-center gap-3">
-                        <Icon className={cn("h-5 w-5", isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-accent-foreground")} />
-                        <span>{item.name}</span>
+                      <div className={cn(
+                        "flex items-center justify-center w-8 h-8 rounded-md transition-colors duration-150",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground group-hover:text-foreground"
+                      )}>
+                        <Icon className="size-4" />
                       </div>
-                      {isActive && <ChevronRight className="h-3 w-3 opacity-50" />}
+                      <span className="flex-1">{item.name}</span>
+                      {item.badge != null && item.badge > 0 && (
+                        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive/15 text-destructive text-[10px] font-bold px-1.5 leading-none">
+                          {item.badge > 99 ? "99+" : item.badge}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
@@ -88,7 +111,7 @@ export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: Sideb
         ))}
       </nav>
 
-      <div className="border-t p-4 space-y-2">
+      <div className="border-t p-3">
         <button
           type="button"
           onClick={async () => {
@@ -97,7 +120,9 @@ export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: Sideb
           }}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors group"
         >
-          <LogOut className="h-5 w-5 text-muted-foreground group-hover:text-destructive" />
+          <div className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground group-hover:text-destructive transition-colors">
+            <LogOut className="size-4" />
+          </div>
           Abmelden
         </button>
       </div>
@@ -135,3 +160,4 @@ export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: Sideb
     </>
   );
 }
+

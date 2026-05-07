@@ -8,7 +8,6 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   // InsForge
   NEXT_PUBLIC_INSFORGE_URL: z.string().url().default("https://4d3rbpyx.eu-central.insforge.app"),
@@ -29,7 +28,6 @@ const envSchema = z.object({
 // Parsen der Umgebungsvariablen. Wirft einen Fehler (mit Exit Code 1), wenn etwas fehlt.
 const processEnv = {
   NODE_ENV: process.env.NODE_ENV,
-  DATABASE_URL: process.env.DATABASE_URL,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   NEXT_PUBLIC_INSFORGE_URL: process.env.NEXT_PUBLIC_INSFORGE_URL ?? "https://4d3rbpyx.eu-central.insforge.app",
   NEXT_PUBLIC_INSFORGE_ANON_KEY: process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY,

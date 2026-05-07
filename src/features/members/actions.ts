@@ -1,9 +1,9 @@
-"use server";
+﻿"use server";
 
 import { createMemberSchema } from "@/lib/validations";
 import { updateUserRoleSchema } from "@/lib/validations/user";
 import { revalidatePath } from "next/cache";
-import { logMemberAction } from "@/lib/audit";
+import { logMemberAction, logAdminAction } from "@/lib/audit";
 import { createInvitation } from "@/lib/auth/invitations";
 import { getSession } from "@/lib/auth/session";
 import { PERMISSIONS, getPermissionsForRole, hasPermission } from "@/lib/auth/permissions";
@@ -34,10 +34,34 @@ export async function getMembers(
   // Use authenticated server client with automatic token validation/refresh
   const client = await createServerAuthClient();
 
+  // Server-side search: pre-filter members table if search term provided
+  let matchedMemberIds: string[] | null = null;
+  if (search) {
+    const q = `%${search}%`;
+    const memberClient = await createServerAuthClient();
+    const [firstRes, lastRes, emailRes] = await Promise.all([
+      memberClient.from('members').select('id').ilike('first_name', q).limit(2000),
+      memberClient.from('members').select('id').ilike('last_name', q).limit(2000),
+      memberClient.from('members').select('id').ilike('email', q).limit(2000),
+    ]);
+    const idSet = new Set<string>();
+    for (const r of [firstRes, lastRes, emailRes]) {
+      if (r.data) r.data.forEach((m: any) => idSet.add(m.id));
+    }
+    if (idSet.size === 0) {
+      return { members: [], totalCount: 0, totalPages: 0 };
+    }
+    matchedMemberIds = Array.from(idSet);
+  }
+
   let query = client
     .from('club_memberships')
     .select('role, members!club_memberships_member_id_members_id_fk(*)', { count: 'exact' })
     .eq('club_id', clubId);
+
+  if (matchedMemberIds) {
+    query = query.in('member_id', matchedMemberIds);
+  }
 
   if (role) {
     query = query.eq('role', role);
@@ -328,6 +352,26 @@ export async function createMember(formData: FormData) {
   };
 
   const validated = createMemberSchema.parse(rawData);
+
+  // Duplicate detection: check for existing member with same email
+  const { data: existingMember } = await client
+    .from('members')
+    .select('id, first_name, last_name')
+    .eq('email', validated.email)
+    .maybeSingle();
+  
+  if (existingMember) {
+    const { data: existingMembership } = await client
+      .from('club_memberships')
+      .select('id')
+      .eq('member_id', existingMember.id)
+      .eq('club_id', clubId)
+      .maybeSingle();
+    
+    if (existingMembership) {
+      throw new Error(`Ein Mitglied mit der E-Mail ${validated.email} existiert bereits`);
+    }
+  }
 
   const { data: member, error: memberError } = await client
     .from('members')
@@ -798,6 +842,12 @@ export async function updateUserRole(formData: FormData) {
 
   const updateClient = await createServerAuthClient();
 
+  const { data: oldUser } = await updateClient
+    .from("auth_user")
+    .select("role, permissions")
+    .eq("id", userId)
+    .maybeSingle();
+
   const { error } = await updateClient
     .from('auth_user')
     .update({
@@ -810,6 +860,11 @@ export async function updateUserRole(formData: FormData) {
   if (error) {
     throw new Error(error?.message || "Fehler beim Aktualisieren der Benutzerrolle");
   }
+
+  await logAdminAction("ROLE_CHANGED", userId, {
+    role: { old: oldUser?.role ?? null, new: role },
+    permissions: { old: oldUser?.permissions ?? [], new: additional },
+  });
 
   revalidatePath("/dashboard/admin/users");
   revalidatePath(`/dashboard/admin/users/${userId}/edit`);
@@ -867,4 +922,240 @@ export async function syncLichessRating(memberId: string) {
 
   revalidatePath(`/dashboard/members/${memberId}`);
   return { success: true, newElo };
+}
+
+export async function requestMemberDeletion(memberId: string) {
+  const clubId = await requireClubId();
+  const session = await getSession();
+  const client = await createServerAuthClient();
+
+  const { data: membership } = await client
+    .from('club_memberships')
+    .select('id')
+    .eq('member_id', memberId)
+    .eq('club_id', clubId)
+    .maybeSingle();
+
+  if (!membership) {
+    throw new Error("Mitglied nicht gefunden");
+  }
+
+  const { error } = await client
+    .from('members')
+    .update({ deletion_requested_at: new Date().toISOString() })
+    .eq('id', memberId);
+
+  if (error) throw error;
+
+  await logMemberAction("DELETION_REQUESTED", memberId, {
+    requestedBy: session?.user.memberId ?? null,
+  });
+
+  revalidatePath(`/dashboard/members/${memberId}`);
+  revalidatePath("/dashboard/members");
+}
+
+export async function anonymizeMember(memberId: string) {
+  const clubId = await requireClubId();
+  const session = await getSession();
+  const client = await createServerAuthClient();
+
+  const { data: membership } = await client
+    .from('club_memberships')
+    .select('id')
+    .eq('member_id', memberId)
+    .eq('club_id', clubId)
+    .maybeSingle();
+
+  if (!membership) {
+    throw new Error("Mitglied nicht gefunden");
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await client
+    .from('members')
+    .update({
+      first_name: "ANONYMISIERT",
+      last_name: "ANONYMISIERT",
+      email: `anonymized-${memberId}@deleted`,
+      phone: null,
+      date_of_birth: null,
+      gender: null,
+      dwz: null,
+      elo: null,
+      dwz_id: null,
+      lichess_username: null,
+      lichess_id: null,
+      is_lichess_verified: null,
+      lichess_access_token: null,
+      chesscom_username: null,
+      fide_id: null,
+      status: "inactive",
+      restrictions: null,
+      sepa_iban: null,
+      sepa_bic: null,
+      sepa_mandate_reference: null,
+      mandate_signed_at: null,
+      mandate_url: null,
+      notes: null,
+      medical_notes: null,
+      emergency_contact_name: null,
+      emergency_contact_phone: null,
+      photo_consent: false,
+      newsletter_consent: false,
+      result_publication_consent: false,
+      deletion_requested_at: null,
+      anonymized_at: now,
+    })
+    .eq('id', memberId);
+
+  if (error) throw error;
+
+  await client
+    .from('club_memberships')
+    .update({ status: "inactive" })
+    .eq('member_id', memberId)
+    .eq('club_id', clubId);
+
+  await logMemberAction("ANONYMIZED", memberId, {
+    performedBy: session?.user.memberId ?? null,
+  });
+
+  revalidatePath(`/dashboard/members/${memberId}`);
+  revalidatePath("/dashboard/members");
+}
+
+export async function getMemberAuditLogs(memberId: string) {
+  const clubId = await requireClubId();
+  const client = await createServerAuthClient();
+
+  const { data: membership } = await client
+    .from('club_memberships')
+    .select('id')
+    .eq('member_id', memberId)
+    .eq('club_id', clubId)
+    .maybeSingle();
+
+  if (!membership) {
+    throw new Error("Mitglied nicht gefunden");
+  }
+
+  const { data, error } = await client
+    .from('audit_log')
+    .select('*')
+    .eq('entity_id', memberId)
+    .eq('entity', 'member')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function syncFideRating(memberId: string) {
+  const clubId = await requireClubId();
+  const client = await createServerAuthClient();
+
+  const { data: member, error: memberError } = await client
+    .from('members')
+    .select('fide_id, dwz, club_memberships!club_memberships_member_id_members_id_fk!inner(club_id)')
+    .eq('id', memberId)
+    .eq('club_memberships.club_id', clubId)
+    .single();
+
+  if (memberError || !member || !member.fide_id) {
+    return { success: false, error: "Keine FIDE-ID hinterlegt" };
+  }
+
+  try {
+    const res = await fetch(`https://ratings.fide.com/profile/${member.fide_id}`);
+    if (!res.ok) {
+      return { success: false, error: "FIDE-Profil nicht gefunden" };
+    }
+    const text = await res.text();
+    const standardMatch = text.match(/std">(\d+)</);
+    const rapidMatch = text.match(/rpd">(\d+)</);
+    const blitzMatch = text.match(/blz">(\d+)</);
+    const fideElo = standardMatch ? parseInt(standardMatch[1], 10) : null;
+
+    if (fideElo) {
+      const { error: updateError } = await client
+        .from('members')
+        .update({ elo: fideElo })
+        .eq('id', memberId);
+
+      if (updateError) throw updateError;
+
+      const { error: insertError } = await client
+        .from('dwz_history')
+        .insert([{
+          member_id: memberId,
+          dwz: member.dwz ?? 0,
+          elo: fideElo,
+          source: "fide-sync",
+          recorded_at: new Date().toISOString().split("T")[0],
+        }]);
+
+      if (insertError) throw insertError;
+
+      revalidatePath(`/dashboard/members/${memberId}`);
+      return { success: true, newElo: fideElo, rapid: rapidMatch ? parseInt(rapidMatch[1], 10) : null, blitz: blitzMatch ? parseInt(blitzMatch[1], 10) : null };
+    }
+    return { success: false, error: "Keine Standard-Elo gefunden" };
+  } catch {
+    return { success: false, error: "Fehler beim Abrufen der FIDE-Daten" };
+  }
+}
+
+export async function syncChesscomRating(memberId: string) {
+  const clubId = await requireClubId();
+  const client = await createServerAuthClient();
+
+  const { data: member, error: memberError } = await client
+    .from('members')
+    .select('chesscom_username, dwz, club_memberships!club_memberships_member_id_members_id_fk!inner(club_id)')
+    .eq('id', memberId)
+    .eq('club_memberships.club_id', clubId)
+    .single();
+
+  if (memberError || !member || !member.chesscom_username) {
+    return { success: false, error: "Kein Chess.com-Benutzername hinterlegt" };
+  }
+
+  try {
+    const res = await fetch(`https://api.chess.com/pub/player/${member.chesscom_username}/stats`);
+    if (!res.ok) {
+      return { success: false, error: "Chess.com-Profil nicht gefunden" };
+    }
+    const stats = await res.json() as any;
+    const ratings = stats?.chess_rapid || stats?.chess_daily || stats?.chess_blitz;
+    const newElo = ratings?.last?.rating ?? null;
+
+    if (newElo) {
+      const { error: updateError } = await client
+        .from('members')
+        .update({ elo: newElo })
+        .eq('id', memberId);
+
+      if (updateError) throw updateError;
+
+      const { error: insertError } = await client
+        .from('dwz_history')
+        .insert([{
+          member_id: memberId,
+          dwz: member.dwz ?? 0,
+          elo: newElo,
+          source: "chesscom-sync",
+          recorded_at: new Date().toISOString().split("T")[0],
+        }]);
+
+      if (insertError) throw insertError;
+
+      revalidatePath(`/dashboard/members/${memberId}`);
+      return { success: true, newElo };
+    }
+    return { success: false, error: "Keine Rating-Daten gefunden" };
+  } catch {
+    return { success: false, error: "Fehler beim Abrufen der Chess.com-Daten" };
+  }
 }

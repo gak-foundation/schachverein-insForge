@@ -1,6 +1,5 @@
-import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-
+import { SignJWT, jwtVerify } from 'jose';
 const secretKey = process.env.ENCRYPTION_KEY || 'default-secret-key-32-chars-long';
 const key = new TextEncoder().encode(secretKey);
 
@@ -23,10 +22,6 @@ export async function decrypt(input: string): Promise<any> {
   }
 }
 
-export async function getSessionToken() {
-  const cookieStore = await cookies();
-  return cookieStore.get('insforge_session')?.value;
-}
 
 export async function setSessionToken(user: any) {
   const token = await encrypt({ user });

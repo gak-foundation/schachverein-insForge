@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ClubProvider } from "@/lib/club-context";
 import { ClubSwitcher } from "@/features/clubs/components/club-switcher";
+import { ImpersonationBanner } from "@/features/admin/components/impersonation-banner";
 import { getUserClubs } from "@/lib/clubs/queries";
 import { ROLE_LABELS } from "@/lib/auth/permissions";
 import Image from "next/image";
@@ -55,6 +56,9 @@ export default async function DashboardLayout({
       }))}
     >
       <div className="flex h-screen overflow-hidden bg-background">
+        {session.isImpersonating && session.club && (
+          <ImpersonationBanner clubName={session.club.name} />
+        )}
         <Sidebar
           role={role}
           permissions={permissions}

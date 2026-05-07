@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { buttonVariants } from "@/components/ui/button";
-import { ArrowRight, Shield, Zap, Sparkles, Lock, Users } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -36,6 +36,16 @@ export function HeroSection() {
           animate="show"
           className="max-w-4xl mx-auto text-center"
         >
+          <motion.div variants={item} className="mb-6">
+            <img
+              src="/logo-256.png"
+              alt="schach.studio Logo"
+              width={128}
+              height={128}
+              className="mx-auto h-24 w-24 sm:h-28 sm:w-28 lg:h-32 lg:w-32 drop-shadow-xl"
+            />
+          </motion.div>
+
           <motion.div variants={item}>
             <div
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-bold uppercase tracking-wider mb-6 border border-primary/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -63,7 +73,7 @@ export function HeroSection() {
 
           <motion.div 
             variants={item}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20"
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <a
               href="/auth/signup"
@@ -75,36 +85,6 @@ export function HeroSection() {
               Kostenlos starten
               <ArrowRight className="h-6 w-6" aria-hidden="true" />
             </a>
-          </motion.div>
-
-          <motion.div 
-            variants={item}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left"
-          >
-            {[
-              { icon: Zap, title: "All-in-One", desc: "Mitglieder, Turniere, Finanzen und mehr — alles an einem Ort.", highlighted: false },
-              { icon: Shield, title: "BFSG 2025", desc: "Barrierefrei nach WCAG 2.2 AA umgesetzt. Bereit für die BFSG.", highlighted: false },
-              { icon: Lock, title: "Datenschutz", desc: "DSGVO-konform. Hosting in Deutschland, verschlüsselte Daten.", highlighted: false },
-              { icon: Users, title: "Mitglieder", desc: "Einfache Verwaltung eurer Mitglieder und Beitragszahlungen.", highlighted: false },
-            ].map((feature) => (
-              <div
-                key={feature.title}
-                className={cn(
-                  "flex gap-4 p-5 rounded-2xl bg-card border transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
-                  feature.highlighted && "border-primary/30 bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/5"
-                )}
-              >
-                <div className="shrink-0">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <feature.icon className="h-6 w-6 text-primary" aria-hidden="true" />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-bold mb-1 text-foreground">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
-                </div>
-              </div>
-            ))}
           </motion.div>
         </motion.div>
       </div>

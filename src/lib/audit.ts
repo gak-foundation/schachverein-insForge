@@ -1,7 +1,6 @@
-"use server";
+﻿"use server";
 
-import { db } from "@/lib/db";
-import { auditLog } from "@/lib/db/schema";
+import { createServiceClient } from "@/lib/insforge";
 import { getSession } from "@/lib/auth/session";
 import { headers } from "next/headers";
 
@@ -50,15 +49,21 @@ export async function logAudit(params: AuditLogParams) {
   const session = await getSession();
   const { ipAddress } = await getClientInfo();
   
-  await db.insert(auditLog).values({
-    userId: session?.user?.id ?? null,
-    clubId: session?.user?.clubId ?? null,
-    action: params.action,
-    entity: params.entity,
-    entityId: params.entityId ?? null,
-    changes: params.changes ?? null,
-    ipAddress: anonymizeIP(ipAddress),
-  });
+  const { error } = await createServiceClient().from("audit_log").insert([
+    {
+      user_id: session?.user?.id ?? null,
+      club_id: session?.user?.clubId ?? null,
+      action: params.action,
+      entity: params.entity,
+      entity_id: params.entityId ?? null,
+      changes: params.changes ?? null,
+      ip_address: anonymizeIP(ipAddress),
+    },
+  ]);
+
+  if (error) {
+    console.error("Failed to log audit entry:", error);
+  }
 }
 
 export async function logAuthAction(

@@ -1,4 +1,5 @@
 import { createServerAuthClient } from "@/lib/insforge/server-auth";
+import { createServiceClient } from "@/lib/insforge";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { ROLE_PERMISSIONS, Permission } from "./permissions";
@@ -89,6 +90,19 @@ export const getSessionWithClub = cache(async () => {
     // Headers might not be available in all contexts (e.g. edge cases)
   }
 
+  // Check for impersonation cookies (Super Admin viewing another club)
+  let isImpersonating = false;
+  try {
+    const impersonationClubId = await getImpersonationTarget();
+    if (impersonationClubId && user.isSuperAdmin) {
+      clubIdLookup = impersonationClubId;
+      clubSlugLookup = null;
+      isImpersonating = true;
+    }
+  } catch (e) {
+    // Silently ignore impersonation check failures
+  }
+
   // 2. Resolve the club
   try {
     let clubData = null;
@@ -116,12 +130,13 @@ export const getSessionWithClub = cache(async () => {
 
   // Super-Admins without a club context (e.g. on root domain) are fine
   if (!club && user.isSuperAdmin) {
-    return { ...session, club: null };
+    return { ...session, club: null, isImpersonating: false };
   }
 
   return {
     ...session,
     club,
+    isImpersonating,
   };
 });
 
@@ -195,27 +210,49 @@ export async function requirePermission(permission: Permission) {
 export async function getImpersonationTarget(): Promise<string | null> {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
-  const payload = cookieStore.get("impersonation_payload")?.value;
+  const token = cookieStore.get("impersonation_token")?.value;
   const sig = cookieStore.get("impersonation_sig")?.value;
-  if (!payload || !sig) return null;
+  if (!token || !sig) return null;
 
   const secret = process.env.IMPERSONATION_SECRET;
   if (!secret) {
-    console.error("IMPERSONATION_SECRET is not set — impersonation disabled");
+    console.error("IMPERSONATION_SECRET is not set - impersonation disabled");
     return null;
   }
+
+  // 1. Verify HMAC signature using crypto.subtle.verify (not sign)
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
-    "raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"]
   );
-  const expectedSig = Array.from(
-    new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(payload)))
-  ).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const sigBytes = new Uint8Array(sig.match(/.{2}/g)!.map((b) => parseInt(b, 16)));
+  const isValid = await crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(token));
+  if (!isValid) return null;
 
-  if (sig !== expectedSig) return null;
+  // 2. Look up session in database by SHA-256 hash of token
+  const tokenHash = Array.from(
+    new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(token)))
+  )
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 
-  const data = JSON.parse(payload);
-  if (Date.now() - data.ts > 3600000) return null; // expired
+  const client = createServiceClient();
+  const { data: sessionData, error } = await client
+    .from("impersonation_sessions")
+    .select("target_club_id, expires_at, revoked, ended_at")
+    .eq("token_hash", tokenHash)
+    .single();
 
-  return data.targetClubId;
+  if (error || !sessionData) return null;
+
+  // 3. Server-side validation: expired, revoked, or ended
+  if (sessionData.revoked) return null;
+  if (sessionData.ended_at) return null;
+  if (new Date(sessionData.expires_at) < new Date()) return null;
+
+  return sessionData.target_club_id;
 }
