@@ -1,4 +1,4 @@
-import { createClient as createInsForgeClient, type InsForgeClient } from '@insforge/sdk';
+﻿import { createClient as createInsForgeClient, type InsForgeClient } from '@insforge/sdk';
 
 const INSFORGE_URL = process.env.NEXT_PUBLIC_INSFORGE_URL ?? '';
 const INSFORGE_ANON_KEY = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
@@ -13,6 +13,7 @@ function getAnonKey(): string | undefined {
 
 export type InsForgeClientWithFrom = InsForgeClient & {
   from: InsForgeClient['database']['from'];
+  rpc: InsForgeClient['database']['rpc'];
 };
 
 function wrapClient(client: InsForgeClient): InsForgeClientWithFrom {
@@ -20,6 +21,9 @@ function wrapClient(client: InsForgeClient): InsForgeClientWithFrom {
     get(target, prop) {
       if (prop === 'from') {
         return target.database.from.bind(target.database);
+      }
+      if (prop === 'rpc') {
+        return target.database.rpc.bind(target.database);
       }
       return (target as any)[prop];
     },
