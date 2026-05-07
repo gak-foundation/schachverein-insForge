@@ -33,8 +33,7 @@ vi.mock("@/lib/audit", () => ({
 
 vi.mock("@/lib/auth/permissions", () => ({
   PERMISSIONS: { MEMBERS_DELETE: "members.delete", ADMIN_USERS: "admin.users" },
-  hasPermission: vi.fn((role: string, perms: string[], perm: string, isSuper?: boolean) => {
-    if (isSuper) return true;
+  hasPermission: vi.fn((role: string, perms: string[], perm: string) => {
     if (perms.includes(perm)) return true;
     return role === "admin" || role === "vorstand";
   })

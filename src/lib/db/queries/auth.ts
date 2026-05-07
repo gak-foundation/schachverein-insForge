@@ -41,7 +41,9 @@ export async function getAuthUserWithClub(id: string) {
       .maybeSingle();
 
     if (!membershipError && membership?.role) {
-      role = membership.role;
+      if (data.role !== "admin") {
+        role = membership.role;
+      }
     }
   }
 
@@ -79,7 +81,11 @@ export async function getAllAuthUsers() {
         .eq("member_id", u.member_id)
         .eq("club_id", u.club_id)
         .maybeSingle();
-      if (membership?.role) effectiveRole = membership.role;
+      if (membership?.role) {
+        if (u.role !== "admin") {
+          effectiveRole = membership.role;
+        }
+      }
     }
     return {
       id: u.id,
