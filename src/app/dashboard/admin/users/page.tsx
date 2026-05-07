@@ -15,13 +15,13 @@ export default async function AdminUsersPage({
     redirect("/auth/login");
   }
 
-  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions || [], PERMISSIONS.ADMIN_USERS, session.user.isSuperAdmin)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions || [], PERMISSIONS.ADMIN_USERS)) {
     redirect("/dashboard");
   }
 
   const { search, role } = await searchParams;
 
-  const users = await getUsers(search, role, session.user.clubId, session.user.isSuperAdmin);
+  const users = await getUsers(search, role, session.user.clubId);
 
   return <UsersPageClient users={users} search={search} role={role} />;
 }

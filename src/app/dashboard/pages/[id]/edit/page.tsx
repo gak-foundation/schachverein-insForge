@@ -17,7 +17,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
     redirect("/auth/login");
   }
 
-  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE, session.user.isSuperAdmin)) {
+  if (!hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.PAGES_WRITE)) {
     redirect("/dashboard/pages");
   }
 

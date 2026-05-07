@@ -96,9 +96,7 @@ export default async function TournamentDetailPage({
   const canEdit = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
-    PERMISSIONS.TOURNAMENTS_WRITE,
-    session.user.isSuperAdmin
-  );
+    PERMISSIONS.TOURNAMENTS_WRITE);
 
   // Generate cross table data for round-robin tournaments
   let crossTableData = null;

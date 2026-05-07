@@ -803,7 +803,7 @@ export async function updateUserRole(formData: FormData) {
   const session = await getSession();
   if (
     !session ||
-    !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.ADMIN_USERS, session.user.isSuperAdmin)
+    !hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.ADMIN_USERS)
   ) {
     throw new Error("Nicht autorisiert");
   }

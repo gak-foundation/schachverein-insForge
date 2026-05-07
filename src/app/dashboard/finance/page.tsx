@@ -22,9 +22,9 @@ export default async function FinancePage() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  const canRead = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_READ, session.user.isSuperAdmin);
-  const canWrite = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_WRITE, session.user.isSuperAdmin);
-  const canSepa = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_SEPA, session.user.isSuperAdmin);
+  const canRead = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_READ);
+  const canWrite = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_WRITE);
+  const canSepa = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.FINANCE_SEPA);
   const hasClubId = !!session.user.clubId;
 
   const [

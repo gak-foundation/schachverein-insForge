@@ -136,9 +136,7 @@ export async function createPage(data: z.infer<typeof pageSchema>) {
     !hasPermission(
       session.user.role ?? "mitglied",
       session.user.permissions ?? [],
-      PERMISSIONS.PAGES_WRITE,
-      session.user.isSuperAdmin
-    )
+      PERMISSIONS.PAGES_WRITE)
   ) {
     throw new Error("Keine Berechtigung");
   }
@@ -185,9 +183,7 @@ export async function updatePage(
     !hasPermission(
       session.user.role ?? "mitglied",
       session.user.permissions ?? [],
-      PERMISSIONS.PAGES_WRITE,
-      session.user.isSuperAdmin
-    )
+      PERMISSIONS.PAGES_WRITE)
   ) {
     throw new Error("Keine Berechtigung");
   }
@@ -236,9 +232,7 @@ export async function deletePage(id: string) {
     !hasPermission(
       session.user.role ?? "mitglied",
       session.user.permissions ?? [],
-      PERMISSIONS.PAGES_WRITE,
-      session.user.isSuperAdmin
-    )
+      PERMISSIONS.PAGES_WRITE)
   ) {
     throw new Error("Keine Berechtigung");
   }
@@ -290,9 +284,7 @@ export async function savePageBlocks(pageId: string, blocksData: any[]) {
     !hasPermission(
       session.user.role ?? "mitglied",
       session.user.permissions ?? [],
-      PERMISSIONS.PAGES_WRITE,
-      session.user.isSuperAdmin
-    )
+      PERMISSIONS.PAGES_WRITE)
   ) {
     throw new Error("Keine Berechtigung");
   }

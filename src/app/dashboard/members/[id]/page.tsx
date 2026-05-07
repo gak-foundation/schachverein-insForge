@@ -52,16 +52,12 @@ export default async function MemberDetailPage({
   const canEdit = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
-    PERMISSIONS.MEMBERS_WRITE,
-    session.user.isSuperAdmin
-  );
+    PERMISSIONS.MEMBERS_WRITE);
 
   const canDelete = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
-    PERMISSIONS.MEMBERS_DELETE,
-    session.user.isSuperAdmin
-  );
+    PERMISSIONS.MEMBERS_DELETE);
 
   const dwzHistory = await getDWZHistory(id);
   const statusHistory = await getMemberStatusHistory(id);
@@ -89,16 +85,12 @@ export default async function MemberDetailPage({
   const canSeeYouthData = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
-    PERMISSIONS.YOUTH_READ,
-    session.user.isSuperAdmin
-  ) || (member.parentId === session.user.memberId);
+    PERMISSIONS.YOUTH_READ) || (member.parentId === session.user.memberId);
 
   const canSeeEmergencyData = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
-    PERMISSIONS.YOUTH_EMERGENCY,
-    session.user.isSuperAdmin
-  ) || (member.parentId === session.user.memberId);
+    PERMISSIONS.YOUTH_EMERGENCY) || (member.parentId === session.user.memberId);
 
   return (
     <div className="space-y-8 pb-10">

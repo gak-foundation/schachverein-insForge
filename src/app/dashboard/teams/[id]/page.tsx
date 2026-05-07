@@ -55,7 +55,7 @@ export default async function TeamDetailPage({
     notFound();
   }
 
-  const canEdit = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.TEAMS_WRITE, session.user.isSuperAdmin);
+  const canEdit = hasPermission(session.user.role ?? "mitglied", session.user.permissions ?? [], PERMISSIONS.TEAMS_WRITE);
 
   const client = createServiceClient();
   const [teamMembers, captain, matchesResult, boardOrders] = await Promise.all([

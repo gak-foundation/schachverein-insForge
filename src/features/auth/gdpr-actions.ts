@@ -115,9 +115,7 @@ export async function anonymizeMember(memberId: string) {
     hasPermission(
       session.user.role ?? "mitglied", 
       session.user.permissions ?? [], 
-      PERMISSIONS.MEMBERS_DELETE,
-      session.user.isSuperAdmin
-    );
+      PERMISSIONS.MEMBERS_DELETE);
 
   if (!hasAuth) {
     throw new Error("Nur Administratoren mit entsprechenden Rechten können Daten anonymisieren.");

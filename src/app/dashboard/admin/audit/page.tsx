@@ -31,9 +31,7 @@ export default async function AuditLogPage() {
   const canViewAudit = hasPermission(
     session.user.role ?? "mitglied",
     session.user.permissions ?? [],
-    PERMISSIONS.ADMIN_AUDIT,
-    session.user.isSuperAdmin
-  );
+    PERMISSIONS.ADMIN_AUDIT);
 
   if (!canViewAudit) {
     redirect("/dashboard");

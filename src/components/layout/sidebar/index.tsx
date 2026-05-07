@@ -31,7 +31,7 @@ export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: Sideb
     .map((group: NavGroup) => ({
       ...group,
       items: group.items.filter((item) =>
-        hasPermission(role, permissions, item.permission, isSuperAdmin),
+        hasPermission(role, permissions, item.permission),
       ),
     }))
     .filter((group) => group.items.length > 0);
