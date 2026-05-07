@@ -1,7 +1,6 @@
 ﻿import { redirect } from "next/navigation";
 import { requireAuth } from "@/lib/auth/session";
 import { hasPermission, type Permission } from "@/lib/auth/permissions";
-import { setTenantContext } from "./set-context";
 
 export async function withTenant<T>(
   permission: Permission,
@@ -18,7 +17,9 @@ export async function withTenant<T>(
     throw new Error("FORBIDDEN");
   }
 
-  await setTenantContext(user.clubId);
+  // Tenant isolation is enforced at the application layer through explicit
+  // club_id filters in database queries. setTenantContext is not used here
+  // because PostgREST/HTTP clients do not support session-scoped set_config.
 
   return action({
     user: {
