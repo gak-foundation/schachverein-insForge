@@ -33,7 +33,7 @@ export async function requestAccountDeletion() {
   }
 
   // Log the request
-  await logMemberAction("DELETION_REQUESTED", memberId, {
+  await logMemberAction("DELETION_REQUESTED", memberId, session.user.clubId!, {
     status: { old: "active", new: "inactive" },
   });
 
@@ -184,7 +184,7 @@ export async function anonymizeMember(memberId: string) {
     console.error("Error updating memberships:", membershipError);
   }
 
-  await logMemberAction("ANONYMIZED", memberId, {});
+  await logMemberAction("ANONYMIZED", memberId, session.user.clubId!, {});
 
   revalidatePath("/dashboard/members");
   return { success: true };

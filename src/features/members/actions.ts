@@ -436,7 +436,7 @@ export async function createMember(formData: FormData) {
     throw historyError;
   }
 
-  await logMemberAction("CREATED", member.id, {
+  await logMemberAction("CREATED", member.id, clubId, {
     firstName: { old: null, new: member.first_name },
     lastName: { old: null, new: member.last_name },
     email: { old: null, new: member.email },
@@ -519,7 +519,7 @@ export async function deleteMember(id: string) {
     }
   }
 
-  await logMemberAction("DELETED", id, {
+  await logMemberAction("DELETED", id, clubId, {
     firstName: { old: member?.firstName, new: null },
     lastName: { old: member?.lastName, new: null },
     email: { old: member?.email, new: null },
@@ -861,7 +861,7 @@ export async function updateUserRole(formData: FormData) {
     throw new Error(error?.message || "Fehler beim Aktualisieren der Benutzerrolle");
   }
 
-  await logAdminAction("ROLE_CHANGED", userId, {
+  await logAdminAction("ROLE_CHANGED", userId, session.user.clubId!, {
     role: { old: oldUser?.role ?? null, new: role },
     permissions: { old: oldUser?.permissions ?? [], new: additional },
   });
@@ -947,7 +947,7 @@ export async function requestMemberDeletion(memberId: string) {
 
   if (error) throw error;
 
-  await logMemberAction("DELETION_REQUESTED", memberId, {
+  await logMemberAction("DELETION_REQUESTED", memberId, clubId, {
     requestedBy: session?.user.memberId ?? null,
   });
 
@@ -1017,7 +1017,7 @@ export async function anonymizeMember(memberId: string) {
     .eq('member_id', memberId)
     .eq('club_id', clubId);
 
-  await logMemberAction("ANONYMIZED", memberId, {
+  await logMemberAction("ANONYMIZED", memberId, clubId, {
     performedBy: session?.user.memberId ?? null,
   });
 

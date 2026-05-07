@@ -84,12 +84,12 @@ describe("requestAccountDeletion", () => {
   });
 
   it("sollte Löschung beantragen", async () => {
-    mockGetSession.mockResolvedValue({ user: { id: "user-1", memberId: "member-1" } });
+    mockGetSession.mockResolvedValue({ user: { id: "user-1", memberId: "member-1", clubId: "club-1" } });
     setupTable("members");
 
     const result = await requestAccountDeletion();
     expect(result).toEqual({ success: true });
-    expect(mockLogMemberAction).toHaveBeenCalledWith("DELETION_REQUESTED", "member-1", expect.anything());
+    expect(mockLogMemberAction).toHaveBeenCalledWith("DELETION_REQUESTED", "member-1", "club-1", expect.anything());
     expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard/settings");
   });
 });
@@ -160,7 +160,7 @@ describe("anonymizeMember", () => {
 
   it("sollte Mitglied anonymisieren", async () => {
     mockGetSession.mockResolvedValue({
-      user: { memberId: "m-1", id: "u-1", role: "admin", permissions: [] }
+      user: { memberId: "m-1", id: "u-1", role: "admin", permissions: [], clubId: "club-1" }
     });
     setupTable("members", [{ id: "member-1" }]);
     setupTable("auth_user");
@@ -168,7 +168,7 @@ describe("anonymizeMember", () => {
 
     const result = await anonymizeMember("member-1");
     expect(result).toEqual({ success: true });
-    expect(mockLogMemberAction).toHaveBeenCalledWith("ANONYMIZED", "member-1", {});
+    expect(mockLogMemberAction).toHaveBeenCalledWith("ANONYMIZED", "member-1", "club-1", {});
     expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard/members");
   });
 
