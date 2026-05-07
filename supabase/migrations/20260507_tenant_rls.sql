@@ -1,4 +1,4 @@
-﻿-- Helper function to get current user's club_id efficiently
+-- Helper function to get current user's club_id efficiently
 CREATE OR REPLACE FUNCTION current_user_club_id()
 RETURNS UUID
 LANGUAGE sql
@@ -6,7 +6,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT club_id FROM auth_user WHERE id = auth.uid();
+  SELECT club_id FROM auth_user WHERE id::text = auth.uid()::text;
 $$;
 
 -- ============================================
