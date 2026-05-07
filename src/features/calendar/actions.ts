@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { createServiceClient } from "@/lib/insforge";
 import { revalidatePath } from "next/cache";
@@ -65,10 +65,21 @@ export async function getEventById(id: string) {
 
   if (id.startsWith("match-")) {
     const realId = id.replace("match-", "");
+
+    // Get season IDs for this club
+    const { data: seasons } = await client
+      .from("seasons")
+      .select("id")
+      .eq("club_id", clubId);
+    const seasonIds = seasons?.map(s => s.id) || [];
+
+    if (seasonIds.length === 0) return undefined;
+
     const { data: match, error } = await client
       .from("matches")
       .select("*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)")
       .eq("id", realId)
+      .in("season_id", seasonIds)
       .single();
 
     if (error || !match) return undefined;
@@ -171,18 +182,30 @@ export async function getCalendarEvents(
     }
   });
 
-  // 2. Fetch matches
-  const { data: clubMatches, error: matchesError } = await client
-    .from("matches")
-    .select("*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)")
-    .gte("match_date", start.toISOString().split("T")[0])
-    .lte("match_date", end.toISOString().split("T")[0]);
+  // 2. Fetch matches for this club's seasons
+  const { data: seasons } = await client
+    .from("seasons")
+    .select("id")
+    .eq("club_id", clubId);
 
-  if (matchesError) {
-    console.error("Error fetching matches:", matchesError);
+  const seasonIds = seasons?.map(s => s.id) || [];
+  let clubMatches: any[] = [];
+
+  if (seasonIds.length > 0) {
+    const { data: matches, error: matchesError } = await client
+      .from("matches")
+      .select("*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name)")
+      .in("season_id", seasonIds)
+      .gte("match_date", start.toISOString().split("T")[0])
+      .lte("match_date", end.toISOString().split("T")[0]);
+
+    if (matchesError) {
+      console.error("Error fetching matches:", matchesError);
+    }
+    clubMatches = matches || [];
   }
 
-  (clubMatches || []).forEach((match: any) => {
+  clubMatches.forEach((match: any) => {
     if (match.match_date) {
       unifiedEvents.push({
         id: `match-${match.id}`,
