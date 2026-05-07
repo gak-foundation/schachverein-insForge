@@ -1,6 +1,12 @@
-﻿import { createServiceClient } from "@/lib/insforge";
+import { createServiceClient } from "@/lib/insforge";
+import { requireAuth } from "@/lib/auth/session";
 
 export async function getWaitlistApplications(status?: string) {
+  const session = await requireAuth();
+  if (session.user.role !== "admin") {
+    throw new Error("FORBIDDEN");
+  }
+
   const client = createServiceClient();
   let query = client
     .from("waitlist_applications")
@@ -30,6 +36,11 @@ export async function getWaitlistApplications(status?: string) {
 }
 
 export async function getWaitlistStatusCounts() {
+  const session = await requireAuth();
+  if (session.user.role !== "admin") {
+    throw new Error("FORBIDDEN");
+  }
+
   const client = createServiceClient();
   const { data: allApplications, error } = await client
     .from("waitlist_applications")
