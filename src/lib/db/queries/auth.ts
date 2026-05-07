@@ -60,46 +60,6 @@ export async function getAuthUserWithClub(id: string) {
   };
 }
 
-export async function getAllAuthUsers() {
-  const client = createServiceClient();
-  const { data, error } = await client
-    .from("auth_user")
-    .select("id, name, email, role, member_id, club_id, created_at, updated_at")
-    .order("created_at", { ascending: false });
-
-  if (error || !data) {
-    console.error("Error in getAllAuthUsers:", error);
-    return [];
-  }
-
-  const users = await Promise.all((data || []).map(async (u: any) => {
-    let effectiveRole = u.role;
-    if (u.member_id && u.club_id) {
-      const { data: membership } = await client
-        .from("club_memberships")
-        .select("role")
-        .eq("member_id", u.member_id)
-        .eq("club_id", u.club_id)
-        .maybeSingle();
-      if (membership?.role) {
-        if (u.role !== "admin") {
-          effectiveRole = membership.role;
-        }
-      }
-    }
-    return {
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      role: effectiveRole,
-      createdAt: u.created_at,
-      lastLoginAt: u.updated_at,
-    };
-  }));
-
-  return users;
-}
-
 export async function updateAuthUser(
   id: string,
   data: Partial<{

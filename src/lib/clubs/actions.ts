@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { requireAuth, requireClub } from "@/lib/auth/session";
 import { sendClubInvitationEmail } from "@/lib/auth/email";
@@ -17,7 +17,7 @@ import {
   getClubById,
 } from "./queries";
 import { getInvitationUrl } from "@/lib/auth/invitations";
-import { getAllAuthUsers, updateAuthUser } from "@/lib/db/queries/auth";
+import { updateAuthUser } from "@/lib/db/queries/auth";
 
 // --- Club CRUD -------------------------------------------------
 
@@ -684,8 +684,27 @@ export async function getAllUsersAction() {
     throw new Error("Nicht autorisiert");
   }
 
+  const client = createServiceClient();
+
   try {
-    return await getAllAuthUsers();
+    const { data, error } = await client
+      .from("members")
+      .select("id, first_name, last_name, email, status, club_id, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to fetch users in getAllUsersAction:", error.message);
+      return [];
+    }
+
+    return (data || []).map((m: any) => ({
+      id: m.id,
+      name: `${m.first_name || ""} ${m.last_name || ""}`.trim() || m.email,
+      email: m.email,
+      role: m.status === "active" ? "mitglied" : "inactive",
+      createdAt: m.created_at,
+      lastLoginAt: null,
+    }));
   } catch (error: any) {
     console.error("Failed to fetch users in getAllUsersAction:", error.message);
     return [];
