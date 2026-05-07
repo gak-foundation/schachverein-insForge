@@ -62,7 +62,6 @@ export default async function DashboardLayout({
         <Sidebar
           role={role}
           permissions={permissions}
-          isSuperAdmin={user.isSuperAdmin}
           clubSwitcher={<ClubSwitcher />}
         />
         <div className="flex flex-1 flex-col overflow-hidden bg-background">

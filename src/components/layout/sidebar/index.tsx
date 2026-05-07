@@ -18,11 +18,10 @@ import { navigation, type NavGroup } from "./navigation";
 interface SidebarProps {
   role: string;
   permissions: string[];
-  isSuperAdmin?: boolean;
   clubSwitcher?: React.ReactNode;
 }
 
-export function Sidebar({ role, permissions, isSuperAdmin, clubSwitcher }: SidebarProps) {
+export function Sidebar({ role, permissions, clubSwitcher }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const activeClub = useActiveClub();
