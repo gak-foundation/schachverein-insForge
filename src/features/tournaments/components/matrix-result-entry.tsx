@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wifi, WifiOff } from "lucide-react";
 
-type GameResult = "1-0" | "0-1" | "½-½" | null;
-const RESULTS: GameResult[] = [null, "1-0", "½-½", "0-1"];
+type GameResult = "1-0" | "0-1" | "1/2-1/2" | null;
+const RESULTS: GameResult[] = [null, "1-0", "1/2-1/2", "0-1"];
 const RESULT_LABELS: Record<string, string> = {
   "1-0": "1-0",
   "0-1": "0-1",
-  "½-½": "½-½",
+  "1/2-1/2": "Remis",
 };
 const RESULT_COLORS: Record<string, string> = {
   "1-0": "bg-green-100 text-green-800 border-green-300",
   "0-1": "bg-red-100 text-red-800 border-red-300",
-  "½-½": "bg-gray-100 text-gray-800 border-gray-300",
+  "1/2-1/2": "bg-gray-100 text-gray-800 border-gray-300",
 };
 
 interface Player {
@@ -39,6 +39,10 @@ interface Cell {
   result: GameResult;
 }
 
+function getStorageKey(tournamentId: string, round: number): string {
+  return `tournament-results-${tournamentId}-${round}`;
+}
+
 export function MatrixResultEntry({
   tournamentId,
   participants,
@@ -48,13 +52,42 @@ export function MatrixResultEntry({
 }: MatrixResultEntryProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isOnline, setIsOnline] = useState(true);
   const [cells, setCells] = useState<Cell[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(getStorageKey(tournamentId, round));
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // ignore parse error
+        }
+      }
+    }
     return existingPairings.map((p) => ({
       whiteId: p.whiteId,
       blackId: p.blackId,
       result: (p.result as GameResult) ?? null,
     }));
   });
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(getStorageKey(tournamentId, round), JSON.stringify(cells));
+    }
+  }, [cells, tournamentId, round]);
 
   function getCell(whiteId: string, blackId: string): Cell | undefined {
     return cells.find((c) => c.whiteId === whiteId && c.blackId === blackId);
@@ -92,6 +125,9 @@ export function MatrixResultEntry({
           }));
 
         await onSave(results);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(getStorageKey(tournamentId, round));
+        }
         toast({ title: "Gespeichert", description: `${results.length} Ergebnisse gespeichert.` });
       } catch (error: any) {
         toast({
@@ -108,17 +144,29 @@ export function MatrixResultEntry({
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm">
+        {isOnline ? (
+          <span className="flex items-center gap-1 text-emerald-600">
+            <Wifi className="h-4 w-4" /> Online
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 text-amber-600">
+            <WifiOff className="h-4 w-4" /> Offline &ndash; Daten werden lokal gespeichert
+          </span>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
               <th className="sticky left-0 bg-white border p-2 min-w-[120px] text-left text-xs">
-                Weiß ↓ / Schwarz →
+                Weiss v / Schwarz &gt;
               </th>
               {sorted.map((p) => (
                 <th key={p.memberId} className="border p-2 text-center min-w-[80px] text-xs bg-slate-50">
                   <div className="font-medium">{p.lastName}</div>
-                  <div className="text-gray-400 font-normal">{p.dwz ?? "—"}</div>
+                  <div className="text-gray-400 font-normal">{p.dwz ?? "-"}</div>
                 </th>
               ))}
             </tr>
@@ -128,7 +176,7 @@ export function MatrixResultEntry({
               <tr key={white.memberId}>
                 <td className="sticky left-0 bg-white border p-2 font-medium text-xs bg-slate-50">
                   {white.lastName}, {white.firstName}
-                  <span className="text-gray-400 ml-1 font-normal">{white.dwz ?? "—"}</span>
+                  <span className="text-gray-400 ml-1 font-normal">{white.dwz ?? "-"}</span>
                 </td>
                 {sorted.map((black) => {
                   const cell = getCell(white.memberId, black.memberId);
@@ -136,7 +184,7 @@ export function MatrixResultEntry({
                   return (
                     <td
                       key={black.memberId}
-                      className={`border p-1 text-center cursor-pointer select-none transition-colors ${
+                      className={`border p-2 text-center cursor-pointer select-none transition-colors min-h-[44px] min-w-[44px] ${
                         isSelf
                           ? "bg-slate-100 cursor-default"
                           : cell?.result
@@ -144,15 +192,30 @@ export function MatrixResultEntry({
                           : "hover:bg-blue-50"
                       }`}
                       onClick={() => !isSelf && toggleCell(white.memberId, black.memberId)}
+                      role="button"
+                      tabIndex={isSelf ? -1 : 0}
+                      onKeyDown={(e) => {
+                        if (!isSelf && (e.key === "Enter" || e.key === " ")) {
+                          e.preventDefault();
+                          toggleCell(white.memberId, black.memberId);
+                        }
+                      }}
+                      aria-label={
+                        isSelf
+                          ? "Nicht verfuegbar"
+                          : cell?.result
+                          ? `${white.lastName} vs ${black.lastName}: ${RESULT_LABELS[cell.result]}`
+                          : `${white.lastName} vs ${black.lastName}: Kein Ergebnis`
+                      }
                     >
                       {isSelf ? (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-gray-300">-</span>
                       ) : cell?.result ? (
                         <span className="font-mono text-xs font-bold">
                           {RESULT_LABELS[cell.result]}
                         </span>
                       ) : (
-                        <span className="text-gray-300">·</span>
+                        <span className="text-gray-300">+</span>
                       )}
                     </td>
                   );
@@ -165,7 +228,7 @@ export function MatrixResultEntry({
 
       <div className="flex justify-between items-center pt-4 border-t">
         <p className="text-sm text-muted-foreground">
-          Klick auf eine Zelle: Leer → 1-0 → ½-½ → 0-1 → Leer
+          Klick auf eine Zelle: Leer &rarr; 1-0 &rarr; Remis &rarr; 0-1 &rarr; Leer
         </p>
         <Button onClick={handleSave} disabled={isPending || filledCount === 0}>
           {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
