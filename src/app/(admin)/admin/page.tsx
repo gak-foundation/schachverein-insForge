@@ -1,7 +1,7 @@
 ﻿import { redirect } from "next/navigation";
 import { getSessionWithClub } from "@/lib/auth/session";
 import { getAllClubsAction, getAllUsersAction } from "@/lib/clubs/actions";
-import { SuperAdminDashboard } from "@/app/super-admin/super-admin-dashboard";
+import { AdminDashboard } from "./admin-dashboard";
 
 export default async function AdminPage() {
   const session = await getSessionWithClub();
@@ -14,7 +14,7 @@ export default async function AdminPage() {
   const allUsers = await getAllUsersAction();
 
   return (
-    <SuperAdminDashboard
+    <AdminDashboard
       clubs={allClubs as any}
       users={allUsers as any}
       stats={{

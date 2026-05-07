@@ -24,17 +24,17 @@ export default function DashboardError({
           <AlertCircle className="h-10 w-10 text-destructive" />
         </div>
         <h2 className="text-2xl font-bold tracking-tight mb-2">
-          {error.message === "SUPER_ADMIN_NO_CLUB_CONTEXT" 
+          {error.message === "ADMIN_NO_CLUB_CONTEXT" 
             ? "Kein Verein ausgewÃ¤hlt" 
             : "Ein Fehler ist aufgetreten"}
         </h2>
         <p className="text-sm text-muted-foreground mb-8">
-          {error.message === "SUPER_ADMIN_NO_CLUB_CONTEXT"
-            ? "Als Super-Admin mÃ¼ssen Sie zuerst einen Verein auswÃ¤hlen, um diese Seite (Statistiken/Finanzen) anzeigen zu kÃ¶nnen."
+          {error.message === "ADMIN_NO_CLUB_CONTEXT"
+            ? "Als Admin mÃ¼ssen Sie zuerst einen Verein auswÃ¤hlen, um diese Seite (Statistiken/Finanzen) anzeigen zu kÃ¶nnen."
             : error.message || "Es gab ein Problem beim Laden dieser Seite."}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          {error.message === "SUPER_ADMIN_NO_CLUB_CONTEXT" ? (
+          {error.message === "ADMIN_NO_CLUB_CONTEXT" ? (
             <Link href="/admin">
               <Button className="w-full sm:w-auto gap-2">
                 <Home className="h-4 w-4" />

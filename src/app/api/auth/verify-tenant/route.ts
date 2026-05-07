@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createServerAuthClient } from "@/lib/insforge/server-auth";
 import { getAuthUserById } from "@/lib/db/queries/auth";
 import { getClubBySlug } from "@/lib/clubs/queries";
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const isSubdomain = h.get("x-is-subdomain") === "true";
 
   if (!isSubdomain) {
-    // Root domain login is allowed for super-admins
+    // Root domain login is allowed for admins
     const authUser = await getAuthUserById(user.id);
     
     if (!authUser?.clubId) {

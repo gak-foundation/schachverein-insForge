@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { getSessionWithClub } from "@/lib/auth/session";
 import Link from "next/link";
 
@@ -29,7 +29,7 @@ export default async function AdminLayout({
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
               <Link href="/admin" className="text-lg font-bold tracking-tight">
-                Super Admin
+                Admin
               </Link>
               <div className="flex gap-1">
                 {adminNavItems.map((item) => (

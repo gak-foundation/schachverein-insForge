@@ -1,4 +1,4 @@
-import { createServerAuthClient } from "@/lib/insforge/server-auth";
+﻿import { createServerAuthClient } from "@/lib/insforge/server-auth";
 import { createServiceClient } from "@/lib/insforge";
 import { cache } from "react";
 import { headers } from "next/headers";
@@ -74,7 +74,7 @@ export const getSessionWithClub = cache(async () => {
   let clubIdLookup = user.clubId;
   let clubSlugLookup = null;
 
-  // For Super Admins or context switching, check headers (injected by proxy.ts middleware)
+  // For Admins or context switching, check headers (injected by proxy.ts middleware)
   try {
     const headerList = await headers();
     const headerSlug = headerList.get("x-club-slug");

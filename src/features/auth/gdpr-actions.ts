@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { createServiceClient } from "@/lib/insforge";
 import { getSession } from "@/lib/auth/session";
@@ -29,7 +29,7 @@ export async function requestAccountDeletion() {
 
   if (error) {
     console.error("Error requesting account deletion:", error);
-    throw new Error("Fehler beim Löschauftrag");
+    throw new Error("Fehler beim LÃ¶schauftrag");
   }
 
   // Log the request
@@ -47,7 +47,7 @@ export async function requestAccountDeletion() {
  */
 export async function exportMemberData(memberId: string) {
   const session = await getSession();
-  // Only the member themselves or a super admin can export data
+  // Only the member themselves or a admin can export data
   if (!session || (session.user.memberId !== memberId && session.user.role !== "admin")) {
     throw new Error("Nicht autorisiert");
   }
@@ -110,7 +110,7 @@ export async function anonymizeMember(memberId: string) {
     throw new Error("Nicht autorisiert");
   }
 
-  // Allow if super admin OR if user has MEMBERS_DELETE permission
+  // Allow if admin OR if user has MEMBERS_DELETE permission
   const hasAuth = session.user.role === "admin" || 
     hasPermission(
       session.user.role ?? "mitglied", 
@@ -118,7 +118,7 @@ export async function anonymizeMember(memberId: string) {
       PERMISSIONS.MEMBERS_DELETE);
 
   if (!hasAuth) {
-    throw new Error("Nur Administratoren mit entsprechenden Rechten können Daten anonymisieren.");
+    throw new Error("Nur Administratoren mit entsprechenden Rechten kÃ¶nnen Daten anonymisieren.");
   }
 
   const client = createServiceClient();

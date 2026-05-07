@@ -1,8 +1,8 @@
-import { getSession } from "@/lib/auth/session";
+﻿import { getSession } from "@/lib/auth/session";
 
 /**
  * Holt die aktuelle Club-ID aus der Session, falls vorhanden.
- * Gibt null zurück, wenn keine Session oder keine Club-ID vorhanden ist.
+ * Gibt null zurÃ¼ck, wenn keine Session oder keine Club-ID vorhanden ist.
  */
 export async function getCurrentClubId() {
   const session = await getSession();
@@ -11,7 +11,7 @@ export async function getCurrentClubId() {
 
 /**
  * Erfordert eine aktive Session und eine zugeordnete Club-ID.
- * Wirft einen Fehler, wenn die Bedingungen nicht erfüllt sind.
+ * Wirft einen Fehler, wenn die Bedingungen nicht erfÃ¼llt sind.
  */
 export async function requireClubId() {
   const session = await getSession();
@@ -23,9 +23,9 @@ export async function requireClubId() {
   
   if (!clubId) {
     if (session.user.role === "admin") {
-      // Super-admins without club context are redirected in the page/layout,
+      // Admins without club context are redirected in the page/layout,
       // but if an action is called, we need to throw a specific error.
-      throw new Error("SUPER_ADMIN_NO_CLUB_CONTEXT");
+      throw new Error("ADMIN_NO_CLUB_CONTEXT");
     }
     throw new Error("Kein Verein zugeordnet");
   }

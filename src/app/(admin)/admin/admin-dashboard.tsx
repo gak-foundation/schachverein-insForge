@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -52,7 +52,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { impersonateClubAction, toggleClubStatusAction, createClubAsSuperAdminAction } from "@/lib/clubs/actions";
+import { impersonateClubAction, toggleClubStatusAction, createClubAsAdminAction } from "@/lib/clubs/actions";
 import { CreateClubForm } from "@/features/clubs/components/create-club-form";
 import { toast } from "@/components/ui/use-toast";
 
@@ -80,7 +80,7 @@ interface User {
   lastLoginAt: Date | null;
 }
 
-interface SuperAdminDashboardProps {
+interface AdminDashboardProps {
   clubs: Club[];
   users: User[];
   stats: {
@@ -106,7 +106,7 @@ const statusColors: Record<string, string> = {
 const getPlanColor = (plan: string) => planColors[plan] || "bg-slate-100 text-slate-700";
 const getStatusColor = (status: string | null) => status ? (statusColors[status] || "bg-slate-100 text-slate-700") : "bg-slate-100 text-slate-700";
 
-export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboardProps) {
+export function AdminDashboard({ clubs, users, stats }: AdminDashboardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [searchQuery, setSearchQuery] = useState("");
@@ -192,7 +192,7 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
           <CardContent>
             <div className="text-3xl font-bold">{stats.totalUsers}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.totalClubs > 0 ? Math.round((stats.totalUsers / stats.totalClubs) * 10) / 10 : 0} User pro Verein ø
+              {stats.totalClubs > 0 ? Math.round((stats.totalUsers / stats.totalClubs) * 10) / 10 : 0} User pro Verein Ã¸
             </p>
           </CardContent>
         </Card>
@@ -258,7 +258,7 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
               </DialogDescription>
             </DialogHeader>
             <CreateClubForm
-              action={createClubAsSuperAdminAction}
+              action={createClubAsAdminAction}
               onSuccess={() => {
                 setCreateDialogOpen(false);
                 router.refresh();
@@ -329,7 +329,7 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuGroup>
-                              <DropdownMenuLabel>Aktionen für {club.name}</DropdownMenuLabel>
+                              <DropdownMenuLabel>Aktionen fÃ¼r {club.name}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => handleImpersonate(club.id)}
@@ -426,7 +426,7 @@ export function SuperAdminDashboard({ clubs, users, stats }: SuperAdminDashboard
                         {user.role === "admin" ? (
                           <Badge className="bg-amber-500/10 text-amber-600 border-amber-200">
                             <ShieldAlert className="h-3 w-3 mr-1" />
-                            Super Admin
+                            Admin
                           </Badge>
                         ) : (
                           <Badge variant="ghost" className="text-muted-foreground">

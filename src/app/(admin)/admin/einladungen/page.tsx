@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { getSessionWithClub } from "@/lib/auth/session";
 import { getAllInvitationsAction, revokeInvitationAction } from "@/lib/clubs/actions";
 import { getAllClubsAction } from "@/lib/clubs/actions";
@@ -9,7 +9,7 @@ import { InviteForm } from "./invite-form";
 import { Link2 } from "lucide-react";
 
 export const metadata = {
-  title: "Einladungen | Super Admin",
+  title: "Einladungen | Admin",
 };
 
 export default async function AdminInvitationsPage() {
@@ -67,7 +67,7 @@ export default async function AdminInvitationsPage() {
                 <th className="px-6 py-4 font-medium">Eingeladen von</th>
                 <th className="px-6 py-4 font-medium">Status</th>
                 <th className="px-6 py-4 font-medium">Erstellt</th>
-                <th className="px-6 py-4 font-medium">Läuft ab</th>
+                <th className="px-6 py-4 font-medium">LÃ¤uft ab</th>
                 <th className="px-6 py-4 font-medium">Aktionen</th>
               </tr>
             </thead>

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { requireAuth, requireClub } from "@/lib/auth/session";
 import { sendClubInvitationEmail } from "@/lib/auth/email";
@@ -89,7 +89,7 @@ export async function completeOnboardingAction(_formData?: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function createClubAsSuperAdminAction(formData: FormData) {
+export async function createClubAsAdminAction(formData: FormData) {
   const session = await requireAuth();
 
   if (session.user.role !== "admin") {
@@ -127,7 +127,7 @@ export async function createClubAsSuperAdminAction(formData: FormData) {
     address,
   });
 
-  revalidatePath("/super-admin");
+  revalidatePath("/admin");
   return { success: true, club };
 }
 
@@ -627,7 +627,7 @@ export async function revokeInvitationAction(invitationId: string) {
   return { success: true };
 }
 
-// --- Super Admin -----------------------------------------------
+// --- Admin -----------------------------------------------
 
 export async function getAllClubsAction() {
   const session = await requireAuth();
@@ -708,7 +708,7 @@ export async function toggleClubStatusAction(clubId: string, isActive: boolean) 
 
   if (error) throw new Error(error.message);
 
-  revalidatePath("/super-admin");
+  revalidatePath("/admin");
   return { success: true };
 }
 
@@ -891,3 +891,6 @@ export async function unimpersonateClubAction() {
 
   return { success: true };
 }
+
+
+

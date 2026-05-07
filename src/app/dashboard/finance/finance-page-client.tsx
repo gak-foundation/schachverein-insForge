@@ -52,7 +52,7 @@ export function FinancePageClient({
       <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
         <h2 className="text-xl font-bold">Kein Verein ausgewaehlt</h2>
         <p className="text-muted-foreground max-w-md">
-          Als Super-Admin muessen Sie zuerst einen Verein auswaehlen, um Finanzdaten einsehen zu koennen.
+          Als Admin muessen Sie zuerst einen Verein auswaehlen, um Finanzdaten einsehen zu koennen.
         </p>
         <Link href="/admin">
           <Button>Zur Vereinsauswahl</Button>
